@@ -134,7 +134,7 @@ transResults()
         MAKE_ERROR(tefNO_TICKET,                   "Ticket is not in ledger."),
         MAKE_ERROR(tefNFTOKEN_IS_NOT_TRANSFERABLE, "The specified NFToken is not transferable."),
 
-        MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
+        MAKE_ERROR(telLOCAL_ERROR,            "Local failure / unit test RPC failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
         MAKE_ERROR(telBAD_PATH_COUNT,         "Malformed: Too many paths."),
         MAKE_ERROR(telBAD_PUBLIC_KEY,         "Public key is not valid."),
