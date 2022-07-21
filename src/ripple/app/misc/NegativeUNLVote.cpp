@@ -80,18 +80,17 @@ NegativeUNLVote::doVoting(
         purgeNewValidators(seq);
 
         // Process the table and find all candidates to disable or to re-enable
-        auto const candidates =
+        auto candidates =
             findAllCandidates(unlNodeIDs, negUnlNodeIDs, *scoreTable);
 
         std::vector<NodeID> ineligible;
 
-        // If FeatureNegativeUNLV2 is enabled, perform this optimization
+        // If FeatureNegativeUNLV2 is enabled, update the ineligible list of
+        // candidates
         if (prevLedger->rules().enabled(featureNegativeUNLV2))
         {
-            // Remove the intersection of (negUNL) AND
-            // (candidates.toReEnableCandidates)
-
-            ineligible = negUnlKeys;
+            for (const auto& u : candidates.toReEnableCandidates)
+                ineligible.push_back(u);
         }
 
         // CK TODO: FeatureNegativeUNLV2: If the toReEnable and negUNL conflict
@@ -103,9 +102,10 @@ NegativeUNLVote::doVoting(
             auto n = choose(
                 prevLedger->info().hash,
                 candidates.toDisableCandidates,
-                std::vector<NodeID>(
-                    {}));  // CK TODO: This is temporary code. Replicate logic
-                           // for the mirrored scenario
+                std::vector<NodeID>());
+            // CK TODO: This is temporary code. Replicate logic
+            // for the mirrored scenario: voting to reEnable followed by voting
+            // to disable a candidate
             assert(nidToKeyMap.count(n));
             addTx(seq, nidToKeyMap[n], ToDisable, initialSet);
         }

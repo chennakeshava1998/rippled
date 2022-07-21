@@ -512,11 +512,17 @@ class NegativeUNL_test : public beast::unit_test::suite
         }
     }
 
-    void testNegativeUNLV2() {
+    void
+    testNegativeUNLV2()
+    {
+        testcase(
+            "NegativeUNLV2: Testcase to observe disable and consecutive "
+            "re-enable of a validator");
 
-        testcase("NegativeUNLV2: Testcase to observe disable and consecutive re-enable of a validator");
-
-        jtx::Env env(*this, jtx::supported_amendments() | featureNegativeUNL);
+        jtx::Env env(
+            *this,
+            jtx::supported_amendments() | featureNegativeUNL |
+                featureNegativeUNLV2);
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -525,6 +531,10 @@ class NegativeUNL_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
         BEAST_EXPECT(l->rules().enabled(featureNegativeUNL));
+
+        // Ensure that featureNegativeUNLV2 is enabled for the subsequent test
+        // cases
+        BEAST_EXPECT(l->rules().enabled(featureNegativeUNLV2));
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
@@ -556,8 +566,9 @@ class NegativeUNL_test : public beast::unit_test::suite
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
 
+            // Vote to disable the validator pk[0]
             auto txDisable_0 = createTx(true, l->seq(), publicKeys[0]);
-            
+
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txDisable_0, true));
             accum.apply(*l);
@@ -573,8 +584,7 @@ class NegativeUNL_test : public beast::unit_test::suite
         }
 
         {
-            
-            for (auto i = 0; i < 255; ++i)
+            for (auto i = 0; i < 256; ++i)
             {
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
@@ -582,18 +592,19 @@ class NegativeUNL_test : public beast::unit_test::suite
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
 
+            // Vote to re-enable the validator pk[0]
             auto txReEnable_2 = createTx(false, l->seq(), publicKeys[0]);
 
-            // can apply 1 and only 1 ToDisable Tx,
-            // cannot apply ToReEnable Tx, since negative UNL is empty
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txReEnable_2, true));
             accum.apply(*l);
 
-            // NegativeUNLV2: the vote to disable and re-enable cancel out each other.
+            // NegativeUNLV2: the vote to disable and re-enable cancel out each
+            // other.
             auto good_size = negUnlSizeTest(l, 0, false, false);
-            
-            // NegativeUNLV2: negUNL must be empty because the same validator has been voted to be disabled and re-enabled.
+
+            // NegativeUNLV2: negUNL must be empty because the same validator
+            // has been voted to be disabled and re-enabled.
             BEAST_EXPECT(!good_size);
         }
     }
@@ -893,14 +904,20 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         NodeID n_2(2);
         NodeID n_3(3);
         std::vector<NodeID> candidates({n_1});
-        BEAST_EXPECT(vote.choose(pad_0, candidates) == n_1);
-        BEAST_EXPECT(vote.choose(pad_f, candidates) == n_1);
+        BEAST_EXPECT(
+            vote.choose(pad_0, candidates, std::vector<NodeID>()) == n_1);
+        BEAST_EXPECT(
+            vote.choose(pad_f, candidates, std::vector<NodeID>()) == n_1);
         candidates.emplace_back(2);
-        BEAST_EXPECT(vote.choose(pad_0, candidates) == n_1);
-        BEAST_EXPECT(vote.choose(pad_f, candidates) == n_2);
+        BEAST_EXPECT(
+            vote.choose(pad_0, candidates, std::vector<NodeID>()) == n_1);
+        BEAST_EXPECT(
+            vote.choose(pad_f, candidates, std::vector<NodeID>()) == n_2);
         candidates.emplace_back(3);
-        BEAST_EXPECT(vote.choose(pad_0, candidates) == n_1);
-        BEAST_EXPECT(vote.choose(pad_f, candidates) == n_3);
+        BEAST_EXPECT(
+            vote.choose(pad_0, candidates, std::vector<NodeID>()) == n_1);
+        BEAST_EXPECT(
+            vote.choose(pad_f, candidates, std::vector<NodeID>()) == n_3);
     }
 
     void
