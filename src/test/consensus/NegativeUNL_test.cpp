@@ -512,10 +512,97 @@ class NegativeUNL_test : public beast::unit_test::suite
         }
     }
 
+    void testNegativeUNLV2() {
+
+        testcase("NegativeUNLV2: Testcase to observe disable and consecutive re-enable of a validator");
+
+        jtx::Env env(*this, jtx::supported_amendments() | featureNegativeUNL);
+        std::vector<PublicKey> publicKeys = createPublicKeys(3);
+        // genesis ledger
+        auto l = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        BEAST_EXPECT(l->rules().enabled(featureNegativeUNL));
+
+        // Record the public keys and ledger sequences of expected negative UNL
+        // validators when we build the ledger history
+        hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq;
+
+        {
+            //(1) the ledger after genesis, not a flag ledger
+            l = std::make_shared<Ledger>(
+                *l, env.app().timeKeeper().closeTime());
+
+            auto txDisable_0 = createTx(true, l->seq(), publicKeys[0]);
+            auto txReEnable_1 = createTx(false, l->seq(), publicKeys[1]);
+
+            OpenView accum(&*l);
+            BEAST_EXPECT(applyAndTestResult(env, accum, txDisable_0, false));
+            BEAST_EXPECT(applyAndTestResult(env, accum, txReEnable_1, false));
+            accum.apply(*l);
+            BEAST_EXPECT(negUnlSizeTest(l, 0, false, false));
+        }
+
+        {
+            //(2) a flag ledger
+            // generate more ledgers
+            for (auto i = 0; i < 256 - 2; ++i)
+            {
+                l = std::make_shared<Ledger>(
+                    *l, env.app().timeKeeper().closeTime());
+            }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
+
+            auto txDisable_0 = createTx(true, l->seq(), publicKeys[0]);
+            
+            OpenView accum(&*l);
+            BEAST_EXPECT(applyAndTestResult(env, accum, txDisable_0, true));
+            accum.apply(*l);
+            auto good_size = negUnlSizeTest(l, 0, true, false);
+            BEAST_EXPECT(good_size);
+            if (good_size)
+            {
+                BEAST_EXPECT(l->validatorToDisable() == publicKeys[0]);
+                //++ first ToDisable Tx in ledger's TxSet
+                uint256 txID = txDisable_0.getTransactionID();
+                BEAST_EXPECT(l->txExists(txID));
+            }
+        }
+
+        {
+            
+            for (auto i = 0; i < 255; ++i)
+            {
+                l = std::make_shared<Ledger>(
+                    *l, env.app().timeKeeper().closeTime());
+            }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
+
+            auto txReEnable_2 = createTx(false, l->seq(), publicKeys[0]);
+
+            // can apply 1 and only 1 ToDisable Tx,
+            // cannot apply ToReEnable Tx, since negative UNL is empty
+            OpenView accum(&*l);
+            BEAST_EXPECT(applyAndTestResult(env, accum, txReEnable_2, true));
+            accum.apply(*l);
+
+            // NegativeUNLV2: the vote to disable and re-enable cancel out each other.
+            auto good_size = negUnlSizeTest(l, 0, false, false);
+            
+            // NegativeUNLV2: negUNL must be empty because the same validator has been voted to be disabled and re-enabled.
+            BEAST_EXPECT(!good_size);
+        }
+    }
+
     void
     run() override
     {
         testNegativeUNL();
+        testNegativeUNLV2();
     }
 };
 

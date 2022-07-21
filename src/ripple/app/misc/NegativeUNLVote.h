@@ -163,7 +163,7 @@ private:
      * @return the picked candidate
      */
     NodeID
-    choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
+    choose(uint256 const& randomPadData, std::vector<NodeID>& candidates, std::vector<NodeID> const& ineligible);
 
     /**
      * Build a reliability measurement score table of validators' validation

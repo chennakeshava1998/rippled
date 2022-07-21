@@ -83,11 +83,29 @@ NegativeUNLVote::doVoting(
         auto const candidates =
             findAllCandidates(unlNodeIDs, negUnlNodeIDs, *scoreTable);
 
+        std::vector<NodeID> ineligible;
+
+        // If FeatureNegativeUNLV2 is enabled, perform this optimization
+        if (prevLedger->rules().enabled(featureNegativeUNLV2))
+        {
+            // Remove the intersection of (negUNL) AND
+            // (candidates.toReEnableCandidates)
+
+            ineligible = negUnlKeys;
+        }
+
+        // CK TODO: FeatureNegativeUNLV2: If the toReEnable and negUNL conflict
+        // with each other, do not create a new spurious transaction
+
         // Pick one to disable and one to re-enable if any, add ttUNL_MODIFY Tx
         if (!candidates.toDisableCandidates.empty())
         {
-            auto n =
-                choose(prevLedger->info().hash, candidates.toDisableCandidates);
+            auto n = choose(
+                prevLedger->info().hash,
+                candidates.toDisableCandidates,
+                std::vector<NodeID>(
+                    {}));  // CK TODO: This is temporary code. Replicate logic
+                           // for the mirrored scenario
             assert(nidToKeyMap.count(n));
             addTx(seq, nidToKeyMap[n], ToDisable, initialSet);
         }
@@ -95,7 +113,9 @@ NegativeUNLVote::doVoting(
         if (!candidates.toReEnableCandidates.empty())
         {
             auto n = choose(
-                prevLedger->info().hash, candidates.toReEnableCandidates);
+                prevLedger->info().hash,
+                candidates.toReEnableCandidates,
+                ineligible);
             assert(nidToKeyMap.count(n));
             addTx(seq, nidToKeyMap[n], ToReEnable, initialSet);
         }
@@ -138,11 +158,24 @@ NegativeUNLVote::addTx(
 NodeID
 NegativeUNLVote::choose(
     uint256 const& randomPadData,
-    std::vector<NodeID> const& candidates)
+    std::vector<NodeID>& candidates,
+    std::vector<NodeID> const& ineligible)
 {
     assert(!candidates.empty());
     static_assert(NodeID::bytes <= uint256::bytes);
     NodeID randomPad = NodeID::fromVoid(randomPadData.data());
+
+    // remove the ineligible validators from the candidates list
+    for (auto const& u : ineligible)
+    {
+        auto position = std::find(candidates.begin(), candidates.end(), u);
+        if (position != candidates.end())
+            candidates.erase(position);
+    }
+
+    // CK TODO: What to do if candidates is empty! change the return type into
+    // std::optional
+
     NodeID txNodeID = candidates[0];
     for (int j = 1; j < candidates.size(); ++j)
     {
