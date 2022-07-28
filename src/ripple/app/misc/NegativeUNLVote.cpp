@@ -23,8 +23,8 @@
 
 namespace ripple {
 
-NegativeUNLVote::NegativeUNLVote(NodeID const& myId, beast::Journal j)
-    : myId_(myId), j_(j)
+NegativeUNLVote::NegativeUNLVote(PublicKey const& myValPubKey, beast::Journal j)
+    : myValPubKey_(myValPubKey), j_(j)
 {
 }
 
@@ -53,8 +53,8 @@ NegativeUNLVote::doVoting(
     }
 
     // Build a reliability score table of validators
-    if (std::optional<hash_map<NodeID, std::uint32_t>> scoreTable =
-            buildScoreTable(prevLedger, unlNodeIDs, validations))
+    if (std::optional<hash_map<PublicKey, std::uint32_t>> scoreTable =
+            buildScoreTable(prevLedger, unlKeys, validations))
     {
         // build next negUnl
         auto negUnlKeys = prevLedger->negativeUNL();
@@ -81,23 +81,25 @@ NegativeUNLVote::doVoting(
 
         // Process the table and find all candidates to disable or to re-enable
         auto const candidates =
-            findAllCandidates(unlNodeIDs, negUnlNodeIDs, *scoreTable);
+            findAllCandidates(unlKeys, negUnlKeys, *scoreTable);
 
         // Pick one to disable and one to re-enable if any, add ttUNL_MODIFY Tx
         if (!candidates.toDisableCandidates.empty())
         {
             auto n =
                 choose(prevLedger->info().hash, candidates.toDisableCandidates);
-            assert(nidToKeyMap.count(n));
-            addTx(seq, nidToKeyMap[n], ToDisable, initialSet);
+            // assert(nidToKeyMap.count(n));
+            assert(negUnlKeys.count(n));
+            addTx(seq, n, ToDisable, initialSet);
         }
 
         if (!candidates.toReEnableCandidates.empty())
         {
             auto n = choose(
                 prevLedger->info().hash, candidates.toReEnableCandidates);
-            assert(nidToKeyMap.count(n));
-            addTx(seq, nidToKeyMap[n], ToReEnable, initialSet);
+            // assert(nidToKeyMap.count(n));
+            assert(negUnlKeys.count(n));
+            addTx(seq, n, ToReEnable, initialSet);
         }
     }
 }
@@ -135,29 +137,29 @@ NegativeUNLVote::addTx(
     }
 }
 
-NodeID
+PublicKey
 NegativeUNLVote::choose(
     uint256 const& randomPadData,
-    std::vector<NodeID> const& candidates)
+    std::vector<PublicKey> const& candidates)
 {
     assert(!candidates.empty());
-    static_assert(NodeID::bytes <= uint256::bytes);
-    NodeID randomPad = NodeID::fromVoid(randomPadData.data());
-    NodeID txNodeID = candidates[0];
+    // static_assert(NodeID::bytes <= uint256::bytes);
+    // NodeID randomPad = NodeID::fromVoid(randomPadData.data());
+    PublicKey chosenValidatorKey = candidates[0];
     for (int j = 1; j < candidates.size(); ++j)
     {
-        if ((candidates[j] ^ randomPad) < (txNodeID ^ randomPad))
+        if ((static_cast<const unsigned char>(*candidates[j].data()) ^ *randomPadData.data()) < (*chosenValidatorKey.data() ^ *randomPadData.data()))
         {
-            txNodeID = candidates[j];
+            chosenValidatorKey = candidates[j];
         }
     }
-    return txNodeID;
+    return chosenValidatorKey;
 }
 
-std::optional<hash_map<NodeID, std::uint32_t>>
+std::optional<hash_map<PublicKey, std::uint32_t>>
 NegativeUNLVote::buildScoreTable(
     std::shared_ptr<Ledger const> const& prevLedger,
-    hash_set<NodeID> const& unl,
+    hash_set<PublicKey> const& unlKeys,
     RCLValidations& validations)
 {
     // Find agreed validation messages received for
@@ -187,8 +189,8 @@ NegativeUNLVote::buildScoreTable(
     }
 
     // have enough ledger ancestors, build the score table
-    hash_map<NodeID, std::uint32_t> scoreTable;
-    for (auto const& k : unl)
+    hash_map<PublicKey, std::uint32_t> scoreTable;
+    for (auto const& k : unlKeys)
     {
         scoreTable[k] = 0;
     }
@@ -200,15 +202,15 @@ NegativeUNLVote::buildScoreTable(
         for (auto const& v : validations.getTrustedForLedger(
                  ledgerAncestors[numAncestors - 1 - i]))
         {
-            if (scoreTable.count(v->getNodeID()))
-                ++scoreTable[v->getNodeID()];
+            if (scoreTable.count(v->getSignerPublic()))
+                ++scoreTable[v->getSignerPublic()];
         }
     }
 
     // Return false if the validation message history or local node's
     // participation in the history is not good.
     auto const myValidationCount = [&]() -> std::uint32_t {
-        if (auto const it = scoreTable.find(myId_); it != scoreTable.end())
+        if (auto const it = scoreTable.find(myValPubKey_); it != scoreTable.end())
             return it->second;
         return 0;
     }();
@@ -240,9 +242,9 @@ NegativeUNLVote::buildScoreTable(
 
 NegativeUNLVote::Candidates const
 NegativeUNLVote::findAllCandidates(
-    hash_set<NodeID> const& unl,
-    hash_set<NodeID> const& negUnl,
-    hash_map<NodeID, std::uint32_t> const& scoreTable)
+    hash_set<PublicKey> const& unl,
+    hash_set<PublicKey> const& negUnl,
+    hash_map<PublicKey, std::uint32_t> const& scoreTable)
 {
     // Compute if need to find more validators to disable
     auto const canAdd = [&]() -> bool {
@@ -255,7 +257,7 @@ NegativeUNLVote::findAllCandidates(
                 ++negativeListed;
         }
         bool const result = negativeListed < maxNegativeListed;
-        JLOG(j_.trace()) << "N-UNL: nodeId " << myId_ << " lowWaterMark "
+        JLOG(j_.trace()) << "N-UNL: PublicKey " << myValPubKey_ << " lowWaterMark "
                          << negativeUNLLowWaterMark << " highWaterMark "
                          << negativeUNLHighWaterMark << " canAdd " << result
                          << " negativeListed " << negativeListed
@@ -264,9 +266,9 @@ NegativeUNLVote::findAllCandidates(
     }();
 
     Candidates candidates;
-    for (auto const& [nodeId, score] : scoreTable)
+    for (auto const& [valPubKey, score] : scoreTable)
     {
-        JLOG(j_.trace()) << "N-UNL: node " << nodeId << " score " << score;
+        JLOG(j_.trace()) << "N-UNL: node " << valPubKey << " score " << score;
 
         // Find toDisable Candidates: check if
         //  (1) canAdd,
@@ -274,19 +276,19 @@ NegativeUNLVote::findAllCandidates(
         //  (3) is not in negUnl, and
         //  (4) is not a new validator.
         if (canAdd && score < negativeUNLLowWaterMark &&
-            !negUnl.count(nodeId) && !newValidators_.count(nodeId))
+            !negUnl.count(nodevalPubKeyId) && !newValidators_.count(valPubKey))
         {
-            JLOG(j_.trace()) << "N-UNL: toDisable candidate " << nodeId;
-            candidates.toDisableCandidates.push_back(nodeId);
+            JLOG(j_.trace()) << "N-UNL: toDisable candidate " << valPubKey;
+            candidates.toDisableCandidates.push_back(valPubKey);
         }
 
         // Find toReEnable Candidates: check if
         //  (1) has more than negativeUNLHighWaterMark validations,
         //  (2) is in negUnl
-        if (score > negativeUNLHighWaterMark && negUnl.count(nodeId))
+        if (score > negativeUNLHighWaterMark && negUnl.count(valPubKey))
         {
-            JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << nodeId;
-            candidates.toReEnableCandidates.push_back(nodeId);
+            JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << valPubKey;
+            candidates.toReEnableCandidates.push_back(valPubKey);
         }
     }
 
@@ -316,9 +318,9 @@ NegativeUNLVote::findAllCandidates(
 void
 NegativeUNLVote::newValidators(
     LedgerIndex seq,
-    hash_set<NodeID> const& nowTrusted)
+    hash_set<PublicKey> const& nowTrusted)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(mutex_); // CK TODO: Why do we need a mutex here? Doesn't unordered_map handle duplicates automatically?
     for (auto const& n : nowTrusted)
     {
         if (newValidators_.find(n) == newValidators_.end())
