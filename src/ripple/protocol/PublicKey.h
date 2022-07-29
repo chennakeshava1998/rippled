@@ -129,12 +129,19 @@ public:
     {
         return slice();
     }
+
+    friend std::string to_string(PublicKey const&);
 };
 
 /** Print the public key to a stream.
  */
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk);
+// std::ostream&
+// operator<<(std::ostream& os, PublicKey const& pk);
+
+template <class Stream>
+Stream&
+// std::ostream&
+operator<<(Stream& os, PublicKey const& pk);
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
@@ -179,6 +186,11 @@ struct STExchange<STBlob, PublicKey>
         return std::make_unique<STBlob>(f, t.data(), t.size());
     }
 };
+
+inline std::string
+to_string(PublicKey const& pk) {
+    return strHex(pk);
+}
 
 //------------------------------------------------------------------------------
 

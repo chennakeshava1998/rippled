@@ -172,7 +172,7 @@ handleNewValidation(
 
     // masterKey is seated only if validator is trusted or listed
     auto const outcome =
-        validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
+        validations.add(masterKey.value_or(signingKey), val);
 
     if (outcome == ValStatus::current)
     {

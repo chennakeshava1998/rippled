@@ -1771,7 +1771,7 @@ ValidatorList::calculateQuorum(
 
 TrustChanges
 ValidatorList::updateTrusted(
-    hash_set<NodeID> const& seenValidators,
+    hash_set<PublicKey> const& seenValidators,
     NetClock::time_point closeTime,
     NetworkOPs& ops,
     Overlay& overlay,
@@ -1859,7 +1859,7 @@ ValidatorList::updateTrusted(
     {
         if (!keyListings_.count(*it) || validatorManifests_.revoked(*it))
         {
-            trustChanges.removed.insert(calcNodeID(*it));
+            trustChanges.removed.insert(*it);
             it = trustedMasterKeys_.erase(it);
         }
         else
@@ -1872,7 +1872,7 @@ ValidatorList::updateTrusted(
     {
         if (!validatorManifests_.revoked(val.first) &&
             trustedMasterKeys_.emplace(val.first).second)
-            trustChanges.added.insert(calcNodeID(val.first));
+            trustChanges.added.insert(val.first);
     }
 
     // If there were any changes, we need to update the ephemeral signing
@@ -1899,14 +1899,14 @@ ValidatorList::updateTrusted(
             if (negativeUNL_.count(k))
                 --effectiveUnlSize;
         }
-        hash_set<NodeID> negUnlNodeIDs;
+        hash_set<PublicKey> negUnlNodePublicKeys;
         for (auto const& k : negativeUNL_)
         {
-            negUnlNodeIDs.emplace(calcNodeID(k));
+            negUnlNodePublicKeys.emplace(k);
         }
         for (auto const& nid : seenValidators)
         {
-            if (negUnlNodeIDs.count(nid))
+            if (negUnlNodePublicKeys.count(nid))
                 --seenSize;
         }
     }

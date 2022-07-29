@@ -89,7 +89,7 @@ class RCLConsensus
 
     public:
         using Ledger_t = RCLCxLedger;
-        using NodeID_t = NodeID;
+        using NodeID_t = PublicKey; // CK: Changed the type: NodeID -> PublicKey
         using NodeKey_t = PublicKey;
         using TxSet_t = RCLTxSet;
         using PeerPosition_t = RCLCxPeerPos;
@@ -138,7 +138,7 @@ class RCLConsensus
         bool
         preStartRound(
             RCLCxLedger const& prevLedger,
-            hash_set<NodeID> const& nowTrusted);
+            hash_set<PublicKey> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -149,6 +149,7 @@ class RCLConsensus
         std::pair<std::size_t, hash_set<NodeKey_t>>
         getQuorumKeys() const;
 
+        // CK TODO: Change this function signature to use Public Keys
         std::size_t
         laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys)
             const;
@@ -483,8 +484,8 @@ public:
         NetClock::time_point const& now,
         RCLCxLedger::ID const& prevLgrId,
         RCLCxLedger const& prevLgr,
-        hash_set<NodeID> const& nowUntrusted,
-        hash_set<NodeID> const& nowTrusted);
+        hash_set<PublicKey> const& nowUntrusted,
+        hash_set<PublicKey> const& nowTrusted);
 
     //! @see Consensus::timerEntry
     void

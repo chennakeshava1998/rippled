@@ -1827,7 +1827,7 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
     if (prevLedger->rules().enabled(featureNegativeUNL))
         app_.validators().setNegativeUNL(prevLedger->negativeUNL());
     TrustChanges const changes = app_.validators().updateTrusted(
-        app_.getValidations().getCurrentNodeIDs(),
+        app_.getValidations().getCurrentNodePublicKeys(),
         closingInfo.parentCloseTime,
         *this,
         app_.overlay(),

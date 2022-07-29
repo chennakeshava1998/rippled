@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/base64.h>
@@ -597,3 +597,4 @@ BEAST_DEFINE_TESTSUITE(ValidatorRPC, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
+#endif

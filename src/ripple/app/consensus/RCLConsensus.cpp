@@ -89,7 +89,8 @@ RCLConsensus::Adaptor::Adaptor(
     , valCookie_{rand_int<std::uint64_t>(
           1,
           std::numeric_limits<std::uint64_t>::max())}
-    , nUnlVote_(validatorKeys_.nodeID, j_)
+    , nUnlVote_(validatorKeys_.masterPublicKey, j_)
+    // CK TODO: masterPublicKey or PublicKey? Which is the correct choice?
 {
     assert(valCookie_ != 0);
 
@@ -390,7 +391,7 @@ RCLConsensus::Adaptor::onClose(
             setHash,
             closeTime,
             app_.timeKeeper().closeTime(),
-            validatorKeys_.nodeID}};
+            validatorKeys_.masterPublicKey}}; // CK: masterPublicKey or publicKey ??
 }
 
 void
@@ -953,7 +954,7 @@ RCLConsensus::peerProposal(
 bool
 RCLConsensus::Adaptor::preStartRound(
     RCLCxLedger const& prevLgr,
-    hash_set<NodeID> const& nowTrusted)
+    hash_set<PublicKey> const& nowTrusted)
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
@@ -1045,8 +1046,8 @@ RCLConsensus::startRound(
     NetClock::time_point const& now,
     RCLCxLedger::ID const& prevLgrId,
     RCLCxLedger const& prevLgr,
-    hash_set<NodeID> const& nowUntrusted,
-    hash_set<NodeID> const& nowTrusted)
+    hash_set<PublicKey> const& nowUntrusted,
+    hash_set<PublicKey> const& nowTrusted)
 {
     std::lock_guard _{mutex_};
     consensus_.startRound(

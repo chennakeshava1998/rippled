@@ -673,7 +673,10 @@ struct Peer
     {
         v.setTrusted();
         v.setSeen(now());
-        ValStatus const res = validations.add(v.nodeID(), v);
+
+        // CK: FIXME Replace the placeholder with corrct code.
+        // ValStatus const res = validations.add(PublicKey(v.key().second), v);
+        ValStatus const res = validations.add(PublicKey(), v);
 
         if (res == ValStatus::stale)
             return false;

@@ -43,7 +43,7 @@ class RCLCxPeerPos
 {
 public:
     //< The type of the proposed position
-    using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
+    using Proposal = ConsensusProposal<PublicKey, uint256, uint256>;
 
     /** Constructor
 
@@ -115,7 +115,7 @@ private:
             Proposal&& proposal);
     };
 
-    std::shared_ptr<Data> data_;
+    std::shared_ptr<Data> data_; // CK: Why is this a shared_ptr and not a unique_ptr -> which other function/classes use this resource?
 
     template <class Hasher>
     void
@@ -129,7 +129,7 @@ private:
         hash_append(h, proposal().position());
     }
 };
-
+// CK TODO: update the comments - last closed ledger field is no longer present in the function signature
 /** Calculate a unique identifier for a signed proposal.
 
     The identifier is based on all the fields that contribute to the signature,

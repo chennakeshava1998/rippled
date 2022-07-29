@@ -701,6 +701,8 @@ Consensus<Adaptor>::peerProposal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    // auto const& peerID = newPeerPos.proposal().nodeID();
+    // CK: Get the correct NodeID here 
     auto const& peerID = newPeerPos.proposal().nodeID();
 
     // Always need to store recent positions

@@ -108,8 +108,8 @@ struct TrustChanges
 {
     explicit TrustChanges() = default;
 
-    hash_set<NodeID> added;
-    hash_set<NodeID> removed;
+    hash_set<PublicKey> added;
+    hash_set<PublicKey> removed;
 };
 
 /** Used to represent the information stored in the blobs_v2 Json array */
@@ -469,7 +469,7 @@ public:
     */
     TrustChanges
     updateTrusted(
-        hash_set<NodeID> const& seenValidators,
+        hash_set<PublicKey> const& seenValidators,
         NetClock::time_point closeTime,
         NetworkOPs& ops,
         Overlay& overlay,
