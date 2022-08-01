@@ -73,27 +73,27 @@ public:
     Slice
     signature() const
     {
-        return data_->signature_;
+        return signature_;
     }
 
     //! Public key of peer that sent the proposal
     PublicKey const&
     publicKey() const
     {
-        return data_->publicKey_;
+        return publicKey_;
     }
 
     //! Unique id used by hash router to suppress duplicates
     uint256 const&
     suppressionID() const
     {
-        return data_->suppression_;
+        return suppression_;
     }
 
     Proposal const&
     proposal() const
     {
-        return data_->proposal_;
+        return proposal_;
     }
 
     //! JSON representation of proposal
@@ -101,21 +101,26 @@ public:
     getJson() const;
 
 private:
-    struct Data : public CountedObject<Data>
-    {
-        PublicKey publicKey_;
-        Buffer signature_;
-        uint256 suppression_;
-        Proposal proposal_;
+    // struct Data : public CountedObject<Data>
+    // {
+    //     PublicKey publicKey_;
+    //     Buffer signature_;
+    //     uint256 suppression_;
+    //     Proposal proposal_;
 
-        Data(
-            PublicKey const& publicKey,
-            Slice const& signature,
-            uint256 const& suppress,
-            Proposal&& proposal);
-    };
+    //     Data(
+    //         PublicKey const& publicKey,
+    //         Slice const& signature,
+    //         uint256 const& suppress,
+    //         Proposal&& proposal);
+    // };
 
-    std::shared_ptr<Data> data_;
+    PublicKey publicKey_;
+    Buffer signature_;
+    uint256 suppression_;
+    Proposal proposal_;
+
+    // std::shared_ptr<Data> data_;
 
     template <class Hasher>
     void

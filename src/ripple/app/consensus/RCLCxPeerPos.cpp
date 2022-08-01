@@ -32,11 +32,10 @@ RCLCxPeerPos::RCLCxPeerPos(
     Slice const& signature,
     uint256 const& suppression,
     Proposal&& proposal)
-    : data_{std::make_shared<Data>(
-          publicKey,
-          signature,
-          suppression,
-          std::move(proposal))}
+    : publicKey_(publicKey)
+    , signature_(signature)
+    , suppression_(suppression)
+    , proposal_(std::move(proposal))
 {
 }
 
@@ -88,16 +87,16 @@ proposalUniqueId(
     return s.getSHA512Half();
 }
 
-RCLCxPeerPos::Data::Data(
-    PublicKey const& publicKey,
-    Slice const& signature,
-    uint256 const& suppress,
-    Proposal&& proposal)
-    : publicKey_{publicKey}
-    , signature_{signature}
-    , suppression_{suppress}
-    , proposal_{std::move(proposal)}
-{
-}
+// RCLCxPeerPos::Data::Data(
+//     PublicKey const& publicKey,
+//     Slice const& signature,
+//     uint256 const& suppress,
+//     Proposal&& proposal)
+//     : publicKey_{publicKey}
+//     , signature_{signature}
+//     , suppression_{suppress}
+//     , proposal_{std::move(proposal)}
+// {
+// }
 
 }  // namespace ripple
