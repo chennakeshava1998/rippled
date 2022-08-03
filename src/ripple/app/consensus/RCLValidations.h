@@ -25,6 +25,8 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
+#include <ripple/protocol/PublicKey.h>
+
 #include <vector>
 
 namespace ripple {
@@ -90,7 +92,7 @@ public:
     NodeID
     nodeID() const
     {
-        return val_->getNodeID();
+        return calcNodeID(key());
     }
 
     /// Whether the validation is considered trusted.

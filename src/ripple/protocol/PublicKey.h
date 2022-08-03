@@ -129,12 +129,16 @@ public:
     {
         return slice();
     }
+
+    friend std::string to_string(PublicKey const&);
 };
 
 /** Print the public key to a stream.
  */
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk);
+// template <class Stream>
+// Stream&
+// std::ostream&
+// operator<<(std::ostream& os, PublicKey const& pk);
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)

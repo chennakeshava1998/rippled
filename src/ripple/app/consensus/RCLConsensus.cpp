@@ -43,6 +43,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/protocol/PublicKey.h>
 
 #include <algorithm>
 #include <mutex>
@@ -89,14 +90,14 @@ RCLConsensus::Adaptor::Adaptor(
     , valCookie_{rand_int<std::uint64_t>(
           1,
           std::numeric_limits<std::uint64_t>::max())}
-    , nUnlVote_(validatorKeys_.nodeID, j_)
+    , nUnlVote_(validatorKeys_.masterPublicKey, j_)
 {
     assert(valCookie_ != 0);
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
 
-    if (validatorKeys_.nodeID != beast::zero)
+    if (calcNodeID(validatorKeys_.masterPublicKey) != beast::zero) // CK : Is this used to check if a key is invalid?
     {
         std::stringstream ss;
 
@@ -390,7 +391,7 @@ RCLConsensus::Adaptor::onClose(
             setHash,
             closeTime,
             app_.timeKeeper().closeTime(),
-            validatorKeys_.nodeID}};
+            calcNodeID(validatorKeys_.masterPublicKey)}};
 }
 
 void
@@ -801,7 +802,7 @@ RCLConsensus::Adaptor::validate(
         lastValidationTime_,
         validatorKeys_.publicKey,
         validatorKeys_.secretKey,
-        validatorKeys_.nodeID,
+        calcNodeID(validatorKeys_.masterPublicKey),
         [&](STValidation& v) {
             v.setFieldH256(sfLedgerHash, ledger.id());
             v.setFieldH256(sfConsensusHash, txns.id());

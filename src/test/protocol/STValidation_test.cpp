@@ -185,12 +185,49 @@ public:
     {
         testcase("Deserialization");
 
+        std::uint8_t const testPubKeyData[33] = {
+            0x03, 0x33, 0x07, 0x57, 0xF4, 0xE7, 0x12, 0xF6, 0x8B, 0x39, 0x11,
+            0xC0, 0x8B, 0x0A, 0x05, 0x9E, 0x9C, 0xE2, 0x61, 0x55, 0xC7, 0xE5,
+            0xDB, 0xC6, 0xDC, 0xB6, 0xD6, 0x5E, 0x22, 0x3B, 0xD9, 0x85, 0x60};
+
+        // CK: @nikb - The below invocation of the makeSlice function throws a
+        // compiler error due to an ambiguity PublicKey const
+        // testPubKey(makeSlice(testPubKeyData)); Compiler output dump:
+        /*
+        In file included from
+/Users/keshava/rippled/build/CMakeFiles/rippled.dir/Unity/unity_30_cxx.cxx:31:
+/Users/keshava/rippled/src/test/protocol/STValidation_test.cpp:193:36: error: no
+matching function for call to 'makeSlice' PublicKey const
+testPubKey(makeSlice(testPubKeyData));
+                                   ^~~~~~~~~
+/Users/keshava/rippled/src/ripple/basics/Slice.h:241:1: note: candidate template
+ignored: could not match 'array<type-parameter-0-0, _Size>' against 'unsigned
+char const[33]' makeSlice(std::array<T, N> const& a)
+^
+/Users/keshava/rippled/src/ripple/basics/Slice.h:250:1: note: candidate template
+ignored: could not match 'vector<type-parameter-0-0, type-parameter-0-1>'
+against 'unsigned char const[33]' makeSlice(std::vector<T, Alloc> const& v)
+^
+/Users/keshava/rippled/src/ripple/basics/Slice.h:257:1: note: candidate template
+ignored: could not match 'basic_string<char, type-parameter-0-0,
+type-parameter-0-1>' against 'unsigned char const[33]'
+makeSlice(std::basic_string<char, Traits, Alloc> const& s)
+
+        */
+       
+        // CK: Verify if it is necessary to use stronger seed/PRNG
+        std::string const testPubKeySeed = "qwertzxcvb";
+        PublicKey const testPubKey(makeSlice(testPubKeySeed));
+
         try
         {
             SerialIter sit{payload8};
 
             auto val = std::make_shared<STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, true);
+                sit,
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                [&testPubKey](PublicKey const& pk) { return testPubKey; },
+                true);
 
             BEAST_EXPECT(val);
             BEAST_EXPECT(val->isFieldPresent(sfLedgerSequence));

@@ -28,11 +28,18 @@
 
 namespace ripple {
 
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk)
-{
-    os << strHex(pk);
-    return os;
+// CK: The older version throws a compiler error with respect to ambiguity posed by std::ostream& versus the beast Journal's stream
+// template <class Stream>
+// Stream&
+// std::ostream&
+// operator<<(std::ostream& os, PublicKey const& pk)
+// {
+//     os << strHex(pk);
+//     return os;
+// }
+
+std::string to_string(PublicKey const& pk) {
+    return strHex(pk);
 }
 
 template <>
