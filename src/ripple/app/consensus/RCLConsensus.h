@@ -64,7 +64,7 @@ class RCLConsensus
         beast::Journal const j_;
 
         // If the server is validating, the necessary keying information:
-        ValidatorKeys const& validatorKeys_;
+        std::optional<ValidatorKeys const>& validatorKeys_;
 
         // A randomly selected non-zero value used to tag our validations
         std::uint64_t const valCookie_;

@@ -26,15 +26,15 @@
 #include <ripple/core/ConfigSections.h>
 
 namespace ripple {
-ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
+std::optional<ValidatorKeys>
+loadValidatorKeys(Config const& config, beast::Journal j)
 {
     if (config.exists(SECTION_VALIDATOR_TOKEN) &&
         config.exists(SECTION_VALIDATION_SEED))
     {
-        configInvalid_ = true;
         JLOG(j.fatal()) << "Cannot specify both [" SECTION_VALIDATION_SEED
                            "] and [" SECTION_VALIDATOR_TOKEN "]";
-        return;
+        return std::nullopt;
     }
 
     if (config.exists(SECTION_VALIDATOR_TOKEN))
@@ -49,17 +49,17 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 
             if (!m || pk != m->signingKey)
             {
-                configInvalid_ = true;
                 JLOG(j.fatal())
                     << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN
                        "]";
+                return std::nullopt;
             }
             else
             {
                 secretKey = token->validationSecret;
                 publicKey = pk;
                 masterPublicKey = m->masterKey;
-                // nodeID = calcNodeID(m->masterKey);
+                nodeID = calcNodeID(m->masterKey);
                 sequence = m->sequence;
                 manifest = std::move(token->manifest);
             }

@@ -45,14 +45,9 @@ public:
 
     ValidatorKeys(Config const& config, beast::Journal j);
 
-    bool
-    configInvalid() const
-    {
-        return configInvalid_;
-    }
+    ValidatorKeys(PublicKey, ..);
 
 private:
-    bool configInvalid_ = false;  //< Set to true if config was invalid
 };
 
 }  // namespace ripple

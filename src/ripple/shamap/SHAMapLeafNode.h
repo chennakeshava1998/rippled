@@ -60,7 +60,6 @@ public:
     void
     invariants(bool is_root = false) const final override;
 
-public:
     std::shared_ptr<SHAMapItem const> const&
     peekItem() const;
 

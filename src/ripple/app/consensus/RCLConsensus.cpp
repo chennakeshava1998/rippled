@@ -42,8 +42,8 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/digest.h>
 
 #include <algorithm>
 #include <mutex>
@@ -78,7 +78,7 @@ RCLConsensus::Adaptor::Adaptor(
     LedgerMaster& ledgerMaster,
     LocalTxs& localTxs,
     InboundTransactions& inboundTransactions,
-    ValidatorKeys const& validatorKeys,
+    std::optional<ValidatorKeys const>& validatorKeys,
     beast::Journal journal)
     : app_(app)
     , feeVote_(std::move(feeVote))
@@ -90,14 +90,18 @@ RCLConsensus::Adaptor::Adaptor(
     , valCookie_{rand_int<std::uint64_t>(
           1,
           std::numeric_limits<std::uint64_t>::max())}
-    , nUnlVote_(validatorKeys_.masterPublicKey, j_)
+    , nUnlVote_([&validatorKeys]() -> std::optional<PublicKey> {
+        if (validatorKeys)
+            return validatorKeys.masterPublicKey;
+        return std::nullopt;
+    }(), j_)
 {
     assert(valCookie_ != 0);
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
 
-    if (calcNodeID(validatorKeys_.masterPublicKey) != beast::zero) // CK : Is this used to check if a key is invalid?
+    if (validatorKeys_)  // CK : Is this used to check if a key is invalid?
     {
         std::stringstream ss;
 

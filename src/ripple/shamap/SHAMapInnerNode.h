@@ -74,7 +74,7 @@ private:
     /** Get the child's index inside the `hashes` or `children` array (stored in
         `hashesAndChildren_`.
 
-        These arrays may or may not be sparse). The optional will be empty is an
+        These arrays may or may not be sparse). The optional will be empty if an
         empty branch is requested and the arrays are sparse.
 
         @param i index of the requested child
@@ -129,7 +129,7 @@ public:
     }
 
     bool
-    isInner() const override
+    isInner() const override // CK: Isn't this function redundant? Why can't we use getType instead of isInner?
     {
         return true;
     }
@@ -194,6 +194,7 @@ public:
     makeCompressedInner(Slice data);
 };
 
+// Is the m'th bit of isBrnach_ set?
 inline bool
 SHAMapInnerNode::isEmptyBranch(int m) const
 {

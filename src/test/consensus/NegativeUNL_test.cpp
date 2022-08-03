@@ -758,7 +758,7 @@ voteAndCheck(
     auto txSet = std::make_shared<SHAMap>(
         SHAMapType::TRANSACTION, history.env.app().getNodeFamily());
     vote.doVoting(
-        history.lastLedger(), history.UNLKeySet, history.validations, txSet); // CK: doVoting function does not modify the txSet. Why is this function being called here?
+        history.lastLedger(), history.UNLKeySet, history.validations, txSet);
     return countTx(txSet) == expect;
 }
 

@@ -26,7 +26,7 @@
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapLeafNode.h>
 #include <ripple/shamap/SHAMapNodeID.h>
-
+// CK: How come there is no Meta file for AccountState?
 namespace ripple {
 
 /** A leaf node for a transaction and its associated metadata. */

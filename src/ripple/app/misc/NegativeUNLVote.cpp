@@ -35,11 +35,6 @@ NegativeUNLVote::doVoting(
     RCLValidations& validations,
     std::shared_ptr<SHAMap> const& initialSet)
 {
-    // CK: Error in the overloading of this operator
-    // for (auto u : unlKeys)
-    // {
-    //     JLOG(j_.warn()) << u << std::endl;
-    // }
     // Voting steps:
     // -- build a reliability score table of validators
     // -- process the table and find all candidates to disable or to re-enable
@@ -93,8 +88,7 @@ NegativeUNLVote::doVoting(
         {
             auto n =
                 choose(prevLedger->info().hash, candidates.toDisableCandidates);
-            // assert(nidToKeyMap.count(n));
-            assert(unlKeys.count(n));  // CK TODO: Is this assert necessary?
+            assert(unlKeys.count(n));
             addTx(seq, n, ToDisable, initialSet);
         }
 
@@ -102,8 +96,7 @@ NegativeUNLVote::doVoting(
         {
             auto n = choose(
                 prevLedger->info().hash, candidates.toReEnableCandidates);
-            // assert(nidToKeyMap.count(n));
-            assert(negUnlKeys.count(n));  // CK TODO: Is this assert necessary?
+            assert(negUnlKeys.count(n));
             addTx(seq, n, ToReEnable, initialSet);
         }
     }
@@ -218,6 +211,10 @@ NegativeUNLVote::buildScoreTable(
     // Return false if the validation message history or local node's
     // participation in the history is not good.
     auto const myValidationCount = [&]() -> std::uint32_t {
+        if(!myValPubKey) {
+            JLOG() << "....";
+        }
+
         if (auto const it = scoreTable.find(myValPubKey_);
             it != scoreTable.end())
             return it->second;
@@ -299,7 +296,6 @@ NegativeUNLVote::findAllCandidates(
         //  (2) is in negUnl
         if (score > negativeUNLHighWaterMark && negUnl.count(valPubKey))
         {
-            // CK TODO: PublicKey's << overload ambibuous, why??
             JLOG(j_.trace())
                 << "N-UNL: toReEnable candidate " << valPubKey.slice();
             candidates.toReEnableCandidates.push_back(valPubKey);

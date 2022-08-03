@@ -37,7 +37,7 @@ private:
     unsigned int depth_ = 0;
 
 public:
-    SHAMapNodeID() = default;
+    SHAMapNodeID() = default; // CK: Does the default constructor create a valid instance of SHAMapNodeID (all zeros)? Is it semantically correct?
     SHAMapNodeID(SHAMapNodeID const& other) = default;
     SHAMapNodeID(unsigned int depth, uint256 const& hash);
 
@@ -85,7 +85,8 @@ public:
     bool
     operator<(SHAMapNodeID const& n) const
     {
-        return std::tie(depth_, id_) < std::tie(n.depth_, n.id_);
+        return std::tie(depth_, id_) < std::tie(n.depth_, n.id_); // CK: std::tie creates and returns references. Isn't this wasteful of time and memory? Can't we do depth_ < n.depth_ && id_ < n.id_ ?
+        // return depth_ < n.depth_ && id_ < n.id_;
     }
 
     bool

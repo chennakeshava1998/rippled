@@ -37,6 +37,8 @@ namespace ripple {
 
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
+
+// CK: Why not use an enum here?
 static constexpr unsigned char const wireTypeTransaction = 0;
 static constexpr unsigned char const wireTypeAccountState = 1;
 static constexpr unsigned char const wireTypeInner = 2;
@@ -53,7 +55,7 @@ enum class SHAMapNodeType {
 class SHAMapTreeNode
 {
 protected:
-    SHAMapHash hash_;
+    SHAMapHash hash_; // CK: getHash() and updateHash() are public functions, why is hash_ protected?
 
     /** Determines the owning SHAMap, if any. Used for copy-on-write semantics.
 
@@ -61,9 +63,8 @@ protected:
         flushed. It is eligible for sharing and may be included multiple
         SHAMap instances.
      */
-    std::uint32_t cowid_;
+    std::uint32_t cowid_; // CK: Is it useful to keep cowid_ as protected member whereas cowid() and unshare() are public functions of this class? (assuming inheritace is not necesarily performed as private/protected)
 
-protected:
     SHAMapTreeNode(SHAMapTreeNode const&) = delete;
     SHAMapTreeNode&
     operator=(SHAMapTreeNode const&) = delete;

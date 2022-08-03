@@ -32,7 +32,7 @@ namespace ripple {
 class SHAMapHash
 {
     uint256 hash_;
-
+// CK: Can't you inherit SHAMapHash : uint256 ? All of the below functions could be overridden from base_uint<T>. -> reinterpret_cast
 public:
     SHAMapHash() = default;
     explicit SHAMapHash(uint256 const& hash) : hash_(hash)
