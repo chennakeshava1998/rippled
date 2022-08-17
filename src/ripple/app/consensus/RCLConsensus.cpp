@@ -214,7 +214,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger().begin(), proposal.prevLedger().size());
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-    prop.set_nodepubkey(*validatorKeys_.publicKey);
+    prop.set_nodepubkey(validatorKeys_.publicKey->data(), validatorKeys_.publicKey->size());
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,

@@ -231,7 +231,15 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        auto [it, inserted] = publisherLists_.emplace();
+
+        // Inserting the trusted validators listed in the config file. This list
+        // is not published by any validator, hence they are not associated with
+        // any public key. Rather, they are mapped to the zero'd public key.
+        std::array<uint8_t, 33> zeroPubKeySlice;
+        zeroPubKeySlice[0] = 0xED;
+        PublicKey zeroPK(makeSlice(zeroPubKeySlice));
+
+        auto [it, inserted] = publisherLists_.emplace(std::make_pair(zeroPK, PublisherListCollection()));
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
@@ -1074,9 +1082,9 @@ ValidatorList::applyList(
     auto const [result, pubKey] = verify(lock, list, manifest, blob, signature);
     if (result > ListDisposition::pending)
     {
-        if (publisherLists_.count(pubKey))
+        if (publisherLists_.count(*pubKey))
         {
-            auto const& pubCollection = publisherLists_[pubKey];
+            auto const& pubCollection = publisherLists_[*pubKey];
             if (pubCollection.maxSequence &&
                 (result == ListDisposition::same_sequence ||
                  result == ListDisposition::known_sequence))
@@ -1085,7 +1093,7 @@ ValidatorList::applyList(
                 // already, so return what we know about it.
                 return PublisherListStats{
                     result,
-                    pubKey,
+                    *pubKey,
                     pubCollection.status,
                     *pubCollection.maxSequence};
             }
@@ -1094,7 +1102,7 @@ ValidatorList::applyList(
     }
 
     // Update publisher's list
-    auto& pubCollection = publisherLists_[pubKey];
+    auto& pubCollection = publisherLists_[*pubKey];
     auto const sequence = list[jss::sequence].asUInt();
     auto const accepted =
         (result == ListDisposition::accepted ||
@@ -1191,11 +1199,11 @@ ValidatorList::applyList(
     }
 
     PublisherListStats const applyResult{
-        result, pubKey, pubCollection.status, *pubCollection.maxSequence};
+        result, *pubKey, pubCollection.status, *pubCollection.maxSequence};
 
     if (accepted)
     {
-        updatePublisherList(pubKey, pubCollection.current, oldList, lock);
+        updatePublisherList(*pubKey, pubCollection.current, oldList, lock);
     }
 
     return applyResult;
@@ -1254,19 +1262,7 @@ ValidatorList::loadLists()
     return sites;
 }
 
-struct VerificationResult
-{
-    ListDisposition disposition;
-    std::optional<PublicKey> pk;
-    VerificationResult(
-        ListDisposition disposition_,
-        std::optional<PublicKey> pk_ = std::nullopt)
-        : disposition(disposition_), pk(pk_)
-    {
-    }
-};
-
-VerificationResult
+ValidatorList::VerificationResult
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
     Json::Value& list,
@@ -1277,11 +1273,8 @@ ValidatorList::verify(
     auto m = deserializeManifest(base64_decode(manifest));
 
     if (!m || !publisherLists_.count(m->masterKey))
-        return {
-            ListDisposition::untrusted,
-            PublicKey(
-                randomKeyPair(KeyType::secp256k1)
-                    .first)};
+        return VerificationResult(ListDisposition::untrusted);
+
     PublicKey pubKey = m->masterKey;
     auto const revoked = m->revoked();
 
@@ -1295,9 +1288,7 @@ ValidatorList::verify(
     }
 
     if (revoked || result == ManifestDisposition::invalid)
-        return {
-            ListDisposition::untrusted,
-            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+        return VerificationResult(ListDisposition::untrusted);
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
@@ -1306,15 +1297,11 @@ ValidatorList::verify(
             publisherManifests_.getSigningKey(pubKey),
             makeSlice(data),
             makeSlice(*sig)))
-        return {
-            ListDisposition::invalid,
-            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+        return VerificationResult(ListDisposition::invalid);
 
     Json::Reader r;
     if (!r.parse(data, list))
-        return {
-            ListDisposition::invalid,
-            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+        return VerificationResult(ListDisposition::invalid);
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1329,21 +1316,21 @@ ValidatorList::verify(
         auto const now = timeKeeper_.now();
         auto const& listCollection = publisherLists_[pubKey];
         if (validUntil <= validFrom)
-            return {
-                ListDisposition::invalid,
-                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+            return VerificationResult(ListDisposition::invalid);
         else if (sequence < listCollection.current.sequence)
-            return {
-                ListDisposition::stale,
-                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+        {
+            return VerificationResult(ListDisposition::stale);
+        }
         else if (sequence == listCollection.current.sequence)
-            return {
-                ListDisposition::same_sequence,
-                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+            return
+
+                VerificationResult(ListDisposition::same_sequence);
+
         else if (validUntil <= now)
-            return {
-                ListDisposition::expired,
-                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+            return
+
+                VerificationResult(ListDisposition::expired);
+
         else if (validFrom > now)
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
@@ -1361,21 +1348,16 @@ ValidatorList::verify(
                      validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
                                      .validFrom)
-                ? std::make_pair(
-                      ListDisposition::pending,
-                      PublicKey(randomKeyPair(KeyType::secp256k1).first))
-                : std::make_pair(
-                      ListDisposition::known_sequence,
-                      PublicKey(randomKeyPair(KeyType::secp256k1).first));
+                ? VerificationResult(ListDisposition::pending)
+
+                : VerificationResult(ListDisposition::known_sequence);
     }
     else
     {
-        return {
-            ListDisposition::invalid,
-            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
+        return VerificationResult(ListDisposition::invalid);
     }
 
-    return {ListDisposition::accepted, pubKey};
+    return VerificationResult(ListDisposition::accepted, pubKey);
 }
 
 bool
@@ -1574,26 +1556,29 @@ ValidatorList::getJson() const
         }
     }
 
-    // URGENT: Ask on group
     // Local static keys
-        PublicKey local;
-        Json::Value& jLocalStaticKeys =
-            (res[jss::local_static_keys] = Json::arrayValue);
+    // The zero'ed public key is used to identify the validators which are
+    // directly input in the config file. They are not associated with any
+    // public key because they are not published by any validator.
+    std::array<uint8_t, 33> zeroPubKeySlice;
+    zeroPubKeySlice[0] = 0xED;
+    PublicKey local(makeSlice(zeroPubKeySlice));
+    Json::Value& jLocalStaticKeys =
+        (res[jss::local_static_keys] = Json::arrayValue);
     // IMP: We are searching for a default constructed key in publisherLists_?
-        if (auto it = publisherLists_.find(local); it !=
-        publisherLists_.end())
-        {
-            for (auto const& key : it->second.current.list)
-                jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
-        }
+    if (auto it = publisherLists_.find(local); it != publisherLists_.end())
+    {
+        for (auto const& key : it->second.current.list)
+            jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
+    }
 
     // Publisher lists
     Json::Value& jPublisherLists =
         (res[jss::publisher_lists] = Json::arrayValue);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-                if (local == publicKey)
-                    continue;
+        if (local == publicKey)
+            continue;
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] =
@@ -1700,7 +1685,7 @@ ValidatorList::for_each_available(
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        if (plCollection.status != PublisherStatus::available || key.empty())
+        if (plCollection.status != PublisherStatus::available)
             continue;
         assert(plCollection.maxSequence);
         func(

@@ -844,13 +844,26 @@ private:
 
     /** Check response for trusted valid published list
 
-        @return `ListDisposition::accepted` if list can be applied
+        @return An instance of VerificationResult is returned
+        `VerificationResult::ListDisposition::accepted` if list can be applied
 
         @par Thread Safety
 
         Calling public member function is expected to lock mutex
     */
-    std::pair<ListDisposition, PublicKey>
+    struct VerificationResult
+    {
+        ListDisposition disposition;
+        std::optional<PublicKey> pk;
+        VerificationResult(
+            ListDisposition disposition_,
+            std::optional<PublicKey> pk_ = std::nullopt)
+            : disposition(disposition_), pk(pk_)
+        {
+        }
+    };
+
+    VerificationResult
     verify(
         lock_guard const&,
         Json::Value& list,
