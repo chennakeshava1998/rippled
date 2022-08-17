@@ -40,7 +40,9 @@ struct Status : public std::exception
 {
 public:
     enum class Type { none, TER, error_code_i };
-    using Code = int;
+    using Code =
+        int;  // IMP: Instead of the Transparent Type alias, can't we use
+              // encapsulation? Not difficult to forward int operations
     using Strings = std::vector<std::string>;
 
     static constexpr Code OK = 0;
@@ -51,6 +53,8 @@ public:
     template <
         typename T,
         typename = std::enable_if_t<std::is_integral<T>::value>>
+    // IMP: long long is an integral type but its size is much larger than the
+    // underlying type "int".
     Status(T code, Strings d = {})
         : type_(Type::none), code_(code), messages_(std::move(d))
     {

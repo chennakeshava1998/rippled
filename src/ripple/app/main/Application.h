@@ -234,7 +234,7 @@ public:
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
 
-    virtual PublicKey const&
+    virtual std::optional<PublicKey const>
     getValidationPublicKey() const = 0;
 
     virtual Resource::Manager&

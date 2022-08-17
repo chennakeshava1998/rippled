@@ -59,13 +59,14 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    std::size_t size_ = 0;
-    std::uint8_t buf_[33];  // should be large enough
+    static constexpr std::size_t size_ = 33;
+//    std::uint8_t buf_[33];  // should be large enough
+    std::array<std::uint8_t, 33> buf_;
 
 public:
     using const_iterator = std::uint8_t const*;
 
-    PublicKey() = default;
+    PublicKey() = delete;
     PublicKey(PublicKey const& other);
     PublicKey&
     operator=(PublicKey const& other);
@@ -80,61 +81,53 @@ public:
     std::uint8_t const*
     data() const noexcept
     {
-        return buf_;
+        return buf_.data();
     }
 
     std::size_t
     size() const noexcept
     {
-        return size_;
+        return buf_.size();
     }
 
     const_iterator
     begin() const noexcept
     {
-        return buf_;
+        return buf_.cbegin();
     }
 
     const_iterator
     cbegin() const noexcept
     {
-        return buf_;
+        return buf_.cbegin();
     }
 
     const_iterator
     end() const noexcept
     {
-        return buf_ + size_;
+        return buf_.cend();
     }
 
     const_iterator
     cend() const noexcept
     {
-        return buf_ + size_;
-    }
-
-    bool
-    empty() const noexcept
-    {
-        return size_ == 0;
+        return buf_.cend();
     }
 
     Slice
     slice() const noexcept
     {
-        return {buf_, size_};
+        return makeSlice(buf_);
     }
 
     operator Slice() const noexcept
     {
         return slice();
     }
-};
 
-/** Print the public key to a stream.
- */
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk);
+    friend std::string
+    to_string(PublicKey const&);
+};
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
@@ -267,5 +260,20 @@ AccountID
 calcAccountID(PublicKey const& pk);
 
 }  // namespace ripple
+
+namespace boost {
+/** boost::hash support. */
+template <>
+struct hash<::ripple::PublicKey>
+{
+    explicit hash() = default;
+
+    std::size_t
+    operator()(::ripple::PublicKey const& pk) const
+    {
+        return ::beast::uhash<>{}(pk);
+    }
+};
+}  // namespace boost
 
 #endif

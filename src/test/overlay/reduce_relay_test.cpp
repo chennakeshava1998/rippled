@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+#if 0
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/overlay/Message.h>
@@ -920,6 +921,8 @@ protected:
     //       time in any quantity
     struct Event
     {
+        // Event(): key_() {}
+        Event() = delete;
         State state_ = State::Off;
         std::uint32_t cnt_ = 0;
         std::uint32_t handledCnt_ = 0;
@@ -937,8 +940,9 @@ protected:
     void
     random(bool log)
     {
-        std::unordered_map<EventType, Event> events{
-            {LinkDown, {}}, {PeerDisconnected, {}}};
+        std::unordered_map<EventType, Event> events;
+        // {
+        //     {LinkDown, {}}, {PeerDisconnected, {}}};
         time_point<ManualClock> lastCheck = ManualClock::now();
 
         network_.reset();
@@ -1598,3 +1602,5 @@ BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, ripple_data, ripple);
 }  // namespace test
 
 }  // namespace ripple
+
+#endif

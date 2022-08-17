@@ -140,9 +140,12 @@ public:
         auto const iter = lookup_.find(name);
         if (iter == lookup_.end())
             return std::nullopt;
+        // return other; merging from the below function??
         return boost::lexical_cast<T>(iter->second);
     }
 
+    // IMP: Can't we merge this value_or with the above get() function and
+    // eliminate this?
     /// Returns a value if present, else another value.
     template <class T>
     T

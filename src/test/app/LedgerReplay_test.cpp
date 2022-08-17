@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/app/ledger/BuildLedger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplay.h>
@@ -1599,3 +1599,4 @@ BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
+#endif

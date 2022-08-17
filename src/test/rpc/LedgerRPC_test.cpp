@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/StringUtilities.h>
@@ -1745,3 +1745,4 @@ public:
 BEAST_DEFINE_TESTSUITE(LedgerRPC, app, ripple);
 
 }  // namespace ripple
+#endif

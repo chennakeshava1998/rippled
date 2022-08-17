@@ -19,6 +19,7 @@
 
 #include <ripple/app/rdb/Wallet.h>
 #include <boost/format.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace ripple {
 
@@ -91,7 +92,7 @@ saveManifests(
     soci::session& session,
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted,
-    hash_map<PublicKey, Manifest> const& map,
+    boost::unordered_map<PublicKey, Manifest> const& map,
     beast::Journal j)
 {
     soci::transaction tr(session);

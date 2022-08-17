@@ -395,14 +395,6 @@ class logstream_buf : public std::basic_stringbuf<CharT, Traits>
         if (strm_)
             strm_ << s;
     }
-
-    void
-    write(wchar_t const* s)
-    {
-        if (strm_)
-            strm_ << s;
-    }
-
 public:
     explicit logstream_buf(beast::Journal::Stream const& strm) : strm_(strm)
     {
@@ -443,7 +435,6 @@ public:
 };
 
 using logstream = basic_logstream<char>;
-using logwstream = basic_logstream<wchar_t>;
 
 }  // namespace beast
 

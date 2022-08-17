@@ -201,6 +201,7 @@ inject_error(error_code_i code, JsonValue& json)
     json[jss::error_message] = info.message;
 }
 
+// CK: Customised eror msg
 template <class JsonValue>
 void
 inject_error(int code, JsonValue& json)

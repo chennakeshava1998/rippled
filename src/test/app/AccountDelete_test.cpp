@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -928,3 +928,4 @@ BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple
+#endif

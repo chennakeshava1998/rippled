@@ -52,14 +52,13 @@ class SigningForParams
 {
 private:
     AccountID const* const multiSigningAcctID_;
-    PublicKey* const multiSignPublicKey_;
+    std::optional<PublicKey> multiSignPublicKey_;
+    // std::optional<PublicKey> const multiSignPublicKey_;
     Buffer* const multiSignature_;
 
 public:
     explicit SigningForParams()
-        : multiSigningAcctID_(nullptr)
-        , multiSignPublicKey_(nullptr)
-        , multiSignature_(nullptr)
+        : multiSigningAcctID_(nullptr), multiSignature_(nullptr)
     {
     }
 
@@ -70,7 +69,15 @@ public:
         PublicKey& multiSignPublicKey,
         Buffer& multiSignature)
         : multiSigningAcctID_(&multiSigningAcctID)
-        , multiSignPublicKey_(&multiSignPublicKey)
+        , multiSignPublicKey_(multiSignPublicKey)
+        , multiSignature_(&multiSignature)
+    {
+    }
+
+    SigningForParams(
+        AccountID const& multiSigningAcctID,
+        Buffer& multiSignature)
+        : multiSigningAcctID_(&multiSigningAcctID)
         , multiSignature_(&multiSignature)
     {
     }
@@ -80,7 +87,8 @@ public:
     {
         return (
             (multiSigningAcctID_ != nullptr) &&
-            (multiSignPublicKey_ != nullptr) && (multiSignature_ != nullptr));
+            (multiSignPublicKey_ != std::nullopt) &&
+            (multiSignature_ != nullptr));
     }
 
     bool
@@ -103,10 +111,17 @@ public:
         return *multiSigningAcctID_;
     }
 
+    std::optional<PublicKey>
+    getPublicKey()
+    {
+        //        assert(multiSignPublicKey_.has_value());
+        return multiSignPublicKey_;
+    }
+
     void
     setPublicKey(PublicKey const& multiSignPublicKey)
     {
-        *multiSignPublicKey_ = multiSignPublicKey;
+        multiSignPublicKey_ = multiSignPublicKey;
     }
 
     void
@@ -117,19 +132,24 @@ public:
 };
 
 //------------------------------------------------------------------------------
-
+// CK: The below function needs to be refactored
 static error_code_i
 acctMatchesPubKey(
-    std::shared_ptr<SLE const> accountState,
+    std::shared_ptr<SLE const> root,
     AccountID const& accountID,
-    PublicKey const& publicKey)
+    std::optional<PublicKey> publicKey)
 {
-    auto const publicKeyAcctID = calcAccountID(publicKey);
+    if (!publicKey)
+    {
+        return rpcINVALID_PARAMS;
+    }
+
+    auto const publicKeyAcctID = calcAccountID(*publicKey);
     bool const isMasterKey = publicKeyAcctID == accountID;
 
     // If we can't get the accountRoot, but the accountIDs match, that's
     // good enough.
-    if (!accountState)
+    if (!root)
     {
         if (isMasterKey)
             return rpcSUCCESS;
@@ -137,17 +157,16 @@ acctMatchesPubKey(
     }
 
     // If we *can* get to the accountRoot, check for MASTER_DISABLED.
-    auto const& sle = *accountState;
     if (isMasterKey)
     {
-        if (sle.isFlag(lsfDisableMaster))
+        if (root->isFlag(lsfDisableMaster))
             return rpcMASTER_DISABLED;
         return rpcSUCCESS;
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) &&
-        (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if ((root->isFieldPresent(sfRegularKey)) &&
+        (publicKeyAcctID == root->getAccountID(sfRegularKey)))
     {
         return rpcSUCCESS;
     }
@@ -369,10 +388,13 @@ transactionPreProcessImpl(
     auto j = app.journal("RPCHandler");
 
     Json::Value jvResult;
-    auto const [pk, sk] = keypairForSignature(params, jvResult);
-    if (contains_error(jvResult))
+
+    auto const keyPair = keypairForSignature(params, jvResult);
+    if (contains_error(jvResult) || !keyPair)
         return jvResult;
 
+    std::optional<PublicKey> pk(keyPair.value().first);
+    SecretKey sk(keyPair.value().second);
     bool const verify =
         !(params.isMember(jss::offline) && params[jss::offline].asBool());
 
@@ -467,7 +489,7 @@ transactionPreProcessImpl(
             return rpcError(rpcALREADY_SINGLE_SIG);
 
         // If multisigning then we need to return the public key.
-        signingArgs.setPublicKey(pk);
+        signingArgs.setPublicKey(*pk);
     }
     else if (signingArgs.isSingleSigning())
     {
@@ -481,7 +503,7 @@ transactionPreProcessImpl(
             // XXX Ignore transactions for accounts not created.
             return rpcError(rpcSRC_ACT_NOT_FOUND);
 
-        JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(pk)) << " : "
+        JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(*pk)) << " : "
                         << toBase58(srcAddressID);
 
         // Don't do this test if multisigning since the account and secret
@@ -513,7 +535,8 @@ transactionPreProcessImpl(
         // empty, otherwise it must be the master account's public key.
         parsed.object->setFieldVL(
             sfSigningPubKey,
-            signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
+            signingArgs.isMultiSigning() ? Slice(nullptr, 0)
+                                         : pk.value().slice());
 
         stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
@@ -538,13 +561,13 @@ transactionPreProcessImpl(
         Serializer s =
             buildMultiSigningData(*stpTrans, signingArgs.getSigner());
 
-        auto multisig = ripple::sign(pk, sk, s.slice());
+        auto multisig = ripple::sign(*pk, sk, s.slice());
 
         signingArgs.moveMultiSignature(std::move(multisig));
     }
     else if (signingArgs.isSingleSigning())
     {
-        stpTrans->sign(pk, sk);
+        stpTrans->sign(*pk, sk);
     }
 
     return transactionPreProcessResult{std::move(stpTrans)};
@@ -982,9 +1005,7 @@ transactionSignFor(
 
     // Add and amend fields based on the transaction type.
     Buffer multiSignature;
-    PublicKey multiSignPubKey;
-    SigningForParams signForParams(
-        *signerAccountID, multiSignPubKey, multiSignature);
+    SigningForParams signForParams(*signerAccountID, multiSignature);
 
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);
@@ -996,13 +1017,17 @@ transactionSignFor(
         std::shared_ptr<SLE const> account_state =
             ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
-        auto const err =
-            acctMatchesPubKey(account_state, *signerAccountID, multiSignPubKey);
+        auto const err = acctMatchesPubKey(
+            account_state, *signerAccountID, signForParams.getPublicKey());
 
         if (err != rpcSUCCESS)
             return rpcError(err);
     }
 
+    if (!signForParams.getPublicKey())
+    {
+        return rpcError(rpcBAD_SECRET);
+    }
     // Inject the newly generated signature into tx_json.Signers.
     auto& sttx = preprocResult.second;
     {
@@ -1010,8 +1035,8 @@ transactionSignFor(
         STObject signer(sfSigner);
         signer[sfAccount] = *signerAccountID;
         signer.setFieldVL(sfTxnSignature, multiSignature);
-        signer.setFieldVL(sfSigningPubKey, multiSignPubKey.slice());
-
+        signer.setFieldVL(
+            sfSigningPubKey, signForParams.getPublicKey().value().slice());
         // If there is not yet a Signers array, make one.
         if (!sttx->isFieldPresent(sfSigners))
             sttx->setFieldArray(sfSigners, {});

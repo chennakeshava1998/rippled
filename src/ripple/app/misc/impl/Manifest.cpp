@@ -46,7 +46,8 @@ to_string(Manifest const& m)
         return "Revocation Manifest " + mk;
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
-        toBase58(TokenType::NodePublic, m.signingKey) + ")";
+        toBase58(TokenType::NodePublic, *m.signingKey) +
+        ")";  // IMP: Fallback for an empty signingKey?
 }
 
 std::optional<Manifest>
@@ -96,10 +97,7 @@ deserializeManifest(Slice s)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
-        Manifest m;
-        m.serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
-        m.masterKey = PublicKey(makeSlice(pk));
-        m.sequence = st.getFieldU32(sfSequence);
+        Manifest m(PublicKey(makeSlice(pk)), st.getFieldU32(sfSequence), s);
 
         if (st.isFieldPresent(sfDomain))
         {
@@ -192,7 +190,8 @@ Manifest::verify() const
 
     // Signing key and signature are not required for
     // master key revocations
-    if (!revoked() && !ripple::verify(st, HashPrefix::manifest, signingKey))
+    if (!revoked() && signingKey &&
+        !ripple::verify(st, HashPrefix::manifest, *signingKey))
         return false;
 
     return ripple::verify(
@@ -290,7 +289,8 @@ ManifestCache::getSigningKey(PublicKey const& pk) const
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
-        return iter->second.signingKey;
+        return *iter->second.signingKey;  // IMP: Will the ManifestCache always
+                                          // have a signingKey?
 
     return pk;
 }
@@ -417,11 +417,18 @@ ManifestCache::applyManifest(Manifest m)
             return ManifestDisposition::badMasterKey;
         }
 
+        if (!m.signingKey)
+        {
+            JLOG(j_.warn())
+                << to_string(m) << ": Ephemeral key not set in the Manifest\n";
+            return ManifestDisposition::badEphemeralKey;
+        }
+
         if (!revoked)
         {
             // Sanity check: the ephemeral key of this manifest should not be
             // used as the master or ephemeral key of another manifest:
-            if (auto const x = signingToMasterKeys_.find(m.signingKey);
+            if (auto const x = signingToMasterKeys_.find(*m.signingKey);
                 x != signingToMasterKeys_.end())
             {
                 JLOG(j_.warn())
@@ -432,7 +439,7 @@ ManifestCache::applyManifest(Manifest m)
                 return ManifestDisposition::badEphemeralKey;
             }
 
-            if (auto const x = map_.find(m.signingKey); x != map_.end())
+            if (auto const x = map_.find(*m.signingKey); x != map_.end())
             {
                 JLOG(j_.warn())
                     << to_string(m) << ": Ephemeral key used as master key for "
@@ -475,7 +482,7 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_[m.signingKey] = m.masterKey;
+            signingToMasterKeys_[*m.signingKey] = m.masterKey;
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -492,10 +499,10 @@ ManifestCache::applyManifest(Manifest m)
             m.sequence,
             iter->second.sequence);
 
-    signingToMasterKeys_.erase(iter->second.signingKey);
+    signingToMasterKeys_.erase(*iter->second.signingKey);
 
     if (!revoked)
-        signingToMasterKeys_[m.signingKey] = m.masterKey;
+        signingToMasterKeys_[*m.signingKey] = m.masterKey;
 
     iter->second = std::move(m);
 

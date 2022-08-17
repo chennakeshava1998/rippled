@@ -30,7 +30,9 @@
 namespace ripple {
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config);
+setup_Overlay(
+    BasicConfig const& config,
+    std::pair<PublicKey, SecretKey> nodeIdentity);
 
 /** Creates the implementation of Overlay. */
 std::unique_ptr<Overlay>

@@ -24,6 +24,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/overlay/ReduceRelayCommon.h>
 #include <ripple/protocol/PublicKey.h>
+#include <boost/unordered_map.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -71,7 +72,7 @@ public:
 private:
     /** Maintains the list of squelched relaying to downstream peers.
      * Expiration time is included in the TMSquelch message. */
-    hash_map<PublicKey, time_point> squelched_;
+    boost::unordered_map<PublicKey, time_point> squelched_;
     beast::Journal const journal_;
 };
 

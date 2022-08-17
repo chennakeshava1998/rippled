@@ -38,6 +38,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <boost/unordered_map.hpp>
+
 namespace ripple {
 
 namespace reduce_relay {
@@ -653,7 +655,7 @@ private:
     bool
     addPeerMessage(uint256 const& key, id_t id);
 
-    hash_map<PublicKey, Slot<clock_type>> slots_;
+    boost::unordered_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
     Logs& logs_;
     beast::Journal const journal_;

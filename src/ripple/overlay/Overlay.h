@@ -24,6 +24,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/PeerSet.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/server/Handoff.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -66,7 +67,11 @@ public:
 
     struct Setup
     {
-        explicit Setup() = default;
+        explicit Setup() = delete;
+        Setup(std::pair<PublicKey, SecretKey> nodeIdentity)
+            : nodeIdentity_(nodeIdentity)
+        {
+        }
 
         std::shared_ptr<boost::asio::ssl::context> context;
         beast::IP::Address public_ip;
@@ -74,6 +79,10 @@ public:
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
         bool vlEnabled = true;
+
+        // The cryptographic credentials identifying this server instance,
+        // parsed from an instance of Application
+        std::pair<PublicKey, SecretKey> nodeIdentity_;
     };
 
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
@@ -238,6 +247,13 @@ public:
     */
     virtual std::optional<std::uint32_t>
     networkID() const = 0;
+
+    /**
+     * nodeIdentity is stored in the Overlay::Setup::nodeIdentity_ variable.
+     * @return the pair of PublicKey and SecretKey unique to this Validator
+     */
+    virtual std::pair<PublicKey, SecretKey>
+    nodeIdentity() const = 0;
 
     /** Returns tx reduce-relay metrics
         @return json value of tx reduce-relay metrics

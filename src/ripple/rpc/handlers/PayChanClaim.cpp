@@ -55,8 +55,10 @@ doChannelAuthorize(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::secret);
 
     Json::Value result;
-    auto const [pk, sk] = RPC::keypairForSignature(params, result);
-    if (RPC::contains_error(result))
+    // auto const [pk, sk] = RPC::keypairForSignature(params, result);
+    auto const publicSecretKeyPair = RPC::keypairForSignature(params, result);
+
+    if (RPC::contains_error(result) || !publicSecretKeyPair)
         return result;
 
     uint256 channelId;
@@ -77,7 +79,10 @@ doChannelAuthorize(RPC::JsonContext& context)
 
     try
     {
-        auto const buf = sign(pk, sk, msg.slice());
+        auto const buf = sign(
+            publicSecretKeyPair.value().first,
+            publicSecretKeyPair.value().second,
+            msg.slice());
         result[jss::signature] = strHex(buf);
     }
     catch (std::exception&)

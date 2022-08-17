@@ -392,6 +392,12 @@ public:
         return setup_.networkID;
     }
 
+    std::pair<PublicKey, SecretKey>
+    nodeIdentity() const override
+    {
+        return setup_.nodeIdentity_;
+    }
+
     Json::Value
     crawlShards(bool includePublicKey, std::uint32_t relays) override;
 

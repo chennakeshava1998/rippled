@@ -28,11 +28,10 @@
 
 namespace ripple {
 
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk)
+std::string
+to_string(PublicKey const& pk)
 {
-    os << strHex(pk);
-    return os;
+    return strHex(pk);
 }
 
 template <>
@@ -178,22 +177,18 @@ PublicKey::PublicKey(Slice const& slice)
 {
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
-    size_ = slice.size();
-    std::memcpy(buf_, slice.data(), size_);
+    std::memcpy(buf_.data(), slice.data(), buf_.size());
 }
 
-PublicKey::PublicKey(PublicKey const& other) : size_(other.size_)
+PublicKey::PublicKey(PublicKey const& other)
 {
-    if (size_)
-        std::memcpy(buf_, other.buf_, size_);
+    std::memcpy(buf_.data(), other.buf_.data(), buf_.size());
 };
 
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
-    size_ = other.size_;
-    if (size_)
-        std::memcpy(buf_, other.buf_, size_);
+    std::memcpy(buf_.data(), other.buf_.data(), buf_.size());
     return *this;
 }
 

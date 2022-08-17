@@ -39,6 +39,7 @@
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
@@ -473,7 +474,7 @@ OverlayImpl::start()
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port,
-        !app_.getValidationPublicKey().empty(),
+        !app_.getValidationPublicKey(),
         setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
@@ -734,7 +735,7 @@ OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
     }
 
     // Combine shard info from peers
-    hash_map<PublicKey, NodeStore::ShardInfo> peerShardInfo;
+    boost::unordered_map<PublicKey, NodeStore::ShardInfo> peerShardInfo;
     for_each([&](std::shared_ptr<PeerImp>&& peer) {
         auto const psi{peer->getPeerShardInfos()};
         for (auto const& [publicKey, shardInfo] : psi)
@@ -1534,9 +1535,11 @@ OverlayImpl::deleteIdlePeers()
 //------------------------------------------------------------------------------
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config)
+setup_Overlay(
+    BasicConfig const& config,
+    std::pair<PublicKey, SecretKey> nodeIdentity)
 {
-    Overlay::Setup setup;
+    Overlay::Setup setup(nodeIdentity);
 
     {
         auto const& section = config.section("overlay");

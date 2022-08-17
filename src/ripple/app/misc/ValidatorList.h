@@ -31,6 +31,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/unordered_map.hpp>
 #include <mutex>
 #include <numeric>
 #include <shared_mutex>
@@ -234,10 +235,10 @@ class ValidatorList
     std::optional<std::size_t> minimumQuorum_;
 
     // Published lists stored by publisher master public key
-    hash_map<PublicKey, PublisherListCollection> publisherLists_;
+    boost::unordered_map<PublicKey, PublisherListCollection> publisherLists_;
 
     // Listed master public keys with the number of lists they appear on
-    hash_map<PublicKey, std::size_t> keyListings_;
+    boost::unordered_map<PublicKey, std::size_t> keyListings_;
 
     // The current list of trusted master keys
     hash_set<PublicKey> trustedMasterKeys_;
@@ -247,7 +248,7 @@ class ValidatorList
     // a seed, the signing key is the same as the master key.
     hash_set<PublicKey> trustedSigningKeys_;
 
-    PublicKey localPubKey_;
+    std::optional<PublicKey> localPubKey_;
 
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
@@ -559,7 +560,7 @@ public:
 
         May be called concurrently
     */
-    PublicKey
+    std::optional<PublicKey>
     localPublicKey() const;
 
     /** Invokes the callback once for every listed validation public key.
@@ -849,11 +850,10 @@ private:
 
         Calling public member function is expected to lock mutex
     */
-    ListDisposition
+    std::pair<ListDisposition, PublicKey>
     verify(
         lock_guard const&,
         Json::Value& list,
-        PublicKey& pubKey,
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature);

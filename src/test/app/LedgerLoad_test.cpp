@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/protocol/SField.h>
@@ -254,3 +254,4 @@ public:
 BEAST_DEFINE_TESTSUITE(LedgerLoad, app, ripple);
 
 }  // namespace ripple
+#endif

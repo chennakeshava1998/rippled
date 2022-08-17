@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/beast/hash/uhash.h>
@@ -932,3 +932,4 @@ BEAST_DEFINE_TESTSUITE(Env, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
+#endif

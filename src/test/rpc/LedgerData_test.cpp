@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -503,3 +503,4 @@ public:
 BEAST_DEFINE_TESTSUITE_PRIO(LedgerData, app, ripple, 1);
 
 }  // namespace ripple
+#endif

@@ -25,6 +25,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 
+#include <boost/unordered_map.hpp>
 #include <optional>
 #include <shared_mutex>
 #include <string>
@@ -86,7 +87,7 @@ struct Manifest
     PublicKey masterKey;
 
     /// The ephemeral key associated with this manifest.
-    PublicKey signingKey;
+    std::optional<PublicKey> signingKey;
 
     /// The sequence number of this manifest.
     std::uint32_t sequence = 0;
@@ -94,7 +95,7 @@ struct Manifest
     /// The domain, if one was specified in the manifest; empty otherwise.
     std::string domain;
 
-    Manifest() = default;
+    Manifest() = delete;
     Manifest(Manifest const& other) = delete;
     Manifest&
     operator=(Manifest const& other) = delete;
@@ -121,6 +122,15 @@ struct Manifest
     /// Returns manifest master key signature
     Blob
     getMasterSignature() const;
+
+    friend std::optional<Manifest>
+    deserializeManifest(Slice s);
+
+private:
+    explicit Manifest(PublicKey const& masterPK, std::uint32_t seq, Slice s)
+        : serialized(s.begin(), s.end()), masterKey(masterPK), sequence(seq)
+    {
+    }
 };
 
 /** Format the specified manifest to a string for debugging purposes. */
@@ -229,10 +239,10 @@ private:
     std::shared_mutex mutable mutex_;
 
     /** Active manifests stored by master public key. */
-    hash_map<PublicKey, Manifest> map_;
+    boost::unordered_map<PublicKey, Manifest> map_;
 
     /** Master public keys stored by current ephemeral public key. */
-    hash_map<PublicKey, PublicKey> signingToMasterKeys_;
+    boost::unordered_map<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
 

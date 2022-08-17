@@ -195,8 +195,8 @@ ValidatorList::load(
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    if (localPubKey_.size())
-        keyListings_.insert({localPubKey_, 1});
+    if (localPubKey_)
+        keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -222,7 +222,7 @@ ValidatorList::load(
         }
 
         // Skip local key which was already added
-        if (*id == localPubKey_ || *id == localSigningKey)
+        if (id == localPubKey_ || *id == localSigningKey)
             continue;
 
         auto ret = keyListings_.insert({*id, 1});
@@ -687,8 +687,7 @@ ValidatorList::sendValidatorList(
     beast::Journal j)
 {
     std::size_t const messageVersion =
-        peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation)
-        ? 2
+        peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation)  ? 2
         : peer.supportsFeature(ProtocolFeature::ValidatorListPropagation) ? 1
                                                                           : 0;
     if (!messageVersion)
@@ -1070,9 +1069,9 @@ ValidatorList::applyList(
     using namespace std::string_literals;
 
     Json::Value list;
-    PublicKey pubKey;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto const result = verify(lock, list, pubKey, manifest, blob, signature);
+    // nikb: Why is verify taking in an empty pubKey argument?
+    auto const [result, pubKey] = verify(lock, list, manifest, blob, signature);
     if (result > ListDisposition::pending)
     {
         if (publisherLists_.count(pubKey))
@@ -1255,11 +1254,22 @@ ValidatorList::loadLists()
     return sites;
 }
 
-ListDisposition
+struct VerificationResult
+{
+    ListDisposition disposition;
+    std::optional<PublicKey> pk;
+    VerificationResult(
+        ListDisposition disposition_,
+        std::optional<PublicKey> pk_ = std::nullopt)
+        : disposition(disposition_), pk(pk_)
+    {
+    }
+};
+
+VerificationResult
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
     Json::Value& list,
-    PublicKey& pubKey,
     std::string const& manifest,
     std::string const& blob,
     std::string const& signature)
@@ -1267,9 +1277,12 @@ ValidatorList::verify(
     auto m = deserializeManifest(base64_decode(manifest));
 
     if (!m || !publisherLists_.count(m->masterKey))
-        return ListDisposition::untrusted;
-
-    pubKey = m->masterKey;
+        return {
+            ListDisposition::untrusted,
+            PublicKey(
+                randomKeyPair(KeyType::secp256k1)
+                    .first)};
+    PublicKey pubKey = m->masterKey;
     auto const revoked = m->revoked();
 
     auto const result = publisherManifests_.applyManifest(std::move(*m));
@@ -1282,7 +1295,9 @@ ValidatorList::verify(
     }
 
     if (revoked || result == ManifestDisposition::invalid)
-        return ListDisposition::untrusted;
+        return {
+            ListDisposition::untrusted,
+            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
@@ -1291,11 +1306,15 @@ ValidatorList::verify(
             publisherManifests_.getSigningKey(pubKey),
             makeSlice(data),
             makeSlice(*sig)))
-        return ListDisposition::invalid;
+        return {
+            ListDisposition::invalid,
+            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
 
     Json::Reader r;
     if (!r.parse(data, list))
-        return ListDisposition::invalid;
+        return {
+            ListDisposition::invalid,
+            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1310,13 +1329,21 @@ ValidatorList::verify(
         auto const now = timeKeeper_.now();
         auto const& listCollection = publisherLists_[pubKey];
         if (validUntil <= validFrom)
-            return ListDisposition::invalid;
+            return {
+                ListDisposition::invalid,
+                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
         else if (sequence < listCollection.current.sequence)
-            return ListDisposition::stale;
+            return {
+                ListDisposition::stale,
+                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
         else if (sequence == listCollection.current.sequence)
-            return ListDisposition::same_sequence;
+            return {
+                ListDisposition::same_sequence,
+                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
         else if (validUntil <= now)
-            return ListDisposition::expired;
+            return {
+                ListDisposition::expired,
+                PublicKey(randomKeyPair(KeyType::secp256k1).first)};
         else if (validFrom > now)
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
@@ -1334,15 +1361,21 @@ ValidatorList::verify(
                      validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
                                      .validFrom)
-                ? ListDisposition::pending
-                : ListDisposition::known_sequence;
+                ? std::make_pair(
+                      ListDisposition::pending,
+                      PublicKey(randomKeyPair(KeyType::secp256k1).first))
+                : std::make_pair(
+                      ListDisposition::known_sequence,
+                      PublicKey(randomKeyPair(KeyType::secp256k1).first));
     }
     else
     {
-        return ListDisposition::invalid;
+        return {
+            ListDisposition::invalid,
+            PublicKey(randomKeyPair(KeyType::secp256k1).first)};
     }
 
-    return ListDisposition::accepted;
+    return {ListDisposition::accepted, pubKey};
 }
 
 bool
@@ -1408,7 +1441,7 @@ ValidatorList::trustedPublisher(PublicKey const& identity) const
         publisherLists_.at(identity).status < PublisherStatus::revoked;
 }
 
-PublicKey
+std::optional<PublicKey>
 ValidatorList::localPublicKey() const
 {
     std::shared_lock read_lock{mutex_};
@@ -1541,23 +1574,26 @@ ValidatorList::getJson() const
         }
     }
 
+    // URGENT: Ask on group
     // Local static keys
-    PublicKey local;
-    Json::Value& jLocalStaticKeys =
-        (res[jss::local_static_keys] = Json::arrayValue);
-    if (auto it = publisherLists_.find(local); it != publisherLists_.end())
-    {
-        for (auto const& key : it->second.current.list)
-            jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
-    }
+        PublicKey local;
+        Json::Value& jLocalStaticKeys =
+            (res[jss::local_static_keys] = Json::arrayValue);
+    // IMP: We are searching for a default constructed key in publisherLists_?
+        if (auto it = publisherLists_.find(local); it !=
+        publisherLists_.end())
+        {
+            for (auto const& key : it->second.current.list)
+                jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
+        }
 
     // Publisher lists
     Json::Value& jPublisherLists =
         (res[jss::publisher_lists] = Json::arrayValue);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        if (local == publicKey)
-            continue;
+                if (local == publicKey)
+                    continue;
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] =
@@ -1620,7 +1656,10 @@ ValidatorList::getJson() const
         if (it != keyListings_.end())
         {
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
-                toBase58(TokenType::NodePublic, manifest.signingKey);
+                toBase58(
+                    TokenType::NodePublic,
+                    *manifest.signingKey);  // IMP: What to do if Manifest is
+                                            // not set?
         }
     });
 

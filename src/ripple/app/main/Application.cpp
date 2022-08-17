@@ -182,7 +182,6 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
-    std::pair<PublicKey, SecretKey> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
@@ -573,13 +572,14 @@ public:
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        return nodeIdentity_;
+        return overlay().nodeIdentity();
     }
 
-    PublicKey const&
+    std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
-        return validatorKeys_.publicKey;
+        return validatorKeys_.publicKey;  // IMP: What if the publicKey has not
+                                          // been set inside validatorKeys_?
     }
 
     NetworkOPs&
@@ -1179,7 +1179,8 @@ ApplicationImp::setup()
         return false;
     }
 
-    if (validatorKeys_.publicKey.size())
+    // If ValidatorKeys have a valid PublicKey
+    if (validatorKeys_.publicKey)
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1265,8 +1266,6 @@ ApplicationImp::setup()
     if (!config().reporting())
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
-    nodeIdentity_ = getNodeIdentity(*this);
-
     if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
     {
         JLOG(m_journal.fatal()) << "Invalid entry in cluster configuration.";
@@ -1276,7 +1275,7 @@ ApplicationImp::setup()
     if (!config().reporting())
     {
         {
-            if (validatorKeys_.configInvalid())
+            if (!validatorKeys_.publicKey)
                 return false;
 
             if (!validatorManifests_->load(
@@ -1296,7 +1295,7 @@ ApplicationImp::setup()
 
             // Setup trusted validators
             if (!validators_->load(
-                    validatorKeys_.publicKey,
+                    *validatorKeys_.publicKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {
@@ -1329,7 +1328,7 @@ ApplicationImp::setup()
     {
         overlay_ = make_Overlay(
             *this,
-            setup_Overlay(*config_),
+            setup_Overlay(*config_, getNodeIdentity(*this)),
             *serverHandler_,
             *m_resourceManager,
             *m_resolver,

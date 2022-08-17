@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#if 0
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorList.h>
@@ -1089,3 +1089,4 @@ BEAST_DEFINE_TESTSUITE(Manifest, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
+#endif

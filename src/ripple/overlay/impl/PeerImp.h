@@ -40,6 +40,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/unordered_map.hpp>
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -161,10 +162,10 @@ private:
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
     // been sent to or received from this peer.
-    hash_map<PublicKey, std::size_t> publisherListSequences_;
+    boost::unordered_map<PublicKey, std::size_t> publisherListSequences_;
 
     // Any known shard info from this peer and its sub peers
-    hash_map<PublicKey, NodeStore::ShardInfo> shardInfos_;
+    boost::unordered_map<PublicKey, NodeStore::ShardInfo> shardInfos_;
     std::mutex mutable shardInfoMutex_;
 
     Compressed compressionEnabled_ = Compressed::Off;
@@ -416,7 +417,7 @@ public:
     fail(std::string const& reason);
 
     // Return any known shard info from this peer and its sub peers
-    [[nodiscard]] hash_map<PublicKey, NodeStore::ShardInfo> const
+    [[nodiscard]] boost::unordered_map<PublicKey, NodeStore::ShardInfo> const
     getPeerShardInfos() const;
 
     bool
