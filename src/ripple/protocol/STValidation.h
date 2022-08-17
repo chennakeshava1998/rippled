@@ -59,7 +59,7 @@ class STValidation final : public STObject, public CountedObject<STValidation>
 
     // The ID of the validator that issued this validation. For validators
     // that use manifests this will be derived from the master public key.
-//    NodeID const nodeID_;
+    NodeID const nodeID_;
 
     NetClock::time_point seenTime_ = {};
 
