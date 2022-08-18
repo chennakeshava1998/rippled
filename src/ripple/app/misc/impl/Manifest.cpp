@@ -482,7 +482,7 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_[*m.signingKey] = m.masterKey;
+            signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -502,7 +502,7 @@ ManifestCache::applyManifest(Manifest m)
     signingToMasterKeys_.erase(*iter->second.signingKey);
 
     if (!revoked)
-        signingToMasterKeys_[*m.signingKey] = m.masterKey;
+        signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
 
     iter->second = std::move(m);
 
