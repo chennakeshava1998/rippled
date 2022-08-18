@@ -578,8 +578,7 @@ public:
     std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
-        return validatorKeys_.publicKey;  // IMP: What if the publicKey has not
-                                          // been set inside validatorKeys_?
+        return validatorKeys_.publicKey;
     }
 
     NetworkOPs&

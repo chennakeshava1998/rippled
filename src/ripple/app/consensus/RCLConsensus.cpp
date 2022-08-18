@@ -91,7 +91,7 @@ RCLConsensus::Adaptor::Adaptor(
           std::numeric_limits<std::uint64_t>::max())}
     , nUnlVote_(
           *validatorKeys_.masterPublicKey,
-          j_)  // Q: What if the masterPublicKey is not set?
+          j_)
 {
     assert(valCookie_ != 0);
 

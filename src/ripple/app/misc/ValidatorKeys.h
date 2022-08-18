@@ -36,14 +36,11 @@ class Config;
 class ValidatorKeys
 {
 public:
-    // Q: For non-validator nodes, both of these fields (including
-    // masterPublicKey) could be empty. Hence, it is appropriate to set these
-    // fields as optional IMP: How do we update our validators? Is it done in
+    // URGENT: How do we update our validators? Is it done in
     // batches or all at once? What about maintaining network connectivity?
     std::optional<PublicKey> masterPublicKey;
     std::optional<PublicKey> publicKey;
     SecretKey secretKey;
-    //    NodeID nodeID;
     std::string manifest;
     std::uint32_t sequence = 0;
 

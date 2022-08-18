@@ -31,7 +31,6 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
     if (config.exists(SECTION_VALIDATOR_TOKEN) &&
         config.exists(SECTION_VALIDATION_SEED))
     {
-        //        configInvalid_ = true;
         JLOG(j.fatal()) << "Cannot specify both [" SECTION_VALIDATION_SEED
                            "] and [" SECTION_VALIDATOR_TOKEN "]";
         return;
@@ -49,7 +48,6 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 
             if (!m || pk != m->signingKey)
             {
-                //                configInvalid_ = true;
                 JLOG(j.fatal())
                     << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN
                        "]";
@@ -59,14 +57,12 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
                 secretKey = token->validationSecret;
                 publicKey = pk;
                 masterPublicKey = m->masterKey;
-                //                nodeID = calcNodeID(m->masterKey);
                 sequence = m->sequence;
                 manifest = std::move(token->manifest);
             }
         }
         else
         {
-            //            configInvalid_ = true;
             JLOG(j.fatal())
                 << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
         }
@@ -77,7 +73,6 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
             config.section(SECTION_VALIDATION_SEED).lines().front());
         if (!seed)
         {
-            //            configInvalid_ = true;
             JLOG(j.fatal())
                 << "Invalid seed specified in [" SECTION_VALIDATION_SEED "]";
         }
@@ -86,7 +81,6 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
             secretKey = generateSecretKey(KeyType::secp256k1, *seed);
             publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
             masterPublicKey = publicKey;
-            //            nodeID = calcNodeID(publicKey);
             sequence = 0;
         }
     }

@@ -72,8 +72,6 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
     return r.first->second;
 }
 
-// Question: Do we need to retain these ctor's of Account that use Default
-// Public Keys?
 Account::Account(std::string name, KeyType type)
     : Account(fromCache(Account::other, std::move(name), type))
 {

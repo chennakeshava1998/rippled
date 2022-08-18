@@ -239,7 +239,8 @@ ValidatorList::load(
         zeroPubKeySlice[0] = 0xED;
         PublicKey zeroPK(makeSlice(zeroPubKeySlice));
 
-        auto [it, inserted] = publisherLists_.emplace(std::make_pair(zeroPK, PublisherListCollection()));
+        auto [it, inserted] = publisherLists_.emplace(
+            std::make_pair(zeroPK, PublisherListCollection()));
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
@@ -1078,7 +1079,6 @@ ValidatorList::applyList(
 
     Json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    // nikb: Why is verify taking in an empty pubKey argument?
     auto const [result, pubKey] = verify(lock, list, manifest, blob, signature);
     if (result > ListDisposition::pending)
     {
@@ -1318,19 +1318,11 @@ ValidatorList::verify(
         if (validUntil <= validFrom)
             return VerificationResult(ListDisposition::invalid);
         else if (sequence < listCollection.current.sequence)
-        {
             return VerificationResult(ListDisposition::stale);
-        }
         else if (sequence == listCollection.current.sequence)
-            return
-
-                VerificationResult(ListDisposition::same_sequence);
-
+            return VerificationResult(ListDisposition::same_sequence);
         else if (validUntil <= now)
-            return
-
-                VerificationResult(ListDisposition::expired);
-
+            return VerificationResult(ListDisposition::expired);
         else if (validFrom > now)
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
@@ -1565,7 +1557,6 @@ ValidatorList::getJson() const
     PublicKey local(makeSlice(zeroPubKeySlice));
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
-    // IMP: We are searching for a default constructed key in publisherLists_?
     if (auto it = publisherLists_.find(local); it != publisherLists_.end())
     {
         for (auto const& key : it->second.current.list)
@@ -1643,8 +1634,7 @@ ValidatorList::getJson() const
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
                 toBase58(
                     TokenType::NodePublic,
-                    *manifest.signingKey);  // IMP: What to do if Manifest is
-                                            // not set?
+                    *manifest.signingKey);
         }
     });
 

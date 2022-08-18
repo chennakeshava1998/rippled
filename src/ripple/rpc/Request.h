@@ -35,7 +35,7 @@ struct Request
 {
     [[deprecated]] explicit Request(
         beast::Journal
-            journal_,  // IMP: Can we pass a reference here? Why pass-by-value?
+            journal_,
         std::string const& method_,
         Json::Value& params_,
         Application& app_)

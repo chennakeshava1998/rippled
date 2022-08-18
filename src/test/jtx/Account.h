@@ -26,7 +26,6 @@
 #include <ripple/protocol/UintTypes.h>
 #include <string>
 #include <unordered_map>
-// #include <SecretKey.h>
 
 namespace ripple {
 namespace test {
@@ -64,7 +63,6 @@ public:
     {
     }
 
-    // IMP: why does the std::pair<> need this to be public?
     // This constructor needs to be public so `std::pair` can use it when
     // emplacing into the cache. However, it is logically `private`. This is
     // enforced with the `privateTag` parameter.
@@ -141,7 +139,6 @@ private:
     fromCache(AcctStringType stringType, std::string name, KeyType type);
 
     std::string name_;
-    // Question: Is it possible for an account to not have a valid PublicKey?
     PublicKey pk_;
     SecretKey sk_;
     AccountID id_;

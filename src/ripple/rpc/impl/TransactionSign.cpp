@@ -53,7 +53,6 @@ class SigningForParams
 private:
     AccountID const* const multiSigningAcctID_;
     std::optional<PublicKey> multiSignPublicKey_;
-    // std::optional<PublicKey> const multiSignPublicKey_;
     Buffer* const multiSignature_;
 
 public:
@@ -114,7 +113,6 @@ public:
     std::optional<PublicKey>
     getPublicKey()
     {
-        //        assert(multiSignPublicKey_.has_value());
         return multiSignPublicKey_;
     }
 
@@ -132,7 +130,6 @@ public:
 };
 
 //------------------------------------------------------------------------------
-// CK: The below function needs to be refactored
 static error_code_i
 acctMatchesPubKey(
     std::shared_ptr<SLE const> root,

@@ -144,7 +144,7 @@ public:
         return boost::lexical_cast<T>(iter->second);
     }
 
-    // IMP: Can't we merge this value_or with the above get() function and
+    // URGENT: Can't we merge this value_or with the above get() function and
     // eliminate this?
     /// Returns a value if present, else another value.
     template <class T>

@@ -61,10 +61,6 @@ namespace RPC {
 
     @return         A JSON object containing the error results, if any
 */
-// Q: 1. Can we use Json::Error class to output errors instead of using
-// Json::Value for everything? Easier to understand. IMP: 2. Instead of having
-// both fee_mult_max and fee_dix_max, why can't we accept a double as a
-// multiplication parameter? It encompasses both -> Floating point precision?
 Json::Value
 checkFee(
     Json::Value& request,
@@ -82,9 +78,6 @@ using ProcessTransactionFn = std::function<void(
     bool bLocal,
     NetworkOPs::FailHard failType)>;
 
-// Q: Is it possible to return a reference/pointer to a lambda function? Are we
-// returning by-value or by-reference in the below function? Q: Will the lambda
-// function go out of scope at the end of this function?
 inline ProcessTransactionFn
 getProcessTxnFn(NetworkOPs& netOPs)
 {
@@ -125,8 +118,6 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-// Q: In what ways can I modify a function pointer? If "processTransaction" is
-// not const, what could possibly happen?
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSubmitMultiSigned(

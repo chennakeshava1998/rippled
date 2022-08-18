@@ -157,7 +157,7 @@ public:
         for (auto const& it : actions)
         {
             STTx amendTx(
-                ttNICKNAME_SET,
+                ttAMENDMENT,
                 [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
                     obj.setAccountID(sfAccount, AccountID());
                     obj.setFieldH256(sfAmendment, it.first);

@@ -1,4 +1,3 @@
-// Q: Why are we bothering ourselves with job scheduling? Doesn't the processor manage context-switches and time sharing? What is the need for customised job scheduling? Does it take care of deadlock prevention, aging and resource starvation?
 # How to use RPC coroutines.
 
 ## Introduction.

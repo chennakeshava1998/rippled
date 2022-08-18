@@ -54,7 +54,6 @@ enum TransStatus {
     INCOMPLETE = 8   // needs more signatures
 };
 
-// CK TODO: Q: What does TxSearched stand for?
 enum class TxSearched { all, some, unknown };
 
 // This class is for constructing and examining transactions.

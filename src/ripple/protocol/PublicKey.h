@@ -60,7 +60,6 @@ class PublicKey
 {
 protected:
     static constexpr std::size_t size_ = 33;
-//    std::uint8_t buf_[33];  // should be large enough
     std::array<std::uint8_t, 33> buf_;
 
 public:

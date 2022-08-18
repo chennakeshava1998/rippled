@@ -47,7 +47,7 @@ to_string(Manifest const& m)
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
         toBase58(TokenType::NodePublic, *m.signingKey) +
-        ")";  // IMP: Fallback for an empty signingKey?
+        ")";
 }
 
 std::optional<Manifest>
@@ -289,8 +289,7 @@ ManifestCache::getSigningKey(PublicKey const& pk) const
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
-        return *iter->second.signingKey;  // IMP: Will the ManifestCache always
-                                          // have a signingKey?
+        return *iter->second.signingKey;
 
     return pk;
 }
