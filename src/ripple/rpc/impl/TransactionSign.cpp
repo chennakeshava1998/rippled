@@ -1002,7 +1002,15 @@ transactionSignFor(
 
     // Add and amend fields based on the transaction type.
     Buffer multiSignature;
-    SigningForParams signForParams(*signerAccountID, multiSignature);
+
+    Json::Value jvResult;
+
+    auto const keyPair = keypairForSignature(jvRequest, jvResult);
+    if (contains_error(jvResult) || !keyPair)
+        return jvResult;
+
+    PublicKey pk(keyPair.value().first);
+    SigningForParams signForParams(*signerAccountID, pk, multiSignature);
 
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);

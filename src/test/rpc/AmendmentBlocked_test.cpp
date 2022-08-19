@@ -106,7 +106,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         set_tx[jss::TransactionType] = jss::AccountSet;
         set_tx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
         set_tx[jss::Sequence] = env.seq(bob);
-        set_tx[jss::SigningPubKey] = "";
+        set_tx[jss::SigningPubKey] = strHex(bob.pk().slice());
 
         Json::Value sign_for;
         sign_for[jss::tx_json] = set_tx;
