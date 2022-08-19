@@ -109,7 +109,7 @@ public:
 
         testcase("Basics");
 
-        Env env{*this}; // ERR: Unable to set the Manifest and PublicKey in the envconfig()
+        Env env{*this};
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
