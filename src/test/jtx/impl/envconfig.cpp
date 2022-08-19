@@ -61,6 +61,8 @@ setupConfigForUnitTests(Config& cfg)
     cfg["port_ws"].set("admin", getEnvLocalhostAddr());
     cfg["port_ws"].set("port", port_ws);
     cfg["port_ws"].set("protocol", "ws");
+
+    cfg[SECTION_VALIDATOR_TOKEN].set("validation_secret_key", "exampleSecretKey"); // ERR: Manifest not set to match the key
     cfg.SSL_VERIFY = false;
 }
 

@@ -51,8 +51,6 @@ public:
     template <
         typename T,
         typename = std::enable_if_t<std::is_integral<T>::value>>
-    // URGENT: long long is an integral type but its size is much larger than the
-    // underlying type "int".
     Status(T code, Strings d = {})
         : type_(Type::none), code_(code), messages_(std::move(d))
     {

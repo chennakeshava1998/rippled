@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorList.h>
@@ -235,18 +234,6 @@ public:
             std::string{});  // Silence compiler warning.
     }
 
-    Manifest
-    clone(Manifest const& m)
-    {
-        Manifest m2;
-        m2.serialized = m.serialized;
-        m2.masterKey = m.masterKey;
-        m2.signingKey = m.signingKey;
-        m2.sequence = m.sequence;
-        m2.domain = m.domain;
-        return m2;
-    }
-
     void
     testLoadStore(ManifestCache& m)
     {
@@ -313,7 +300,7 @@ public:
             }
             {
                 // save should store all trusted master keys to db
-                PublicKey emptyLocalKey;
+                PublicKey emptyLocalKey(randomKeyPair(KeyType::secp256k1).first);
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
                 std::string cfgManifest;
@@ -852,7 +839,10 @@ public:
 
                         BEAST_EXPECT(manifest);
                         BEAST_EXPECT(manifest->masterKey == pk);
-                        BEAST_EXPECT(manifest->signingKey == PublicKey());
+                        std::array<uint8_t, 33> zeroPubKeySlice;
+                        zeroPubKeySlice[0] = 0xED;
+
+                        BEAST_EXPECT(manifest->signingKey == PublicKey(makeSlice(zeroPubKeySlice)));
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);
@@ -1014,6 +1004,14 @@ public:
 
             auto const fake = s_b2.serialized + '\0';
 
+            auto clone = [this](Manifest const& m)
+            {
+                auto m2 = deserializeManifest(m.serialized);
+                BEAST_EXPECT(m2.has_value());
+
+                return std::move(*m2);
+            };
+
             // applyManifest should accept new manifests with
             // higher sequence numbers
             BEAST_EXPECT(
@@ -1089,4 +1087,3 @@ BEAST_DEFINE_TESTSUITE(Manifest, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

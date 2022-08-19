@@ -1274,7 +1274,7 @@ ApplicationImp::setup()
     if (!config().reporting())
     {
         {
-            if (!validatorKeys_.publicKey)
+            if (validatorKeys_.configInvalid())
                 return false;
 
             if (!validatorManifests_->load(

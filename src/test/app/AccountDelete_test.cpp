@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -110,7 +109,7 @@ public:
 
         testcase("Basics");
 
-        Env env{*this};
+        Env env{*this}; // ERR: Unable to set the Manifest and PublicKey in the envconfig()
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -928,4 +927,3 @@ BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple
-#endif

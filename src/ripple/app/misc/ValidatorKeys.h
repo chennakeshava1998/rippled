@@ -45,6 +45,15 @@ public:
     std::uint32_t sequence = 0;
 
     ValidatorKeys(Config const& config, beast::Journal j);
+
+    bool
+    configInvalid() const
+    {
+        return configInvalid_;
+    }
+
+private:
+    bool configInvalid_ = false;  //< Set to true if config was invalid
 };
 
 }  // namespace ripple
