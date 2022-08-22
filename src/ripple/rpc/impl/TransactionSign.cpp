@@ -1009,6 +1009,7 @@ transactionSignFor(
 
     Json::Value jvResult;
 
+    // Obtain the PublicKey to correctly instantiate SigningForParams for a multi-signature.
     auto const keyPair = keypairForSignature(jvRequest, jvResult);
     if (contains_error(jvResult) || !keyPair)
         return jvResult;
