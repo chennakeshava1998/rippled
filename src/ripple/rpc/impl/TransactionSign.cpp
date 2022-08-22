@@ -801,6 +801,8 @@ transactionSign(
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);
 
+    // If there is an error in the construction/verification of STTx, abort
+    // further processing and return the error.
     if (!preprocResult.second)
         return preprocResult.first;
 
@@ -840,6 +842,8 @@ transactionSubmit(
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);
 
+    // If there is an error in the construction/verification of STTx, abort
+    // further processing and return the error.
     if (!preprocResult.second)
         return preprocResult.first;
 
@@ -1015,6 +1019,8 @@ transactionSignFor(
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);
 
+    // If there is an error in the construction/verification of STTx, abort
+    // further processing and return the error.
     if (!preprocResult.second)
         return preprocResult.first;
 
