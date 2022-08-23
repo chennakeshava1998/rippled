@@ -192,6 +192,7 @@ ValidatorList::load(
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
+    // Q: no declaration for this variable??
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config
@@ -235,9 +236,7 @@ ValidatorList::load(
         // Inserting the trusted validators listed in the config file. This list
         // is not published by any validator, hence they are not associated with
         // any public key. Rather, they are mapped to the zero'd public key.
-        std::array<uint8_t, 33> zeroPubKeySlice;
-        zeroPubKeySlice[0] = 0xED;
-        PublicKey zeroPK(makeSlice(zeroPubKeySlice));
+        PublicKey zeroPK(PublicKey::getEmptyPublicKey());
 
         auto [it, inserted] = publisherLists_.emplace(
             std::make_pair(zeroPK, PublisherListCollection()));

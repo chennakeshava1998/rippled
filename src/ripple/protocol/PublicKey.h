@@ -59,7 +59,7 @@ namespace ripple {
 class PublicKey
 {
 protected:
-//    static constexpr std::size_t size_ = 33;
+    //    static constexpr std::size_t size_ = 33;
     std::array<std::uint8_t, 33> buf_;
 
 public:
@@ -126,6 +126,17 @@ public:
 
     friend std::string
     to_string(PublicKey const&);
+
+    // This function returns a PublicKey instance filled with zeros. It is used
+    // to store trusted information that have not been published by any
+    // validator (for eg: user specified input in the config file)
+    static PublicKey const
+    getEmptyPublicKey()
+    {
+        std::array<uint8_t, 33> zeroPubKeySlice;
+        zeroPubKeySlice[0] = 0xED;
+        return PublicKey(makeSlice(zeroPubKeySlice));
+    }
 };
 
 inline bool
