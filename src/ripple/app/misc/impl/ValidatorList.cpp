@@ -192,7 +192,6 @@ ValidatorList::load(
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
-    // Q: no declaration for this variable??
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config

@@ -568,6 +568,7 @@ private:
             pubSigningKeys1.second,
             1));
 
+        std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
         PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         std::vector<std::string> emptyCfgKeys;
 
@@ -952,6 +953,7 @@ private:
             pubSigningKeys1.second,
             1));
 
+        std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
         PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         std::vector<std::string> emptyCfgKeys;
 
@@ -1337,7 +1339,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            PublicKey emptyLocalKey(getEmptyPublicKey());
+            PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
             std::vector<std::string> emptyCfgKeys;
             auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
             auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);

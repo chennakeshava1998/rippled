@@ -59,7 +59,7 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    //    static constexpr std::size_t size_ = 33;
+    static constexpr std::size_t size_ = 33;
     std::array<std::uint8_t, 33> buf_;
 
 public:
@@ -77,49 +77,49 @@ public:
     */
     explicit PublicKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return buf_.data();
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return buf_.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_.cend();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_.cend();
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
         return makeSlice(buf_);
     }
 
-    operator Slice() const noexcept
+    explicit operator Slice() const noexcept
     {
         return slice();
     }
@@ -130,7 +130,7 @@ public:
     // This function returns a PublicKey instance filled with zeros. It is used
     // to store trusted information that have not been published by any
     // validator (for eg: user specified input in the config file)
-    static PublicKey const
+    static PublicKey
     getEmptyPublicKey()
     {
         std::array<uint8_t, 33> zeroPubKeySlice;
@@ -138,6 +138,18 @@ public:
         return PublicKey(makeSlice(zeroPubKeySlice));
     }
 };
+
+static_assert(!std::is_default_constructible_v<PublicKey>);
+static_assert(std::is_copy_constructible_v<PublicKey>);
+static_assert(std::is_move_constructible_v<PublicKey>);
+static_assert(std::is_copy_assignable_v<PublicKey>);
+static_assert(std::is_move_assignable_v<PublicKey>);
+static_assert(std::is_assignable_v<ripple::STBlob, PublicKey>);
+
+/** Print the public key to a stream.
+ */
+std::ostream&
+operator<<(std::ostream& os, PublicKey const& pk);
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
