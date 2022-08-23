@@ -61,7 +61,6 @@ setupConfigForUnitTests(Config& cfg)
     cfg["port_ws"].set("admin", getEnvLocalhostAddr());
     cfg["port_ws"].set("port", port_ws);
     cfg["port_ws"].set("protocol", "ws");
-
     cfg.SSL_VERIFY = false;
 }
 

@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/basics/base64.h>
@@ -178,4 +177,3 @@ BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

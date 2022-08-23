@@ -59,7 +59,7 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    static constexpr std::size_t size_ = 33;
+//    static constexpr std::size_t size_ = 33;
     std::array<std::uint8_t, 33> buf_;
 
 public:
