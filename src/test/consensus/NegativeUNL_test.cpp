@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/NegativeUNLVote.h>
@@ -778,15 +777,14 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         testcase("Create UNLModify Tx");
         jtx::Env env(*this);
 
-        // NodeID myId(0xA0);
         PublicKey myPubKey(createPublicKeys(1)[0]);
         NegativeUNLVote vote(myPubKey, env.journal);
 
         // one add, one remove
         auto txSet = std::make_shared<SHAMap>(
             SHAMapType::TRANSACTION, env.app().getNodeFamily());
-        PublicKey toDisableKey;
-        PublicKey toReEnableKey;
+        PublicKey toDisableKey(createPublicKeys(1)[0]);
+        PublicKey toReEnableKey(createPublicKeys(1)[0]);
         LedgerIndex seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
         vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
@@ -803,7 +801,6 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         testcase("Pick One Candidate");
         jtx::Env env(*this);
 
-        // NodeID myId(0xA0);
         PublicKey myPubKey(createPublicKeys(1)[0]);
 
         NegativeUNLVote vote(myPubKey, env.journal);
@@ -1182,8 +1179,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
 
         jtx::Env env(*this);
 
-        // NodeID myId(0xA0);
-        PublicKey myId;
+        PublicKey myId(createPublicKeys(1)[0]);
         NegativeUNLVote vote(myId, env.journal);
 
         std::array<std::uint32_t, 3> unlSizes = {34, 35, 80};
@@ -1356,7 +1352,6 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         testcase("New Validators");
         jtx::Env env(*this);
 
-        // NodeID myId(0xA0);
         PublicKey myId(createPublicKeys(1)[0]);
         NegativeUNLVote vote(myId, env.journal);
 
@@ -2128,4 +2123,3 @@ createTx(bool disabling, LedgerIndex seq, PublicKey const& txKey)
 
 }  // namespace test
 }  // namespace ripple
-#endif

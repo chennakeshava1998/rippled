@@ -14,7 +14,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
@@ -1705,4 +1704,3 @@ BEAST_DEFINE_TESTSUITE(MultiSign, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

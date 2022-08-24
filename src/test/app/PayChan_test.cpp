@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/basics/chrono.h>
 #include <ripple/ledger/Directory.h>
 #include <ripple/protocol/Feature.h>
@@ -2067,4 +2066,3 @@ struct PayChan_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(PayChan, app, ripple);
 }  // namespace test
 }  // namespace ripple
-#endif

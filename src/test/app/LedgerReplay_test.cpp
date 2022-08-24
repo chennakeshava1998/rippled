@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/app/ledger/BuildLedger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplay.h>
@@ -231,7 +230,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
+        static PublicKey key{PublicKey::getEmptyPublicKey()};
         return key;
     }
     Json::Value
@@ -1599,4 +1598,3 @@ BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
@@ -599,4 +598,3 @@ BEAST_DEFINE_TESTSUITE(AccountTx, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

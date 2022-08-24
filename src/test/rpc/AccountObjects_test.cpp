@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
@@ -591,4 +590,3 @@ BEAST_DEFINE_TESTSUITE(AccountObjects, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

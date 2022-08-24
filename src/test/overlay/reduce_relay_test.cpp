@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#if 0
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/overlay/Message.h>
@@ -104,7 +103,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
+        static PublicKey key{PublicKey::getEmptyPublicKey()};
         return key;
     }
     Json::Value
@@ -440,7 +439,7 @@ public:
 
 private:
     Links links_;
-    PublicKey pkey_{};
+    PublicKey pkey_{PublicKey::getEmptyPublicKey()};
     MessageSPtr message_ = nullptr;
     inline static std::uint16_t sid_ = 0;
     std::uint16_t id_ = 0;
@@ -986,25 +985,26 @@ protected:
 
             // Trigger Link Down or Peer Disconnect event
             // Only one Link Down at a time
-            if (events[EventType::LinkDown].state_ == State::Off)
+            // CK: Don't use [], use emplace
+            if (events.at(EventType::LinkDown).state_ == State::Off)
             {
                 auto update = [&](EventType event) {
-                    events[event].cnt_++;
-                    events[event].validator_ = validator.id();
-                    events[event].key_ = validator;
-                    events[event].peer_ = link.peerId();
-                    events[event].state_ = State::On;
-                    events[event].time_ = now;
+                    events.at(event).cnt_++;
+                    events.at(event).validator_ = validator.id();
+                    events.at(event).key_ = validator;
+                    events.at(event).peer_ = link.peerId();
+                    events.at(event).state_ = State::On;
+                    events.at(event).time_ = now;
                     if (event == EventType::LinkDown)
                     {
                         network_.enableLink(
                             validator.id(), link.peerId(), false);
-                        events[event].isSelected_ =
+                        events.at(event).isSelected_ =
                             network_.overlay().isSelected(
                                 validator, link.peerId());
                     }
                     else
-                        events[event].isSelected_ =
+                        events.at(event).isSelected_ =
                             network_.isSelected(link.peerId());
                 };
                 auto r = rand_int(0, 1000);
@@ -1015,9 +1015,9 @@ protected:
                 }
             }
 
-            if (events[EventType::PeerDisconnected].state_ == State::On)
+            if (events.at(EventType::PeerDisconnected).state_ == State::On)
             {
-                auto& event = events[EventType::PeerDisconnected];
+                auto& event = events.at(EventType::PeerDisconnected);
                 bool allCounting = network_.allCounting(event.peer_);
                 network_.overlay().deletePeer(
                     event.peer_,
@@ -1043,7 +1043,7 @@ protected:
                 network_.onDisconnectPeer(event.peer_);
             }
 
-            auto& event = events[EventType::LinkDown];
+            auto& event = events.at(EventType::LinkDown);
             // Check every sec for idled peers. Idled peers are
             // created by Link Down event.
             if (now - lastCheck > milliseconds(1000))
@@ -1099,8 +1099,8 @@ protected:
             }
         });
 
-        auto& down = events[EventType::LinkDown];
-        auto& disconnected = events[EventType::PeerDisconnected];
+        auto& down = events.at(EventType::LinkDown);
+        auto& disconnected = events.at(EventType::PeerDisconnected);
         // It's possible the last Down Link event is not handled
         BEAST_EXPECT(down.handledCnt_ >= down.cnt_ - 1);
         // All Peer Disconnect events must be handled
@@ -1602,5 +1602,3 @@ BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, ripple_data, ripple);
 }  // namespace test
 
 }  // namespace ripple
-
-#endif
