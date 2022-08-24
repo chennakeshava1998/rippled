@@ -46,8 +46,7 @@ to_string(Manifest const& m)
         return "Revocation Manifest " + mk;
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
-        toBase58(TokenType::NodePublic, *m.signingKey) +
-        ")";
+        toBase58(TokenType::NodePublic, *m.signingKey) + ")";
 }
 
 std::optional<Manifest>
@@ -416,15 +415,15 @@ ManifestCache::applyManifest(Manifest m)
             return ManifestDisposition::badMasterKey;
         }
 
-        if (!m.signingKey)
-        {
-            JLOG(j_.warn())
-                << to_string(m) << ": Ephemeral key not set in the Manifest\n";
-            return ManifestDisposition::badEphemeralKey;
-        }
-
         if (!revoked)
         {
+            if (!m.signingKey)
+            {
+                JLOG(j_.warn()) << to_string(m)
+                                << ": Ephemeral key not set in the Manifest\n";
+                return ManifestDisposition::badEphemeralKey;
+            }
+
             // Sanity check: the ephemeral key of this manifest should not be
             // used as the master or ephemeral key of another manifest:
             if (auto const x = signingToMasterKeys_.find(*m.signingKey);

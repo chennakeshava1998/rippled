@@ -300,7 +300,8 @@ public:
             }
             {
                 // save should store all trusted master keys to db
-                PublicKey emptyLocalKey(randomKeyPair(KeyType::secp256k1).first);
+                PublicKey emptyLocalKey(
+                    randomKeyPair(KeyType::secp256k1).first);
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
                 std::string cfgManifest;
@@ -842,7 +843,8 @@ public:
                         std::array<uint8_t, 33> zeroPubKeySlice;
                         zeroPubKeySlice[0] = 0xED;
 
-                        BEAST_EXPECT(manifest->signingKey == PublicKey(makeSlice(zeroPubKeySlice)));
+                        // A revoked Manifest must not contain ephemeral or master public key
+                        BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);
@@ -1004,8 +1006,7 @@ public:
 
             auto const fake = s_b2.serialized + '\0';
 
-            auto clone = [this](Manifest const& m)
-            {
+            auto clone = [this](Manifest const& m) {
                 auto m2 = deserializeManifest(m.serialized);
                 BEAST_EXPECT(m2.has_value());
 

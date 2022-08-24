@@ -1820,7 +1820,7 @@ struct PayChan_test : public beast::unit_test::suite
             }
 
             // resurrect bob
-            env(pay(alice, bob, XRP(20)));
+            env(pay(alice, bob, XRP(200)));
             env.close();
             BEAST_EXPECT(env.closed()->exists(keylet::account(bob.id())));
 
