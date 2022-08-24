@@ -81,7 +81,6 @@ public:
             generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
         PublicKey const seedPublicKey =
             derivePublicKey(KeyType::secp256k1, seedSecretKey);
-//        NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
         auto const tokenSecretKey =
@@ -92,7 +91,6 @@ public:
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);
-//        NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
         {
             // No config -> no key but valid
@@ -110,7 +108,6 @@ public:
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.publicKey == seedPublicKey);
             BEAST_EXPECT(k.secretKey == seedSecretKey);
-//            BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -134,7 +131,6 @@ public:
 
             BEAST_EXPECT(k.publicKey == tokenPublicKey);
             BEAST_EXPECT(k.secretKey == tokenSecretKey);
-//            BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());
         }

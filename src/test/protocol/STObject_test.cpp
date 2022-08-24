@@ -608,7 +608,7 @@ public:
     auto const kp =
         generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
     st[sf5] = kp.first;
-    BEAST_EXPECT(st[sf5] != PublicKey{});
+    BEAST_EXPECT(st[sf5] != PublicKey::getEmptyPublicKey());
     st[~sf5] = std::nullopt;
 #if 0
             pk = st[sf5];

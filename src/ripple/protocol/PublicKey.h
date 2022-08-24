@@ -119,7 +119,7 @@ public:
         return makeSlice(buf_);
     }
 
-    explicit operator Slice() const noexcept
+    operator Slice() const noexcept
     {
         return slice();
     }
@@ -131,7 +131,7 @@ public:
     // to store trusted information that have not been published by any
     // validator (for eg: user specified input in the config file)
     static PublicKey
-    getEmptyPublicKey()
+    getEmptyPublicKey() noexcept
     {
         std::array<uint8_t, 33> zeroPubKeySlice;
         zeroPubKeySlice[0] = 0xED;
@@ -144,12 +144,6 @@ static_assert(std::is_copy_constructible_v<PublicKey>);
 static_assert(std::is_move_constructible_v<PublicKey>);
 static_assert(std::is_copy_assignable_v<PublicKey>);
 static_assert(std::is_move_assignable_v<PublicKey>);
-static_assert(std::is_assignable_v<ripple::STBlob, PublicKey>);
-
-/** Print the public key to a stream.
- */
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk);
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)

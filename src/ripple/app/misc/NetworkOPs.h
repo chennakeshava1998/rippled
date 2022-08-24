@@ -83,13 +83,9 @@ enum class OperatingMode {
     instances of rippled will need to be hardened to protect against hostile
     or unreliable servers.
 */
-// Q: Why is NetworkOPs a pure virtual class? What is the need for inheritance?
-// What are the different child-ways that NetworkOPs can be used?
 class NetworkOPs : public InfoSub::Source
 {
 public:
-    // Q: Why not use std::chrono::steady_clock directly? What is the use of
-    // this beast abstraction?
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
     enum class FailHard : bool { no, yes };
     static inline FailHard
@@ -99,10 +95,6 @@ public:
     }
 
 public:
-    // Q: Since NetworkOPs does not have any members that need special
-    // deallocation, why are we declaring this destructor? Q: Wouldn't the
-    // compiler provide a default destructor anyway? Q: Why do we need virtual
-    // destructors?
     ~NetworkOPs() override = default;
 
     virtual void
@@ -141,8 +133,6 @@ public:
      */
     virtual void
     processTransaction(
-        // Q: Why are we passing a reference to a shared_ptr? Doesn't this
-        // subvert the reference counting and Garbage Collection of shared_ptr?
         std::shared_ptr<Transaction>& transaction,
         bool bUnlimited,
         bool bLocal,
