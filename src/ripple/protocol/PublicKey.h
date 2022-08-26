@@ -59,7 +59,6 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    static constexpr std::size_t size_ = 33;
     std::array<std::uint8_t, 33> buf_;
 
 public:
@@ -135,6 +134,11 @@ public:
     {
         std::array<uint8_t, 33> zeroPubKeySlice;
         zeroPubKeySlice[0] = 0xED;
+
+        // Set the rest of bytes to zero
+        for(unsigned int i = 1; i < 33; i++)
+            zeroPubKeySlice[i] = 0;
+
         return PublicKey(makeSlice(zeroPubKeySlice));
     }
 };
