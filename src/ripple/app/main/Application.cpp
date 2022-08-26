@@ -1294,7 +1294,7 @@ ApplicationImp::setup()
 
             // Setup trusted validators
             if (!validators_->load(
-                    *validatorKeys_.publicKey,
+                    validatorKeys_.publicKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {

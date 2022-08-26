@@ -134,7 +134,7 @@ ValidatorList::ValidatorList(
 
 bool
 ValidatorList::load(
-    PublicKey const& localSigningKey,
+    std::optional<PublicKey> localSigningKey,
     std::vector<std::string> const& configKeys,
     std::vector<std::string> const& publisherKeys)
 {
@@ -192,10 +192,11 @@ ValidatorList::load(
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
-    localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
+    if (localSigningKey)
+        localPubKey_ = validatorManifests_.getMasterKey(*localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    if (*localPubKey_ != PublicKey::getEmptyPublicKey())
+    if (localPubKey_)
         keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
@@ -222,7 +223,7 @@ ValidatorList::load(
         }
 
         // Skip local key which was already added
-        if (id == localPubKey_ || *id == localSigningKey)
+        if (id == localPubKey_ || id == localSigningKey)
             continue;
 
         auto ret = keyListings_.insert({*id, 1});
@@ -232,9 +233,10 @@ ValidatorList::load(
             continue;
         }
 
-        // Inserting the trusted validators listed in the config file. This list
-        // is not published by any validator, hence they are not associated with
-        // any public key. Rather, they are mapped to the zero'd public key.
+        // Inserting the trusted validators listed in the config file. This
+        // list is not published by any validator, hence they are not
+        // associated with any public key. Rather, they are mapped to the
+        // zero'd public key.
         auto [it, inserted] = publisherLists_.emplace(std::make_pair(
             PublicKey::getEmptyPublicKey(), PublisherListCollection()));
         // Config listed keys never expire
@@ -1553,9 +1555,7 @@ ValidatorList::getJson() const
     // The zero'ed public key is used to identify the validators which are
     // directly input in the config file. They are not associated with any
     // public key because they are not published by any validator.
-    std::array<uint8_t, 33> zeroPubKeySlice;
-    zeroPubKeySlice[0] = 0xED;
-    PublicKey local(makeSlice(zeroPubKeySlice));
+    PublicKey local(PublicKey::getEmptyPublicKey());
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
     if (auto it = publisherLists_.find(local); it != publisherLists_.end())
