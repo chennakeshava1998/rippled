@@ -1111,6 +1111,11 @@ private:
             for (auto const& val : unseenValidators)
                 activeValidatorsOuter.emplace(val);
 
+            // Add the local validator public key into the list of trusted keys - adheres to the behavior of load() function
+            activeValidatorsOuter.emplace(calcNodeID(emptyLocalKeyOuter));
+
+            BEAST_EXPECT(changes.added.find(calcNodeID(emptyLocalKeyOuter)) != changes.added.end());
+
             BEAST_EXPECT(changes.added == activeValidatorsOuter);
             BEAST_EXPECT(changes.removed.empty());
             BEAST_EXPECT(

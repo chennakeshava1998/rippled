@@ -195,7 +195,7 @@ ValidatorList::load(
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    if (localPubKey_)
+    if (*localPubKey_ != PublicKey::getEmptyPublicKey())
         keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
@@ -235,10 +235,8 @@ ValidatorList::load(
         // Inserting the trusted validators listed in the config file. This list
         // is not published by any validator, hence they are not associated with
         // any public key. Rather, they are mapped to the zero'd public key.
-        PublicKey zeroPK(PublicKey::getEmptyPublicKey());
-
-        auto [it, inserted] = publisherLists_.emplace(
-            std::make_pair(zeroPK, PublisherListCollection()));
+        auto [it, inserted] = publisherLists_.emplace(std::make_pair(
+            PublicKey::getEmptyPublicKey(), PublisherListCollection()));
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
@@ -1270,6 +1268,11 @@ ValidatorList::verify(
 {
     auto m = deserializeManifest(base64_decode(manifest));
 
+    // If the List is accepted/expired/pending/same_sequence, return the
+    // appropriate ListDisposition value and the publicKey to correctly estimate
+    // PublisherListStats in applyList. In all the other cases, do not return
+    // the public key because we do not keep track of such a list.
+
     if (!m || !publisherLists_.count(m->masterKey))
         return VerificationResult(ListDisposition::untrusted);
 
@@ -1318,9 +1321,9 @@ ValidatorList::verify(
         else if (sequence < listCollection.current.sequence)
             return VerificationResult(ListDisposition::stale);
         else if (sequence == listCollection.current.sequence)
-            return VerificationResult(ListDisposition::same_sequence);
+            return VerificationResult(ListDisposition::same_sequence, pubKey);
         else if (validUntil <= now)
-            return VerificationResult(ListDisposition::expired);
+            return VerificationResult(ListDisposition::expired, pubKey);
         else if (validFrom > now)
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
@@ -1338,7 +1341,7 @@ ValidatorList::verify(
                      validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
                                      .validFrom)
-                ? VerificationResult(ListDisposition::pending)
+                ? VerificationResult(ListDisposition::pending, pubKey)
 
                 : VerificationResult(ListDisposition::known_sequence);
     }
@@ -1630,9 +1633,7 @@ ValidatorList::getJson() const
         if (it != keyListings_.end())
         {
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
-                toBase58(
-                    TokenType::NodePublic,
-                    *manifest.signingKey);
+                toBase58(TokenType::NodePublic, *manifest.signingKey);
         }
     });
 
