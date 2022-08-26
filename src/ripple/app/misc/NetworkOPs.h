@@ -87,7 +87,8 @@ class NetworkOPs : public InfoSub::Source
 {
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
-    enum class FailHard : bool { no, yes };
+
+    enum class FailHard : unsigned char { no, yes };
     static inline FailHard
     doFailHard(bool noMeansDont)
     {
@@ -218,8 +219,6 @@ public:
     virtual void
     consensusViewChange() = 0;
 
-    // IMP: Can we mark the getConsensusInfo() and getXXX functions as const?
-    // (Not modifying the "this" pointer)?
     virtual Json::Value
     getConsensusInfo() = 0;
     virtual Json::Value
@@ -276,8 +275,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-// IMP: Why do we need the make_XXX functions? Can't we create an object of the
-// class manually and make_unique_ptr using that object?
+
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs(
     Application& app,

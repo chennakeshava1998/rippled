@@ -136,7 +136,7 @@ public:
         zeroPubKeySlice[0] = 0xED;
 
         // Set the rest of bytes to zero
-        for(unsigned int i = 1; i < 33; i++)
+        for (unsigned int i = 1; i < 33; i++)
             zeroPubKeySlice[i] = 0;
 
         return PublicKey(makeSlice(zeroPubKeySlice));
@@ -281,6 +281,9 @@ calcAccountID(PublicKey const& pk);
 
 }  // namespace ripple
 
+// A template specialization of boost::hash is defined here. It is used in the
+// boost::unordered_map data structure, whenever PublicKey is used as a Key of
+// the unordered_map.
 namespace boost {
 /** boost::hash support. */
 template <>

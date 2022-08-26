@@ -36,8 +36,6 @@ class Config;
 class ValidatorKeys
 {
 public:
-    // URGENT: How do we update our validators? Is it done in
-    // batches or all at once? What about maintaining network connectivity?
     std::optional<PublicKey> masterPublicKey;
     std::optional<PublicKey> publicKey;
     SecretKey secretKey;

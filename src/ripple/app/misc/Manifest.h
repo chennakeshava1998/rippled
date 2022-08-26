@@ -123,6 +123,8 @@ struct Manifest
     Blob
     getMasterSignature() const;
 
+    // this is declared as a friend function because it calls the (below
+    // defined) private constructor of Manifest class.
     friend std::optional<Manifest>
     deserializeManifest(Slice s);
 
@@ -238,6 +240,9 @@ private:
     beast::Journal j_;
     std::shared_mutex mutable mutex_;
 
+    // We use boost::unordered_map instead of std::unordered_map so that we
+    // don't have to forcibly default construct the key-values (PublicKey) of
+    // the map.
     /** Active manifests stored by master public key. */
     boost::unordered_map<PublicKey, Manifest> map_;
 

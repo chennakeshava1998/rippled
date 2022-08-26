@@ -249,14 +249,6 @@ Payment::preclaim(PreclaimContext const& ctx)
                 << "Delay transaction: Destination account does not exist. "
                 << "Insufficent payment to create account.";
 
-//            std::cerr << "\n\nIMP DEBUG INFO\n\n" << std::endl;
-//            std::cerr << saDstAmount.mantissa() << std::endl;
-//            std::cerr << saDstAmount.exponent() << std::endl;
-//            std::cerr << STAmount(ctx.view.fees().accountReserve(0)).mantissa()
-//                      << std::endl;
-//            std::cerr << STAmount(ctx.view.fees().accountReserve(0)).exponent()
-//                      << std::endl;
-
             // TODO: dedupe
             // Another transaction could create the account and then this
             // transaction would succeed.

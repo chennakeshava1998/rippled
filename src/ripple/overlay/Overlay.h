@@ -81,7 +81,10 @@ public:
         bool vlEnabled = true;
 
         // The cryptographic credentials identifying this server instance,
-        // parsed from an instance of Application
+        // parsed from an instance of Application. This information was
+        // previously stored in the Application class. Since this information is
+        // available at the time of creation of Overlay, it has been shifted to
+        // this class
         std::pair<PublicKey, SecretKey> nodeIdentity_;
     };
 
