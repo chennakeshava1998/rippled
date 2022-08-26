@@ -88,7 +88,7 @@ class NetworkOPs : public InfoSub::Source
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
-    enum class FailHard : unsigned char { no, yes };
+    enum class FailHard : bool { no, yes };
     static inline FailHard
     doFailHard(bool noMeansDont)
     {
