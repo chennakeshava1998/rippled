@@ -920,7 +920,6 @@ protected:
     //       time in any quantity
     struct Event
     {
-        // Event(): key_() {}
         Event() = delete;
         State state_ = State::Off;
         std::uint32_t cnt_ = 0;
@@ -940,8 +939,6 @@ protected:
     random(bool log)
     {
         std::unordered_map<EventType, Event> events;
-        // {
-        //     {LinkDown, {}}, {PeerDisconnected, {}}};
         time_point<ManualClock> lastCheck = ManualClock::now();
 
         network_.reset();
@@ -985,7 +982,6 @@ protected:
 
             // Trigger Link Down or Peer Disconnect event
             // Only one Link Down at a time
-            // CK: Don't use [], use emplace
             if (events.at(EventType::LinkDown).state_ == State::Off)
             {
                 auto update = [&](EventType event) {

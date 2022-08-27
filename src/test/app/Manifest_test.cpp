@@ -840,8 +840,6 @@ public:
 
                         BEAST_EXPECT(manifest);
                         BEAST_EXPECT(manifest->masterKey == pk);
-                        std::array<uint8_t, 33> zeroPubKeySlice;
-                        zeroPubKeySlice[0] = 0xED;
 
                         // A revoked Manifest must not contain ephemeral or master public key
                         BEAST_EXPECT(!manifest->signingKey);

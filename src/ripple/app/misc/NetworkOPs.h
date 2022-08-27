@@ -95,7 +95,6 @@ public:
         return noMeansDont ? FailHard::yes : FailHard::no;
     }
 
-public:
     ~NetworkOPs() override = default;
 
     virtual void
