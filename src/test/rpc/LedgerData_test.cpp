@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>

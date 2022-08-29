@@ -221,7 +221,6 @@ private:
             *this, jtx::envconfig(), nullptr, beast::severities::kDisabled);
         auto& app = env.app();
 
-//        PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
 
@@ -574,7 +573,6 @@ private:
             1));
 
         std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
-//        PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         std::vector<std::string> emptyCfgKeys;
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys1));
@@ -959,7 +957,6 @@ private:
             1));
 
         std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
-//        PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         std::vector<std::string> emptyCfgKeys;
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys1));
@@ -1071,7 +1068,6 @@ private:
 
         std::string const siteUri = "testUpdateTrusted.test";
 
-//        PublicKey emptyLocalKeyOuter(PublicKey::getEmptyPublicKey());
         ManifestCache manifestsOuter;
         jtx::Env env(*this);
         auto& app = env.app();
@@ -1344,7 +1340,6 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-//            PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
             std::vector<std::string> emptyCfgKeys;
             auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
             auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
@@ -1569,7 +1564,6 @@ private:
 
                 std::vector<std::string> cfgPublishers(
                     {strHex(publisherPublic)});
-//                PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
                 std::vector<std::string> emptyCfgKeys;
 
                 BEAST_EXPECT(trustedKeys->load(
@@ -1645,7 +1639,6 @@ private:
             BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
 
             // Config listed keys have maximum expiry
-//            PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
             PublicKey localCfgListed = randomNode();
             trustedKeys->load(randomKeyPair(KeyType::secp256k1).first, {toStr(localCfgListed)}, {});
             BEAST_EXPECT(
@@ -1693,7 +1686,6 @@ private:
 
                 std::vector<std::string> cfgPublishers(
                     {strHex(publisherPublic)});
-//                PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
                 std::vector<std::string> emptyCfgKeys;
 
                 BEAST_EXPECT(trustedKeys->load(
@@ -1800,7 +1792,6 @@ private:
     {
         testcase("NegativeUNL");
         jtx::Env env(*this);
-//        PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         ManifestCache manifests;
 
         auto createValidatorList =
