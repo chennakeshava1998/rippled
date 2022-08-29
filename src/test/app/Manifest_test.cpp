@@ -300,7 +300,8 @@ public:
             }
             {
                 // save should store all trusted master keys to db
-                PublicKey emptyLocalKey(
+                // Use a set optional value to correctly invoke the load function
+                PublicKey arbitraryPubKey(
                     randomKeyPair(KeyType::secp256k1).first);
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
@@ -308,7 +309,7 @@ public:
                 for (auto const& man : inManifests)
                     s1.push_back(
                         toBase58(TokenType::NodePublic, man->masterKey));
-                unl->load(emptyLocalKey, s1, keys);
+                unl->load(arbitraryPubKey, s1, keys);
 
                 m.save(
                     *dbCon,
