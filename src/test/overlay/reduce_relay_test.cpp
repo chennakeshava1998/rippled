@@ -57,7 +57,14 @@ static constexpr std::uint32_t MAX_MESSAGES = 200000;
  */
 class PeerPartial : public Peer
 {
+    // for testing purposes, store a randomly generated public key
+    PublicKey pk;
+
 public:
+    PeerPartial() : pk(randomKeyPair(KeyType::secp256k1).first)
+    {
+    }
+
     virtual ~PeerPartial()
     {
     }
@@ -103,8 +110,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{PublicKey::getEmptyPublicKey()};
-        return key;
+        return pk;
     }
     Json::Value
     json() override
@@ -312,9 +318,8 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator()
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::ed25519)))
     {
-        pkey_ = std::get<0>(randomKeyPair(KeyType::ed25519));
         protocol::TMValidation v;
         v.set_validation("validation");
         message_ = std::make_shared<Message>(v, protocol::mtVALIDATION, pkey_);
@@ -439,7 +444,7 @@ public:
 
 private:
     Links links_;
-    PublicKey pkey_{PublicKey::getEmptyPublicKey()};
+    PublicKey pkey_;
     MessageSPtr message_ = nullptr;
     inline static std::uint16_t sid_ = 0;
     std::uint16_t id_ = 0;

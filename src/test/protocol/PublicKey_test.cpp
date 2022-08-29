@@ -362,10 +362,10 @@ public:
         }
 
         // Try some random secret keys
-        std::vector<PublicKey> keys(32, PublicKey::getEmptyPublicKey());
+        std::vector<PublicKey> keys;
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = derivePublicKey(keyType, randomSecretKey());
+        for (std::size_t i = 0; i < 32; ++i)
+            keys.push_back(derivePublicKey(keyType, randomSecretKey()));
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {

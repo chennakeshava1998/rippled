@@ -171,7 +171,6 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        PublicKey emptyLocalKey(PublicKey::getEmptyPublicKey());
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
@@ -229,7 +228,7 @@ private:
         }
 
         BEAST_EXPECT(
-            trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
+            trustedKeys.load({}, emptyCfgKeys, cfgPublishers));
 
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
