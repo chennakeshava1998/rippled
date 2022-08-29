@@ -519,12 +519,12 @@ public:
 
         // Actually resurrect becky's account.
         // This amount must be atleast as much as src/ripple/ledger/ReadView.h:accountReserve
-        env(pay(alice, becky, XRP(200)));
+        env(pay(alice, becky, XRP(20)));
         env.close();
 
         // becky's account root should be back.
         BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(200));
+        BEAST_EXPECT(env.balance(becky) == XRP(20));
 
         // becky's resurrected account can be the destination of alice's
         // PayChannel.
@@ -541,7 +541,7 @@ public:
         env(payChanClaim());
         env.close();
 
-        BEAST_EXPECT(env.balance(becky) == XRP(200) + payChanXRP);
+        BEAST_EXPECT(env.balance(becky) == XRP(20) + payChanXRP);
     }
 
     void

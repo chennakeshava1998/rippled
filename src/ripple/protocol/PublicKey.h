@@ -125,22 +125,6 @@ public:
 
     friend std::string
     to_string(PublicKey const&);
-
-    // This function returns a PublicKey instance filled with zeros. It is used
-    // to store trusted information that have not been published by any
-    // validator (for eg: user specified input in the config file)
-    static PublicKey
-    getEmptyPublicKey() noexcept
-    {
-        std::array<uint8_t, 33> zeroPubKeySlice;
-        zeroPubKeySlice[0] = 0xED;
-
-        // Set the rest of bytes to zero
-        for (unsigned int i = 1; i < 33; i++)
-            zeroPubKeySlice[i] = 0;
-
-        return PublicKey(makeSlice(zeroPubKeySlice));
-    }
 };
 
 static_assert(!std::is_default_constructible_v<PublicKey>);

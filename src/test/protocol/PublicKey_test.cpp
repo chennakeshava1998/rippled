@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>

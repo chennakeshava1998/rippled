@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/basics/chrono.h>
 #include <ripple/ledger/Directory.h>
 #include <ripple/protocol/Feature.h>
@@ -1820,7 +1821,7 @@ struct PayChan_test : public beast::unit_test::suite
             }
 
             // resurrect bob
-            env(pay(alice, bob, XRP(200)));
+            env(pay(alice, bob, XRP(20)));
             env.close();
             BEAST_EXPECT(env.closed()->exists(keylet::account(bob.id())));
 

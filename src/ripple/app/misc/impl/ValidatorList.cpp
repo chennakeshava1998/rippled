@@ -129,6 +129,16 @@ ValidatorList::ValidatorList(
     , j_(j)
     , quorum_(minimumQuorum.value_or(1))  // Genesis ledger quorum
     , minimumQuorum_(minimumQuorum)
+    , configID_([]() {
+        std::array<uint8_t, 33> zeroPubKeySlice;
+        zeroPubKeySlice[0] = 0xED;
+
+        // Set the rest of bytes to zero
+        for (unsigned int i = 1; i < 33; i++)
+            zeroPubKeySlice[i] = 0;
+
+        return PublicKey(makeSlice(zeroPubKeySlice));
+    }())
 {
 }
 
@@ -238,7 +248,7 @@ ValidatorList::load(
         // associated with any public key. Rather, they are mapped to the
         // zero'd public key.
         auto [it, inserted] = publisherLists_.emplace(std::make_pair(
-            PublicKey::getEmptyPublicKey(), PublisherListCollection()));
+            configID_, PublisherListCollection()));
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
@@ -1552,13 +1562,9 @@ ValidatorList::getJson() const
     }
 
     // Local static keys
-    // The zero'ed public key is used to identify the validators which are
-    // directly input in the config file. They are not associated with any
-    // public key because they are not published by any validator.
-    PublicKey local(PublicKey::getEmptyPublicKey());
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
-    if (auto it = publisherLists_.find(local); it != publisherLists_.end())
+    if (auto it = publisherLists_.find(configID_); it != publisherLists_.end())
     {
         for (auto const& key : it->second.current.list)
             jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
@@ -1569,7 +1575,7 @@ ValidatorList::getJson() const
         (res[jss::publisher_lists] = Json::arrayValue);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        if (local == publicKey)
+        if (configID_ == publicKey)
             continue;
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(publicKey);

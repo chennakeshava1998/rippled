@@ -250,6 +250,13 @@ class ValidatorList
 
     std::optional<PublicKey> localPubKey_;
 
+    // This data member contains a PublicKey instance filled with zeros. It is
+    // used to store trusted information that has not been published by any
+    // validator, but it is manually specified in the config file.
+    // PublicKey associated with manually configured validators in config
+    // FIXME: Refactor this file and remove the need for a zero public key
+    PublicKey configID_;
+
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
 

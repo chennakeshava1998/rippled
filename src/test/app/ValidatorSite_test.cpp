@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/base64.h>

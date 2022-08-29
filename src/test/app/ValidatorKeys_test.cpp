@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/basics/base64.h>

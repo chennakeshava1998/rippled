@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/basics/Log.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/json_reader.h>
