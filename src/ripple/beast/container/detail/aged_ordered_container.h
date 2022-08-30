@@ -54,6 +54,8 @@ struct is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>>
     explicit is_boost_reverse_iterator() = default;
 };
 
+// Q: How can we replace the chronological ordering, iterators, touch, expire with STL containers?
+
 /** Associative container where each element is also indexed by time.
 
     This container mirrors the interface of the standard library ordered

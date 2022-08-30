@@ -34,6 +34,7 @@ template <
     class Hash = std::hash<Key>,
     class KeyEqual = std::equal_to<Key>,
     class Allocator = std::allocator<Key>>
+// Q: Apart from the test files, where is this data structure used in the Ripple codebase?
 using aged_unordered_multiset = detail::aged_unordered_container<
     true,
     false,
