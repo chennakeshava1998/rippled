@@ -189,6 +189,11 @@ struct ValidatorToken
 {
     std::string manifest;
     SecretKey validationSecret;
+
+    // Delete the default constructor of the ValidatorToken. ValidatorToken
+    // contains an instance of SecretKey, and SecretKey class must not be
+    // default constructed.
+    ValidatorToken() = delete;
 };
 
 std::optional<ValidatorToken>

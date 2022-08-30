@@ -36,9 +36,11 @@ class Config;
 class ValidatorKeys
 {
 public:
+    // If the instance of rippled is not configured as a validator or with a
+    // manifest, then the below optional values might only contain std::nullopt
     std::optional<PublicKey> masterPublicKey;
     std::optional<PublicKey> publicKey;
-    SecretKey secretKey;
+    std::optional<SecretKey> secretKey;
     std::string manifest;
     std::uint32_t sequence = 0;
 

@@ -275,10 +275,10 @@ public:
         }
 
         // Try some random secret keys
-        std::array<SecretKey, 32> keys;
+        std::vector<SecretKey> keys;
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = randomSecretKey();
+        for (std::size_t i = 0; i < 32; ++i)
+            keys.push_back(randomSecretKey());
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {

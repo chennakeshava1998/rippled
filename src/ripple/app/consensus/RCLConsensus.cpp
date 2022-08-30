@@ -89,9 +89,7 @@ RCLConsensus::Adaptor::Adaptor(
     , valCookie_{rand_int<std::uint64_t>(
           1,
           std::numeric_limits<std::uint64_t>::max())}
-    , nUnlVote_(
-          *validatorKeys_.masterPublicKey,
-          j_)
+    , nUnlVote_(*validatorKeys_.masterPublicKey, j_)
 {
     assert(valCookie_ != 0);
 
@@ -206,6 +204,9 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     if (!validatorKeys_.publicKey)
         LogicError("RCLConsensus: Proposing without a PublicKey");
 
+    if (!validatorKeys_.secretKey)
+        LogicError("RCLConsensus: Proposing without a SecretKey");
+
     protocol::TMProposeSet prop;
 
     prop.set_currenttxhash(
@@ -214,7 +215,8 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger().begin(), proposal.prevLedger().size());
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-    prop.set_nodepubkey(validatorKeys_.publicKey->data(), validatorKeys_.publicKey->size());
+    prop.set_nodepubkey(
+        validatorKeys_.publicKey->data(), validatorKeys_.publicKey->size());
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,
@@ -224,7 +226,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.position());
 
     auto sig = signDigest(
-        *validatorKeys_.publicKey, validatorKeys_.secretKey, signingHash);
+        *validatorKeys_.publicKey, *validatorKeys_.secretKey, signingHash);
 
     prop.set_signature(sig.data(), sig.size());
 
@@ -808,10 +810,16 @@ RCLConsensus::Adaptor::validate(
         return;
     }
 
+    if (!validatorKeys_.secretKey)
+    {
+        LogicError("RCLConsensus::validate: SecretKey of Validator not found");
+        return;
+    }
+
     auto v = std::make_shared<STValidation>(
         lastValidationTime_,
         *validatorKeys_.publicKey,
-        validatorKeys_.secretKey,
+        *validatorKeys_.secretKey,
         calcNodeID(*validatorKeys_.masterPublicKey),
         [&](STValidation& v) {
             v.setFieldH256(sfLedgerHash, ledger.id());
