@@ -31,6 +31,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/unordered_map.hpp>
 #include <mutex>
 #include <numeric>
 #include <shared_mutex>
@@ -234,10 +235,10 @@ class ValidatorList
     std::optional<std::size_t> minimumQuorum_;
 
     // Published lists stored by publisher master public key
-    hash_map<PublicKey, PublisherListCollection> publisherLists_;
+    boost::unordered_map<PublicKey, PublisherListCollection> publisherLists_;
 
     // Listed master public keys with the number of lists they appear on
-    hash_map<PublicKey, std::size_t> keyListings_;
+    boost::unordered_map<PublicKey, std::size_t> keyListings_;
 
     // The current list of trusted master keys
     hash_set<PublicKey> trustedMasterKeys_;

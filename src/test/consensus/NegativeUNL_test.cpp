@@ -26,6 +26,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/ledger/View.h>
 #include <ripple/rpc/impl/GRPCHelpers.h>
+#include <boost/unordered_map.hpp>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -84,7 +85,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass);
 bool
 VerifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
-    hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq);
+    boost::unordered_map<PublicKey, std::uint32_t> nUnlLedgerSeq);
 
 /**
  * Count the number of Tx in a TxSet
@@ -239,7 +240,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
-        hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq;
+        boost::unordered_map<PublicKey, std::uint32_t> nUnlLedgerSeq;
 
         {
             //(1) the ledger after genesis, not a flag ledger
@@ -2040,7 +2041,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 bool
 VerifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
-    hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq)
+    boost::unordered_map<PublicKey, std::uint32_t> nUnlLedgerSeq)
 {
     auto sle = l->read(keylet::negativeUNL());
     if (!sle)

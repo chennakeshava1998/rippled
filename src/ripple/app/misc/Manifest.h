@@ -24,6 +24,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
+#include <boost/unordered_map.hpp>
 
 #include <optional>
 #include <shared_mutex>
@@ -240,10 +241,10 @@ private:
     std::shared_mutex mutable mutex_;
 
     /** Active manifests stored by master public key. */
-    hash_map<PublicKey, Manifest> map_;
+    boost::unordered_map<PublicKey, Manifest> map_;
 
     /** Master public keys stored by current ephemeral public key. */
-    hash_map<PublicKey, PublicKey> signingToMasterKeys_;
+    boost::unordered_map<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
 

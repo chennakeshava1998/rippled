@@ -395,6 +395,7 @@ class logstream_buf : public std::basic_stringbuf<CharT, Traits>
         if (strm_)
             strm_ << s;
     }
+
 public:
     explicit logstream_buf(beast::Journal::Stream const& strm) : strm_(strm)
     {

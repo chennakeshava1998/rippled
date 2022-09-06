@@ -44,6 +44,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <algorithm>
 #include <memory>
@@ -603,7 +604,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -628,7 +629,7 @@ PeerImp::fail(std::string const& name, error_code ec)
     close();
 }
 
-hash_map<PublicKey, NodeStore::ShardInfo> const
+boost::unordered_map<PublicKey, NodeStore::ShardInfo> const
 PeerImp::getPeerShardInfos() const
 {
     std::lock_guard l{shardInfoMutex_};

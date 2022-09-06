@@ -268,4 +268,22 @@ calcAccountID(PublicKey const& pk);
 
 }  // namespace ripple
 
+// A template specialization of boost::hash is defined here. It is used in the
+// boost::unordered_map data structure, whenever PublicKey is used as a Key of
+// the unordered_map.
+namespace boost {
+/** boost::hash support. */
+template <>
+struct hash<::ripple::PublicKey>
+{
+    explicit hash() = default;
+
+    std::size_t
+    operator()(::ripple::PublicKey const& pk) const
+    {
+        return ::beast::uhash<>{}(pk);
+    }
+};
+}  // namespace boost
+
 #endif

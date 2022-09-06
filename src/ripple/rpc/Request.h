@@ -34,8 +34,7 @@ namespace RPC {
 struct Request
 {
     [[deprecated]] explicit Request(
-        beast::Journal
-            journal_,
+        beast::Journal journal_,
         std::string const& method_,
         Json::Value& params_,
         Application& app_)

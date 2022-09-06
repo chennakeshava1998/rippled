@@ -39,6 +39,7 @@
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
@@ -734,7 +735,7 @@ OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
     }
 
     // Combine shard info from peers
-    hash_map<PublicKey, NodeStore::ShardInfo> peerShardInfo;
+    boost::unordered_map<PublicKey, NodeStore::ShardInfo> peerShardInfo;
     for_each([&](std::shared_ptr<PeerImp>&& peer) {
         auto const psi{peer->getPeerShardInfos()};
         for (auto const& [publicKey, shardInfo] : psi)
