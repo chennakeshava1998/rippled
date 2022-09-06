@@ -121,6 +121,17 @@ struct Manifest
     /// Returns manifest master key signature
     Blob
     getMasterSignature() const;
+
+    // this is declared as a friend function because it calls the (below
+    // defined) private constructor of Manifest class.
+    friend std::optional<Manifest>
+    deserializeManifest(Slice s);
+
+private:
+    explicit Manifest(PublicKey const& masterPK, std::uint32_t seq, Slice s)
+        : serialized(s.begin(), s.end()), masterKey(masterPK), sequence(seq)
+    {
+    }
 };
 
 /** Format the specified manifest to a string for debugging purposes. */

@@ -96,10 +96,7 @@ deserializeManifest(Slice s)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
-        Manifest m;
-        m.serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
-        m.masterKey = PublicKey(makeSlice(pk));
-        m.sequence = st.getFieldU32(sfSequence);
+        Manifest m(PublicKey(makeSlice(pk)), st.getFieldU32(sfSequence), s);
 
         if (st.isFieldPresent(sfDomain))
         {
