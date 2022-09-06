@@ -33,8 +33,9 @@ namespace RPC {
 
 struct Request
 {
-    explicit Request(
-        beast::Journal journal_,
+    [[deprecated]] explicit Request(
+        beast::Journal
+            journal_,
         std::string const& method_,
         Json::Value& params_,
         Application& app_)
@@ -64,9 +65,13 @@ struct Request
     // [in] The Application instance
     Application& app;
 
-private:
     Request&
-    operator=(Request const&);
+    operator=(Request const&) = delete;
+    Request(Request const&) = delete;
+
+    Request(Request&&) = delete;
+    Request&
+    operator=(Request&&) = delete;
 };
 
 }  // namespace RPC
