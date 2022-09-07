@@ -194,8 +194,8 @@ class TestPeer : public Peer
 
 public:
     TestPeer(bool enableLedgerReplay)
-        : ledgerReplayEnabled_(enableLedgerReplay)
-        , pk(randomKeyPair(KeyType::secp256k1).first)
+        : pk(randomKeyPair(KeyType::secp256k1).first)
+        , ledgerReplayEnabled_(enableLedgerReplay)
     {
     }
 
