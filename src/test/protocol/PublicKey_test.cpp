@@ -363,10 +363,10 @@ public:
         }
 
         // Try some random secret keys
-        std::array<PublicKey, 32> keys;
+        std::vector<PublicKey> keys;
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = derivePublicKey(keyType, randomSecretKey());
+        for (std::size_t i = 0; i < 32; ++i)
+            keys.push_back(derivePublicKey(keyType, randomSecretKey()));
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
@@ -434,31 +434,10 @@ public:
     }
 
     void
-    testMiscOperations()
-    {
-        testcase("Miscellaneous operations");
-
-        auto const pk1 = derivePublicKey(
-            KeyType::secp256k1,
-            generateSecretKey(
-                KeyType::secp256k1, generateSeed("masterpassphrase")));
-
-        PublicKey pk2(pk1);
-        BEAST_EXPECT(pk1 == pk2);
-        BEAST_EXPECT(pk2 == pk1);
-
-        PublicKey pk3;
-        pk3 = pk2;
-        BEAST_EXPECT(pk3 == pk2);
-        BEAST_EXPECT(pk1 == pk3);
-    }
-
-    void
     run() override
     {
         testBase58();
         testCanonical();
-        testMiscOperations();
     }
 };
 

@@ -51,7 +51,7 @@ convertBlobsToTxResult(
         std::make_shared<TxMeta>(tr->getID(), tr->getLedger(), rawMeta);
 
     to.emplace_back(std::move(tr), metaset);
-};
+}
 
 void
 saveLedgerAsync(Application& app, std::uint32_t seq)

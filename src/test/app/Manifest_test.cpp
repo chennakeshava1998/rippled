@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorList.h>
@@ -235,18 +234,6 @@ public:
             std::string{});  // Silence compiler warning.
     }
 
-    Manifest
-    clone(Manifest const& m)
-    {
-        Manifest m2;
-        m2.serialized = m.serialized;
-        m2.masterKey = m.masterKey;
-        m2.signingKey = m.signingKey;
-        m2.sequence = m.sequence;
-        m2.domain = m.domain;
-        return m2;
-    }
-
     void
     testLoadStore(ManifestCache& m)
     {
@@ -313,14 +300,16 @@ public:
             }
             {
                 // save should store all trusted master keys to db
-                PublicKey emptyLocalKey;
+                // Use a set optional value to correctly invoke the load function
+                PublicKey arbitraryPubKey(
+                    randomKeyPair(KeyType::secp256k1).first);
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
                 std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back(
                         toBase58(TokenType::NodePublic, man->masterKey));
-                unl->load(emptyLocalKey, s1, keys);
+                unl->load(arbitraryPubKey, s1, keys);
 
                 m.save(
                     *dbCon,
@@ -852,7 +841,9 @@ public:
 
                         BEAST_EXPECT(manifest);
                         BEAST_EXPECT(manifest->masterKey == pk);
-                        BEAST_EXPECT(manifest->signingKey == PublicKey());
+
+                        // A revoked Manifest must not contain ephemeral or master public key
+                        BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);
@@ -1013,6 +1004,13 @@ public:
                 sk_b, KeyType::ed25519, kp_b2.second, KeyType::ed25519, 2);
 
             auto const fake = s_b2.serialized + '\0';
+
+            auto clone = [this](Manifest const& m) {
+                auto m2 = deserializeManifest(m.serialized);
+                BEAST_EXPECT(m2.has_value());
+
+                return std::move(*m2);
+            };
 
             // applyManifest should accept new manifests with
             // higher sequence numbers

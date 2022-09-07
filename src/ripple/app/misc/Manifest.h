@@ -26,6 +26,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <boost/unordered_map.hpp>
 
+#include <boost/unordered_map.hpp>
 #include <optional>
 #include <shared_mutex>
 #include <string>
@@ -87,7 +88,7 @@ struct Manifest
     PublicKey masterKey;
 
     /// The ephemeral key associated with this manifest.
-    PublicKey signingKey;
+    std::optional<PublicKey> signingKey;
 
     /// The sequence number of this manifest.
     std::uint32_t sequence = 0;
@@ -95,7 +96,7 @@ struct Manifest
     /// The domain, if one was specified in the manifest; empty otherwise.
     std::string domain;
 
-    Manifest() = default;
+    Manifest() = delete;
     Manifest(Manifest const& other) = delete;
     Manifest&
     operator=(Manifest const& other) = delete;
@@ -240,6 +241,9 @@ private:
     beast::Journal j_;
     std::shared_mutex mutable mutex_;
 
+    // We use boost::unordered_map instead of std::unordered_map so that we
+    // don't have to forcibly default construct the key-values (PublicKey) of
+    // the map.
     /** Active manifests stored by master public key. */
     boost::unordered_map<PublicKey, Manifest> map_;
 

@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <ripple/app/ledger/BuildLedger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplay.h>
@@ -190,8 +189,13 @@ enum class PeerFeature {
  */
 class TestPeer : public Peer
 {
+    // for testing purposes, store a randomly generated public key
+    PublicKey pk;
+
 public:
-    TestPeer(bool enableLedgerReplay) : ledgerReplayEnabled_(enableLedgerReplay)
+    TestPeer(bool enableLedgerReplay)
+        : ledgerReplayEnabled_(enableLedgerReplay)
+        , pk(randomKeyPair(KeyType::secp256k1).first)
     {
     }
 
@@ -231,8 +235,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
-        return key;
+        return pk;
     }
     Json::Value
     json() override

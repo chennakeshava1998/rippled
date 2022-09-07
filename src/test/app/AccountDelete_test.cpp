@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -519,6 +518,7 @@ public:
         env.close();
 
         // Actually resurrect becky's account.
+        // This amount must be atleast as much as src/ripple/ledger/ReadView.h:accountReserve
         env(pay(alice, becky, XRP(20)));
         env.close();
 

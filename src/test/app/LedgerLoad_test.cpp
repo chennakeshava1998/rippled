@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/protocol/SField.h>
@@ -63,7 +62,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         retval.ledgerFile = td.file("ledgerdata.json");
 
         Env env{*this};
-        Account prev;
+        Account prev("prevAccount");
 
         for (auto i = 0; i < 20; ++i)
         {

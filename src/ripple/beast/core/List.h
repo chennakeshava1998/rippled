@@ -45,7 +45,8 @@ struct CopyConst<T const, U>
 {
     explicit CopyConst() = default;
 
-    using type = typename std::remove_const<U>::type const;
+    using type =
+        typename std::remove_const<U>::type const;
 };
 /** @} */
 

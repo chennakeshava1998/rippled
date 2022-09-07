@@ -1580,7 +1580,7 @@ PeerImp::handleTransaction(
                 flags |= SF_TRUSTED;
             }
 
-            if (app_.getValidationPublicKey().empty())
+            if (app_.getValidationPublicKey())
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
@@ -2547,6 +2547,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                     return calcNodeID(
                         app_.validatorManifests().getMasterKey(pk));
                 },
+                [this](PublicKey const& pk) {
+                    return app_.validatorManifests().getMasterKey(pk);
+                },
                 false);
             val->setSeen(closeTime);
         }
@@ -2606,7 +2609,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 #ifdef DEBUG
                 ret += " " +
                     std::to_string(val->getFieldU32(sfLedgerSequence)) + ": " +
-                    to_string(val->getNodeID());
+                    to_string(val->getSignerPublic());
 #endif
 
                 return ret;
@@ -2924,8 +2927,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
 
+    std::optional<PublicKey const> pk = app_.getValidationPublicKey();
+    if (!pk)
+    {
+        JLOG(p_journal_.debug()) << "onMessage: TMSquelch discarding "
+                                    "non-validator squelch, PublicKey not set ";
+        return;
+    }
     // Ignore the squelch for validator's own messages.
-    if (key == app_.getValidationPublicKey())
+    if (key == *pk)
     {
         JLOG(p_journal_.debug())
             << "onMessage: TMSquelch discarding validator's squelch " << slice;

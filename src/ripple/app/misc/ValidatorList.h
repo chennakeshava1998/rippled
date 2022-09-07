@@ -248,7 +248,14 @@ class ValidatorList
     // a seed, the signing key is the same as the master key.
     hash_set<PublicKey> trustedSigningKeys_;
 
-    PublicKey localPubKey_;
+    std::optional<PublicKey> localPubKey_;
+
+    // This data member contains a PublicKey instance filled with zeros. It is
+    // used to store trusted information that has not been published by any
+    // validator, but it is manually specified in the config file.
+    // PublicKey associated with manually configured validators in config
+    // FIXME: Refactor this file and remove the need for a zero public key
+    PublicKey configID_;
 
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
@@ -332,7 +339,7 @@ public:
     */
     bool
     load(
-        PublicKey const& localSigningKey,
+        std::optional<PublicKey> localSigningKey,
         std::vector<std::string> const& configKeys,
         std::vector<std::string> const& publisherKeys);
 
@@ -560,7 +567,7 @@ public:
 
         May be called concurrently
     */
-    PublicKey
+    std::optional<PublicKey>
     localPublicKey() const;
 
     /** Invokes the callback once for every listed validation public key.
@@ -844,17 +851,29 @@ private:
 
     /** Check response for trusted valid published list
 
-        @return `ListDisposition::accepted` if list can be applied
+        @return An instance of VerificationResult is returned
+        `VerificationResult::ListDisposition::accepted` if list can be applied
 
         @par Thread Safety
 
         Calling public member function is expected to lock mutex
     */
-    ListDisposition
+    struct VerificationResult
+    {
+        ListDisposition disposition;
+        std::optional<PublicKey> pk;
+        VerificationResult(
+            ListDisposition disposition_,
+            std::optional<PublicKey> pk_ = std::nullopt)
+            : disposition(disposition_), pk(pk_)
+        {
+        }
+    };
+
+    VerificationResult
     verify(
         lock_guard const&,
         Json::Value& list,
-        PublicKey& pubKey,
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature);

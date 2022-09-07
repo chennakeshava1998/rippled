@@ -23,9 +23,8 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <test/jtx/Env.h>
-
 #include <string>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace test {
@@ -76,21 +75,13 @@ public:
     void
     run() override
     {
-        // We're only using Env for its Journal.  That Journal gives better
-        // coverage in unit tests.
-        test::jtx::Env env{
-            *this,
-            test::jtx::envconfig(),
-            nullptr,
-            beast::severities::kDisabled};
-        beast::Journal journal{env.app().journal("ValidatorKeys_test")};
+        SuiteJournal journal("ValidatorKeys_test", *this);
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
             generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
         PublicKey const seedPublicKey =
             derivePublicKey(KeyType::secp256k1, seedSecretKey);
-        NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
         auto const tokenSecretKey =
@@ -101,13 +92,12 @@ public:
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);
-        NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
         {
             // No config -> no key but valid
             Config c;
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -119,7 +109,6 @@ public:
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.publicKey == seedPublicKey);
             BEAST_EXPECT(k.secretKey == seedSecretKey);
-            BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -131,7 +120,7 @@ public:
 
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -143,7 +132,6 @@ public:
 
             BEAST_EXPECT(k.publicKey == tokenPublicKey);
             BEAST_EXPECT(k.secretKey == tokenSecretKey);
-            BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -153,7 +141,7 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -165,7 +153,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -176,7 +164,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
     }

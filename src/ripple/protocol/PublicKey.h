@@ -59,13 +59,12 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    std::size_t size_ = 0;
-    std::uint8_t buf_[33];  // should be large enough
+    std::array<std::uint8_t, 33> buf_;
 
 public:
     using const_iterator = std::uint8_t const*;
 
-    PublicKey() = default;
+    [[deprecated]] PublicKey() = default;
     PublicKey(PublicKey const& other);
     PublicKey&
     operator=(PublicKey const& other);
@@ -77,64 +76,62 @@ public:
     */
     explicit PublicKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
-        return buf_;
+        return buf_.data();
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
-        return size_;
+        return buf_.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
-        return buf_;
+        return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
-        return buf_;
+        return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + size_;
+        return buf_.cend();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + size_;
+        return buf_.cend();
     }
 
-    bool
-    empty() const noexcept
-    {
-        return size_ == 0;
-    }
-
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, size_};
+        return makeSlice(buf_);
     }
 
     operator Slice() const noexcept
     {
         return slice();
     }
+
+    friend std::string
+    to_string(PublicKey const&);
 };
 
-/** Print the public key to a stream.
- */
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk);
+static_assert(std::is_default_constructible_v<PublicKey>);
+static_assert(std::is_copy_constructible_v<PublicKey>);
+static_assert(std::is_move_constructible_v<PublicKey>);
+static_assert(std::is_copy_assignable_v<PublicKey>);
+static_assert(std::is_move_assignable_v<PublicKey>);
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)

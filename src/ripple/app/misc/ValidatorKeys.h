@@ -36,10 +36,9 @@ class Config;
 class ValidatorKeys
 {
 public:
-    PublicKey masterPublicKey;
-    PublicKey publicKey;
+    std::optional<PublicKey> masterPublicKey;
+    std::optional<PublicKey> publicKey;
     SecretKey secretKey;
-    NodeID nodeID;
     std::string manifest;
     std::uint32_t sequence = 0;
 

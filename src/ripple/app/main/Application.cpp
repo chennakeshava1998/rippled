@@ -590,7 +590,7 @@ public:
         return nodeIdentity_;
     }
 
-    PublicKey const&
+    std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
         return validatorKeys_.publicKey;
@@ -1189,7 +1189,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (validatorKeys_.publicKey.size())
+    // If ValidatorKeys have a valid PublicKey
+    if (validatorKeys_.publicKey)
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports

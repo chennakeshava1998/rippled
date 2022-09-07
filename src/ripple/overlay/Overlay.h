@@ -24,6 +24,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/PeerSet.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/server/Handoff.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
