@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <boost/json.hpp>
 
 /** \brief JSON (JavaScript Object Notation).
  */
@@ -142,6 +143,14 @@ operator!=(StaticString x, std::string const& y)
  * It is possible to iterate over the list of a #objectValue values using
  * the getMemberNames() method.
  */
+
+// static, thread-local -> problematic for re-entrant multi-threaded code
+// return by value -> not helpful for assignment/update operations
+// type alias Json::Value with boost::json as a transparent wrapper -> check how much of the external codebase will break
+// reference proxy: just like a vector of bools, implement a wrapper class which owns the memory
+
+
+
 class Value
 {
     friend class ValueIteratorBase;
@@ -158,6 +167,11 @@ public:
     static const Int minInt;
     static const Int maxInt;
     static const UInt maxUInt;
+    Value(boost::json::value &other, ValueType type);
+    Value(const boost::json::value &other, ValueType type);
+
+    Value& boostJsonToJV(boost::json::value& inp) const;
+    Value& boostJsonToJV(const boost::json::value& inp) const;
 
 private:
     class CZString
@@ -431,6 +445,7 @@ private:
     } value_;
     ValueType type_ : 8;
     int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
+    boost::json::value jv_;
 };
 
 bool
@@ -677,6 +692,58 @@ public:
         return deref();
     }
 };
+
+Value& Value::boostJsonToJV(boost::json::value& inp) const {
+    ValueType type;
+
+    if (inp.is_string()) {
+        type = ValueType::stringValue;
+    } else if(inp.is_null()) {
+        type = ValueType::nullValue;
+    } else if(inp.is_array())
+        type=ValueType::arrayValue;
+    else if(inp.is_bool())
+        type=ValueType::booleanValue;
+    else if(inp.is_double())
+        type = ValueType::realValue;
+    else if(inp.is_int64())
+        type = ValueType::intValue;
+    else if(inp.is_uint64())
+        type = ValueType::uintValue;
+    else
+        type = ValueType::objectValue;
+
+    const Value v = Value(inp, type);
+    Value& copy = const_cast<Value &>(v);
+    return copy;
+}
+
+
+Value& Value::boostJsonToJV(const boost::json::value& inp) const {
+    ValueType type;
+
+    if (inp.is_string()) {
+        type = ValueType::stringValue;
+    } else if(inp.is_null()) {
+        type = ValueType::nullValue;
+    } else if(inp.is_array())
+        type=ValueType::arrayValue;
+    else if(inp.is_bool())
+        type=ValueType::booleanValue;
+    else if(inp.is_double())
+        type = ValueType::realValue;
+    else if(inp.is_int64())
+        type = ValueType::intValue;
+    else if(inp.is_uint64())
+        type = ValueType::uintValue;
+    else
+        type = ValueType::objectValue;
+
+    const Value v = Value(inp, type);
+    Value& copy = const_cast<Value &>(v);
+    return copy;
+}
+
 
 }  // namespace Json
 
