@@ -22,6 +22,7 @@
 
 #include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/json/json_value.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -29,8 +30,8 @@ namespace ripple {
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
-    Json::Value m_top;
-    std::vector<Json::Value*> m_stack;
+    boost::json::value m_top;
+    std::vector<boost::json::value*> m_stack;
 
 public:
     JsonPropertyStream();

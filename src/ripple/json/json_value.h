@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <boost/json.hpp>
 
 /** \brief JSON (JavaScript Object Notation).
  */
@@ -159,6 +160,12 @@ public:
     static const Int maxInt;
     static const UInt maxUInt;
 
+    boost::json::value jv_;
+
+    static Value boostJsonToJV(boost::json::value jv) {
+        return Value(jv, ValueType::nullValue);
+    }
+
 private:
     class CZString
     {
@@ -209,6 +216,10 @@ public:
     Json::Value obj_value(Json::objectValue); // {}
     \endcode
          */
+    Value(boost::json::value jv, ValueType type) {
+        jv_ = jv;
+        type_ = type;
+    }
     Value(ValueType type = nullValue);
     Value(Int value);
     Value(UInt value);
