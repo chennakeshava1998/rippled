@@ -31,11 +31,11 @@ namespace jtx {
 namespace deposit {
 
 /** Preauthorize for deposit.  Invoke as deposit::auth. */
-Json::Value
+boost::json::value
 auth(Account const& account, Account const& auth);
 
 /** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
-Json::Value
+boost::json::value
 unauth(Account const& account, Account const& unauth);
 
 }  // namespace deposit

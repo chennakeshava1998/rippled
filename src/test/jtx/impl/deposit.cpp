@@ -27,24 +27,24 @@ namespace jtx {
 namespace deposit {
 
 // Add DepositPreauth.
-Json::Value
+boost::json::value
 auth(jtx::Account const& account, jtx::Account const& auth)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfAuthorize.jsonName] = auth.human();
-    jv[sfTransactionType.jsonName] = jss::DepositPreauth;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = account.human();
+    jv[std::string{sfAuthorize.jsonName}] = auth.human();
+    jv[std::string{sfTransactionType.jsonName}] = jss::DepositPreauth;
     return jv;
 }
 
 // Remove DepositPreauth.
-Json::Value
+boost::json::value
 unauth(jtx::Account const& account, jtx::Account const& unauth)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfUnauthorize.jsonName] = unauth.human();
-    jv[sfTransactionType.jsonName] = jss::DepositPreauth;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = account.human();
+    jv[std::string{sfUnauthorize.jsonName}] = unauth.human();
+    jv[std::string{sfTransactionType.jsonName}] = jss::DepositPreauth;
     return jv;
 }
 

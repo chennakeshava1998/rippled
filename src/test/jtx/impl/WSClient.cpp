@@ -33,6 +33,7 @@
 #include <iostream>
 
 #include <ripple/beast/unit_test.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
@@ -43,9 +44,9 @@ class WSClientImpl : public WSClient
 
     struct msg
     {
-        Json::Value jv;
+        boost::json::value jv;
 
-        explicit msg(Json::Value&& jv_) : jv(jv_)
+        explicit msg(boost::json::value&& jv_) : jv(jv_)
         {
         }
     };
@@ -166,31 +167,39 @@ public:
         cleanup();
     }
 
-    Json::Value
-    invoke(std::string const& cmd, Json::Value const& params) override
+    bool comp(boost::json::value& jval) const {
+        return jval.as_object()[jss::type] == jss::response;
+    }
+
+    boost::json::value
+    invoke(std::string const& cmd, boost::json::value const& params) override
     {
         using boost::asio::buffer;
         using namespace std::chrono_literals;
 
         {
-            Json::Value jp;
-            if (params)
+            boost::json::value jp;
+            if (!params.as_object().empty())
                 jp = params;
             if (rpc_version_ == 2)
             {
-                jp[jss::method] = cmd;
-                jp[jss::jsonrpc] = "2.0";
-                jp[jss::ripplerpc] = "2.0";
-                jp[jss::id] = 5;
+                jp.as_object()[std::string{jss::method}] = cmd;
+                jp.as_object()[std::string{jss::jsonrpc}] = "2.0";
+                jp.as_object()[std::string{jss::ripplerpc}] = "2.0";
+                jp.as_object()[std::string{jss::id}] = 5;
             }
             else
-                jp[jss::command] = cmd;
-            auto const s = to_string(jp);
+                jp.as_object()[std::string{jss::command}] = cmd;
+            auto const s = serialize(jp);
             ws_.write_some(true, buffer(s));
         }
 
-        auto jv = findMsg(5s, [&](Json::Value const& jval) {
-            return jval[jss::type] == jss::response;
+//        auto jv = findMsg(5s, [&](boost::json::value const& jval) {
+//            return jval.as_object()[std::string{jss::type}] == std::string{jss::response};
+//        });
+
+        auto jv = findMsg(5s, [&](boost::json::value const& jval) {
+            return serialize(jval.as_object()[std::string{jss::type}]) == std::string{jss::response};
         });
         if (jv)
         {
@@ -198,11 +207,11 @@ public:
             jv->removeMember(jss::type);
             if ((*jv).isMember(jss::status) && (*jv)[jss::status] == jss::error)
             {
-                Json::Value ret;
-                ret[jss::result] = *jv;
+                boost::json::value ret;
+                ret.as_object()[std::string{jss::result}] = *jv;
                 if ((*jv).isMember(jss::error))
-                    ret[jss::error] = (*jv)[jss::error];
-                ret[jss::status] = jss::error;
+                    ret.as_object()[std::string{jss::error}] = (*jv)[jss::error];
+                ret.as_object()[std::string{jss::status}] = jss::error;
                 return ret;
             }
             if ((*jv).isMember(jss::status) && (*jv).isMember(jss::result))
@@ -212,7 +221,7 @@ public:
         return {};
     }
 
-    std::optional<Json::Value>
+    std::optional<boost::json::value>
     getMsg(std::chrono::milliseconds const& timeout) override
     {
         std::shared_ptr<msg> m;
@@ -226,10 +235,10 @@ public:
         return std::move(m->jv);
     }
 
-    std::optional<Json::Value>
+    std::optional<boost::json::value>
     findMsg(
         std::chrono::milliseconds const& timeout,
-        std::function<bool(Json::Value const&)> pred) override
+        std::function<bool(boost::json::value const&)> pred) override
     {
         std::shared_ptr<msg> m;
         {
@@ -270,9 +279,9 @@ private:
             return;
         }
 
-        Json::Value jv;
-        Json::Reader jr;
-        jr.parse(buffer_string(rb_.data()), jv);
+        boost::json::value jv = boost::json::parse(buffer_string(rb_.data()));
+//        Json::Reader jr;
+//        jr.parse(buffer_string(rb_.data()), jv);
         rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(std::move(jv));
         {

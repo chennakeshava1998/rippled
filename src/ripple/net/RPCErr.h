@@ -21,13 +21,13 @@
 #define RIPPLE_NET_RPCERR_H_INCLUDED
 
 #include <ripple/json/json_value.h>
-
+#include <boost/json.hpp>
 namespace ripple {
 
 // VFALCO NOTE these are deprecated
 bool
-isRpcError(Json::Value jvResult);
-Json::Value
+isRpcError(boost::json::value jvResult);
+boost::json::value
 rpcError(int iError);
 
 }  // namespace ripple

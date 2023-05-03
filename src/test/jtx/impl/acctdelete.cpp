@@ -25,13 +25,13 @@ namespace test {
 namespace jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
-Json::Value
+boost::json::value
 acctdelete(jtx::Account const& account, jtx::Account const& dest)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfDestination.jsonName] = dest.human();
-    jv[sfTransactionType.jsonName] = jss::AccountDelete;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = account.human();
+    jv[std::string{sfDestination.jsonName}] = dest.human();
+    jv[std::string{sfTransactionType.jsonName}] = jss::AccountDelete;
     return jv;
 }
 

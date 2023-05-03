@@ -21,7 +21,7 @@
 #include <array>
 #include <cassert>
 #include <stdexcept>
-
+#include <boost/json.hpp>
 namespace ripple {
 namespace RPC {
 
@@ -191,9 +191,9 @@ make_error(error_code_i code, std::string const& message)
 }
 
 bool
-contains_error(Json::Value const& json)
+contains_error(boost::json::value const& json)
 {
-    if (json.isObject() && json.isMember(jss::error))
+    if (json.is_object() && json.as_object().contains(jss::error.c_str()))
         return true;
     return false;
 }

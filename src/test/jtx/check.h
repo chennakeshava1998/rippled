@@ -32,14 +32,14 @@ namespace jtx {
 namespace check {
 
 /** Create a check. */
-Json::Value
+boost::json::value
 create(
     jtx::Account const& account,
     jtx::Account const& dest,
     STAmount const& sendMax);
 
 /** Cash a check requiring that a specific amount be delivered. */
-Json::Value
+boost::json::value
 cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
 
 /** Type used to specify DeliverMin for cashing a check. */
@@ -52,14 +52,14 @@ struct DeliverMin
 };
 
 /** Cash a check requiring that at least a minimum amount be delivered. */
-Json::Value
+boost::json::value
 cash(
     jtx::Account const& dest,
     uint256 const& checkId,
     DeliverMin const& atLeast);
 
 /** Cancel a check. */
-Json::Value
+boost::json::value
 cancel(jtx::Account const& dest, uint256 const& checkId);
 
 }  // namespace check

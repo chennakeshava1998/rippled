@@ -38,7 +38,7 @@ public:
         @param name The name of the JSON field, used in diagnostics.
         @param json The JSON-RPC to parse.
     */
-    STParsedJSONObject(std::string const& name, Json::Value const& json);
+    STParsedJSONObject(std::string const& name, boost::json::value const& json);
 
     STParsedJSONObject() = delete;
     STParsedJSONObject(STParsedJSONObject const&) = delete;
@@ -66,7 +66,7 @@ public:
         @param name The name of the JSON field, used in diagnostics.
         @param json The JSON-RPC to parse.
     */
-    STParsedJSONArray(std::string const& name, Json::Value const& json);
+    STParsedJSONArray(std::string const& name, boost::json::value const& json);
 
     STParsedJSONArray() = delete;
     STParsedJSONArray(STParsedJSONArray const&) = delete;

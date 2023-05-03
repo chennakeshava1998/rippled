@@ -493,17 +493,17 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
 }
 
 void
-STAmount::setJson(Json::Value& elem) const
+STAmount::setJson(boost::json::value& elem) const
 {
-    elem = Json::objectValue;
+    elem.emplace_object();
 
     if (!mIsNative)
     {
         // It is an error for currency or issuer not to be specified for valid
         // json.
-        elem[jss::value] = getText();
-        elem[jss::currency] = to_string(mIssue.currency);
-        elem[jss::issuer] = to_string(mIssue.account);
+        elem.as_object()[std::string{jss::value}] = getText();
+        elem.as_object()[std::string{jss::currency}] = to_string(mIssue.currency);
+        elem.as_object()[std::string{jss::issuer}] = to_string(mIssue.account);
     }
     else
     {
@@ -631,9 +631,9 @@ STAmount::getText() const
     return ret;
 }
 
-Json::Value STAmount::getJson(JsonOptions) const
+boost::json::value STAmount::getJson(JsonOptions) const
 {
-    Json::Value elem;
+    boost::json::value elem;
     setJson(elem);
     return elem;
 }
@@ -905,37 +905,54 @@ amountFromString(Issue const& issue, std::string const& amount)
 }
 
 STAmount
-amountFromJson(SField const& name, Json::Value const& v)
+amountFromJson(SField const& name, boost::json::value const& v)
 {
     STAmount::mantissa_type mantissa = 0;
     STAmount::exponent_type exponent = 0;
     bool negative = false;
     Issue issue;
 
-    Json::Value value;
-    Json::Value currency;
-    Json::Value issuer;
+    boost::json::value value;
+    boost::json::value currency;
+    boost::json::value issuer;
 
-    if (v.isNull())
+    if (v.is_null())
     {
         Throw<std::runtime_error>(
             "XRP may not be specified with a null Json value");
     }
-    else if (v.isObject())
+    else if (v.is_object())
     {
-        value = v[jss::value];
-        currency = v[jss::currency];
-        issuer = v[jss::issuer];
+        value = v.as_object().at(std::string{jss::value});
+        currency = v.as_object().at(std::string{jss::currency});
+        issuer = v.as_object().at(std::string{jss::issuer});
     }
-    else if (v.isArray())
+    else if (v.is_array())
     {
-        value = v.get(Json::UInt(0), 0);
-        currency = v.get(Json::UInt(1), Json::nullValue);
-        issuer = v.get(Json::UInt(2), Json::nullValue);
+        int vSize = v.as_array().size();
+        if (vSize > 0) {
+            value = v.as_array().at(0);
+        } else {
+            value.emplace_uint64() = 0;
+        }
+//        value = v.get(Json::UInt(0), 0);
+//        currency = v.get(Json::UInt(1), Json::nullValue);
+        if (vSize > 1) {
+            currency = v.as_array().at(1);
+        } else {
+            currency.emplace_null();
+        }
+
+//        issuer = v.get(Json::UInt(2), Json::nullValue);
+        if (vSize > 2) {
+            issuer = v.as_array().at(2);
+        } else {
+            issuer.emplace_null();
+        }
     }
-    else if (v.isString())
+    else if (v.is_string())
     {
-        std::string val = v.asString();
+        std::string val = serialize(v.as_string());
         std::vector<std::string> elements;
         boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
 
@@ -955,47 +972,47 @@ amountFromJson(SField const& name, Json::Value const& v)
         value = v;
     }
 
-    bool const native = !currency.isString() || currency.asString().empty() ||
-        (currency.asString() == systemCurrencyCode());
+    bool const native = !currency.is_string() || currency.as_string().empty() ||
+        (currency.as_string() == systemCurrencyCode());
 
     if (native)
     {
-        if (v.isObjectOrNull())
+        if (v.is_object() || v.is_null())
             Throw<std::runtime_error>("XRP may not be specified as an object");
         issue = xrpIssue();
     }
     else
     {
         // non-XRP
-        if (!to_currency(issue.currency, currency.asString()))
+        if (!to_currency(issue.currency, serialize(currency.as_string())))
             Throw<std::runtime_error>("invalid currency");
 
-        if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
+        if (!issuer.is_string() || !to_issuer(issue.account, serialize(issuer.as_string())))
             Throw<std::runtime_error>("invalid issuer");
 
         if (isXRP(issue.currency))
             Throw<std::runtime_error>("invalid issuer");
     }
 
-    if (value.isInt())
+    if (value.is_int64())
     {
-        if (value.asInt() >= 0)
+        if (value.as_int64() >= 0)
         {
-            mantissa = value.asInt();
+            mantissa = value.as_int64();
         }
         else
         {
-            mantissa = -value.asInt();
+            mantissa = -value.as_int64();
             negative = true;
         }
     }
-    else if (value.isUInt())
+    else if (value.is_uint64())
     {
-        mantissa = v.asUInt();
+        mantissa = v.as_uint64();
     }
-    else if (value.isString())
+    else if (value.is_string())
     {
-        auto const ret = amountFromString(issue, value.asString());
+        auto const ret = amountFromString(issue, serialize(value.as_string()));
 
         mantissa = ret.mantissa();
         exponent = ret.exponent();
@@ -1010,7 +1027,7 @@ amountFromJson(SField const& name, Json::Value const& v)
 }
 
 bool
-amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource)
+amountFromJsonNoThrow(STAmount& result, boost::json::value const& jvSource)
 {
     try
     {

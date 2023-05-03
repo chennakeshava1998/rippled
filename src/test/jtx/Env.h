@@ -279,13 +279,13 @@ public:
         the correct JSON as per the arguments.
     */
     template <class... Args>
-    Json::Value
+    boost::json::value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    boost::json::value
     rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
@@ -449,7 +449,7 @@ public:
         This will apply funclets and autofill.
     */
     template <class JsonValue, class... FN>
-    Json::Value
+    boost::json::value
     json(JsonValue&& jv, FN const&... fN)
     {
         auto tj = jt(std::forward<JsonValue>(jv), fN...);
@@ -471,7 +471,7 @@ public:
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static std::pair<TER, bool>
-    parseResult(Json::Value const& jr);
+    parseResult(boost::json::value const& jr);
 
     /** Submit an existing JTx.
         This calls postconditions.
@@ -483,7 +483,7 @@ public:
         This calls postconditions.
     */
     void
-    sign_and_submit(JTx const& jt, Json::Value params = Json::nullValue);
+    sign_and_submit(JTx const& jt, boost::json::value params = Json::nullValue);
 
     /** Check expected postconditions
         of JTx submission.
@@ -640,7 +640,7 @@ protected:
     uint256 txid_;
     TER ter_ = tesSUCCESS;
 
-    Json::Value
+    boost::json::value
     do_rpc(
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
@@ -683,7 +683,7 @@ protected:
 };
 
 template <class... Args>
-Json::Value
+boost::json::value
 Env::rpc(
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
@@ -694,7 +694,7 @@ Env::rpc(
 }
 
 template <class... Args>
-Json::Value
+boost::json::value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
     return rpc(

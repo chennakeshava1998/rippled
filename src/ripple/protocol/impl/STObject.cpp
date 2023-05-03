@@ -721,10 +721,10 @@ STObject::setFieldArray(SField const& field, STArray const& v)
     setFieldUsingAssignment(field, v);
 }
 
-Json::Value
+boost::json::value
 STObject::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     for (auto const& elem : v_)
     {

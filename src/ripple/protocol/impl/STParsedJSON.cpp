@@ -189,7 +189,7 @@ parseLeaf(
     std::string const& json_name,
     std::string const& fieldName,
     SField const* name,
-    Json::Value const& value,
+    boost::json::value const& value,
     Json::Value& error)
 {
     std::optional<detail::STVar> ret;
@@ -211,9 +211,9 @@ parseLeaf(
                     std::numeric_limits<std::uint8_t>::min();
                 constexpr auto maxValue =
                     std::numeric_limits<std::uint8_t>::max();
-                if (value.isString())
+                if (value.is_string())
                 {
-                    std::string const strValue = value.asString();
+                    std::string const strValue = serialize(value.as_string());
 
                     if (!strValue.empty() &&
                         ((strValue[0] < '0') || (strValue[0] > '9')))
@@ -246,27 +246,27 @@ parseLeaf(
                             beast::lexicalCastThrow<std::uint8_t>(strValue));
                     }
                 }
-                else if (value.isInt())
+                else if (value.is_int64())
                 {
-                    if (value.asInt() < minValue || value.asInt() > maxValue)
+                    if (value.as_int64() < minValue || value.as_int64() > maxValue)
                     {
                         error = out_of_range(json_name, fieldName);
                         return ret;
                     }
 
                     ret = detail::make_stvar<STUInt8>(
-                        field, static_cast<std::uint8_t>(value.asInt()));
+                        field, static_cast<std::uint8_t>(value.as_int64()));
                 }
-                else if (value.isUInt())
+                else if (value.is_uint64())
                 {
-                    if (value.asUInt() > maxValue)
+                    if (value.as_uint64() > maxValue)
                     {
                         error = out_of_range(json_name, fieldName);
                         return ret;
                     }
 
                     ret = detail::make_stvar<STUInt8>(
-                        field, static_cast<std::uint8_t>(value.asUInt()));
+                        field, static_cast<std::uint8_t>(value.as_uint64()));
                 }
                 else
                 {
@@ -284,9 +284,9 @@ parseLeaf(
         case STI_UINT16:
             try
             {
-                if (value.isString())
+                if (value.is_string())
                 {
-                    std::string const strValue = value.asString();
+                    std::string const strValue = serialize(value.as_string());
 
                     if (!strValue.empty() &&
                         ((strValue[0] < '0') || (strValue[0] > '9')))
@@ -326,15 +326,15 @@ parseLeaf(
                             beast::lexicalCastThrow<std::uint16_t>(strValue));
                     }
                 }
-                else if (value.isInt())
+                else if (value.is_int64())
                 {
                     ret = detail::make_stvar<STUInt16>(
-                        field, to_unsigned<std::uint16_t>(value.asInt()));
+                        field, to_unsigned<std::uint16_t>(value.as_int64()));
                 }
-                else if (value.isUInt())
+                else if (value.is_uint64())
                 {
                     ret = detail::make_stvar<STUInt16>(
-                        field, to_unsigned<std::uint16_t>(value.asUInt()));
+                        field, to_unsigned<std::uint16_t>(value.as_uint64()));
                 }
                 else
                 {
@@ -353,22 +353,23 @@ parseLeaf(
         case STI_UINT32:
             try
             {
-                if (value.isString())
+                if (value.is_string())
                 {
                     ret = detail::make_stvar<STUInt32>(
                         field,
                         beast::lexicalCastThrow<std::uint32_t>(
-                            value.asString()));
+                            serialize(value.as_string())));
                 }
-                else if (value.isInt())
+                else if (value.is_int64())
                 {
+                    // TODO: Is it safe to cast into uint_64? int_64 causes discrepency in sizes
                     ret = detail::make_stvar<STUInt32>(
-                        field, to_unsigned<std::uint32_t>(value.asInt()));
+                        field, to_unsigned<std::uint32_t>(value.as_uint64()));
                 }
-                else if (value.isUInt())
+                else if (value.is_uint64())
                 {
-                    ret = detail::make_stvar<STUInt32>(
-                        field, safe_cast<std::uint32_t>(value.asUInt()));
+                    ret = detail::make_stvar<STUInt64>(
+                        field, safe_cast<std::uint64_t>(value.as_uint64()));
                 }
                 else
                 {
@@ -387,9 +388,9 @@ parseLeaf(
         case STI_UINT64:
             try
             {
-                if (value.isString())
+                if (value.is_string())
                 {
-                    auto const str = value.asString();
+                    auto const str = value.as_string();
 
                     std::uint64_t val;
 
@@ -401,15 +402,15 @@ parseLeaf(
 
                     ret = detail::make_stvar<STUInt64>(field, val);
                 }
-                else if (value.isInt())
+                else if (value.is_int64())
                 {
                     ret = detail::make_stvar<STUInt64>(
-                        field, to_unsigned<std::uint64_t>(value.asInt()));
+                        field, to_unsigned<std::uint64_t>(value.as_int64()));
                 }
-                else if (value.isUInt())
+                else if (value.is_uint64())
                 {
                     ret = detail::make_stvar<STUInt64>(
-                        field, safe_cast<std::uint64_t>(value.asUInt()));
+                        field, safe_cast<std::uint64_t>(value.as_uint64()));
                 }
                 else
                 {
@@ -426,7 +427,7 @@ parseLeaf(
             break;
 
         case STI_UINT128: {
-            if (!value.isString())
+            if (!value.is_string())
             {
                 error = bad_type(json_name, fieldName);
                 return ret;
@@ -434,7 +435,7 @@ parseLeaf(
 
             uint128 num;
 
-            if (auto const s = value.asString(); !num.parseHex(s))
+            if (auto const s = value.as_string(); !num.parseHex(s))
             {
                 if (!s.empty())
                 {
@@ -450,7 +451,7 @@ parseLeaf(
         }
 
         case STI_UINT160: {
-            if (!value.isString())
+            if (!value.is_string())
             {
                 error = bad_type(json_name, fieldName);
                 return ret;
@@ -458,7 +459,7 @@ parseLeaf(
 
             uint160 num;
 
-            if (auto const s = value.asString(); !num.parseHex(s))
+            if (auto const s = value.as_string(); !num.parseHex(s))
             {
                 if (!s.empty())
                 {
@@ -474,7 +475,7 @@ parseLeaf(
         }
 
         case STI_UINT256: {
-            if (!value.isString())
+            if (!value.is_string())
             {
                 error = bad_type(json_name, fieldName);
                 return ret;
@@ -482,7 +483,7 @@ parseLeaf(
 
             uint256 num;
 
-            if (auto const s = value.asString(); !num.parseHex(s))
+            if (auto const s = value.as_string(); !num.parseHex(s))
             {
                 if (!s.empty())
                 {
@@ -498,7 +499,7 @@ parseLeaf(
         }
 
         case STI_VL:
-            if (!value.isString())
+            if (!value.is_string())
             {
                 error = bad_type(json_name, fieldName);
                 return ret;
@@ -506,7 +507,7 @@ parseLeaf(
 
             try
             {
-                if (auto vBlob = strUnHex(value.asString()))
+                if (auto vBlob = strUnHex(serialize(value.as_string())))
                 {
                     ret = detail::make_stvar<STBlob>(
                         field, vBlob->data(), vBlob->size());
@@ -539,7 +540,7 @@ parseLeaf(
             break;
 
         case STI_VECTOR256:
-            if (!value.isArrayOrNull())
+            if (!(value.is_array() || value.is_null()))
             {
                 error = array_expected(json_name, fieldName);
                 return ret;
@@ -548,10 +549,10 @@ parseLeaf(
             try
             {
                 STVector256 tail(field);
-                for (Json::UInt i = 0; value.isValidIndex(i); ++i)
+                for (std::uint64_t i = 0; i < value.as_array().size(); ++i)
                 {
                     uint256 s;
-                    if (!s.parseHex(value[i].asString()))
+                    if (!s.parseHex(value.as_array()[i].as_string()))
                         Throw<std::invalid_argument>("invalid data");
                     tail.push_back(s);
                 }
@@ -566,7 +567,7 @@ parseLeaf(
             break;
 
         case STI_PATHSET:
-            if (!value.isArrayOrNull())
+            if (!(value.is_array() || value.is_null()))
             {
                 error = array_expected(json_name, fieldName);
                 return ret;
@@ -576,11 +577,11 @@ parseLeaf(
             {
                 STPathSet tail(field);
 
-                for (Json::UInt i = 0; value.isValidIndex(i); ++i)
+                for (std::uint64_t i = 0; i < value.as_array().size(); ++i)
                 {
                     STPath p;
 
-                    if (!value[i].isArrayOrNull())
+                    if (!(value.as_array()[i].is_array() || value.as_array()[i].is_null()))
                     {
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "]";
@@ -588,7 +589,7 @@ parseLeaf(
                         return ret;
                     }
 
-                    for (Json::UInt j = 0; value[i].isValidIndex(j); ++j)
+                    for (std::uint64_t j = 0; j < value.as_array()[i].as_array().size(); ++j)
                     {
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "][" << j << "]";
@@ -598,25 +599,25 @@ parseLeaf(
                         // each element in this path has some combination of
                         // account, currency, or issuer
 
-                        Json::Value pathEl = value[i][j];
+                        boost::json::value pathEl = value.as_array()[i].as_array()[j];
 
-                        if (!pathEl.isObject())
+                        if (!pathEl.is_object())
                         {
                             error = not_an_object(element_name);
                             return ret;
                         }
 
-                        Json::Value const& account = pathEl["account"];
-                        Json::Value const& currency = pathEl["currency"];
-                        Json::Value const& issuer = pathEl["issuer"];
+                        boost::json::value const& account = pathEl.as_object()["account"];
+                        boost::json::value const& currency = pathEl.as_object()["currency"];
+                        boost::json::value const& issuer = pathEl.as_object()["issuer"];
                         bool hasCurrency = false;
                         AccountID uAccount, uIssuer;
                         Currency uCurrency;
 
-                        if (account)
+                        if (!account.is_null())
                         {
                             // human account id
-                            if (!account.isString())
+                            if (!account.is_string())
                             {
                                 error =
                                     string_expected(element_name, "account");
@@ -625,10 +626,10 @@ parseLeaf(
 
                             // If we have what looks like a 160-bit hex value,
                             // we set it, otherwise, we assume it's an AccountID
-                            if (!uAccount.parseHex(account.asString()))
+                            if (!uAccount.parseHex(account.as_string()))
                             {
                                 auto const a =
-                                    parseBase58<AccountID>(account.asString());
+                                    parseBase58<AccountID>(serialize(account.as_string()));
                                 if (!a)
                                 {
                                     error =
@@ -639,10 +640,10 @@ parseLeaf(
                             }
                         }
 
-                        if (currency)
+                        if (!currency.is_null())
                         {
                             // human currency
-                            if (!currency.isString())
+                            if (!currency.is_string())
                             {
                                 error =
                                     string_expected(element_name, "currency");
@@ -651,10 +652,10 @@ parseLeaf(
 
                             hasCurrency = true;
 
-                            if (!uCurrency.parseHex(currency.asString()))
+                            if (!uCurrency.parseHex(currency.as_string()))
                             {
                                 if (!to_currency(
-                                        uCurrency, currency.asString()))
+                                        uCurrency, serialize(currency.as_string())))
                                 {
                                     error =
                                         invalid_data(element_name, "currency");
@@ -663,19 +664,19 @@ parseLeaf(
                             }
                         }
 
-                        if (issuer)
+                        if (!issuer.is_null())
                         {
                             // human account id
-                            if (!issuer.isString())
+                            if (!issuer.is_string())
                             {
                                 error = string_expected(element_name, "issuer");
                                 return ret;
                             }
 
-                            if (!uIssuer.parseHex(issuer.asString()))
+                            if (!uIssuer.parseHex(issuer.as_string()))
                             {
                                 auto const a =
-                                    parseBase58<AccountID>(issuer.asString());
+                                    parseBase58<AccountID>(serialize(issuer.as_string()));
                                 if (!a)
                                 {
                                     error =
@@ -703,13 +704,13 @@ parseLeaf(
             break;
 
         case STI_ACCOUNT: {
-            if (!value.isString())
+            if (!value.is_string())
             {
                 error = bad_type(json_name, fieldName);
                 return ret;
             }
 
-            std::string const strValue = value.asString();
+            std::string const strValue = serialize(value.as_string());
 
             try
             {
@@ -744,7 +745,7 @@ static const int maxDepth = 64;
 static std::optional<detail::STVar>
 parseArray(
     std::string const& json_name,
-    Json::Value const& json,
+    boost::json::value const& json,
     SField const& inName,
     int depth,
     Json::Value& error);
@@ -752,12 +753,12 @@ parseArray(
 static std::optional<STObject>
 parseObject(
     std::string const& json_name,
-    Json::Value const& json,
+    boost::json::value const& json,
     SField const& inName,
     int depth,
     Json::Value& error)
 {
-    if (!json.isObjectOrNull())
+    if (!(json.is_object() || json.is_null()))
     {
         error = not_an_object(json_name);
         return std::nullopt;
@@ -773,15 +774,15 @@ parseObject(
     {
         STObject data(inName);
 
-        for (auto const& fieldName : json.getMemberNames())
+        for (auto const& fieldName : json.as_object())
         {
-            Json::Value const& value = json[fieldName];
+            boost::json::value const& fieldNameVal = fieldName.value();
 
-            auto const& field = SField::getField(fieldName);
+            auto const& field = SField::getField(std::string{fieldName.key()});
 
             if (field == sfInvalid)
             {
-                error = unknown_field(json_name, fieldName);
+                error = unknown_field(json_name, std::string{fieldName.key()});
                 return std::nullopt;
             }
 
@@ -792,17 +793,17 @@ parseObject(
                 case STI_TRANSACTION:
                 case STI_LEDGERENTRY:
                 case STI_VALIDATION:
-                    if (!value.isObject())
+                    if (!fieldNameVal.is_object())
                     {
-                        error = not_an_object(json_name, fieldName);
+                        error = not_an_object(json_name, std::string{fieldName.key()});
                         return std::nullopt;
                     }
 
                     try
                     {
                         auto ret = parseObject(
-                            json_name + "." + fieldName,
-                            value,
+                            json_name + "." + std::string{fieldName.key()},
+                            fieldNameVal,
                             field,
                             depth + 1,
                             error);
@@ -812,7 +813,7 @@ parseObject(
                     }
                     catch (std::exception const&)
                     {
-                        error = invalid_data(json_name, fieldName);
+                        error = invalid_data(json_name, std::string{fieldName.key()});
                         return std::nullopt;
                     }
 
@@ -823,8 +824,8 @@ parseObject(
                     try
                     {
                         auto array = parseArray(
-                            json_name + "." + fieldName,
-                            value,
+                            json_name + "." + std::string{fieldName.key()},
+                            fieldNameVal,
                             field,
                             depth + 1,
                             error);
@@ -834,7 +835,7 @@ parseObject(
                     }
                     catch (std::exception const&)
                     {
-                        error = invalid_data(json_name, fieldName);
+                        error = invalid_data(json_name, std::string{fieldName.key()});
                         return std::nullopt;
                     }
 
@@ -843,7 +844,7 @@ parseObject(
                 // Everything else (types that don't recurse).
                 default: {
                     auto leaf =
-                        parseLeaf(json_name, fieldName, &inName, value, error);
+                        parseLeaf(json_name, std::string{fieldName.key()}, &inName, fieldNameVal, error);
 
                     if (!leaf)
                         return std::nullopt;
@@ -875,12 +876,12 @@ parseObject(
 static std::optional<detail::STVar>
 parseArray(
     std::string const& json_name,
-    Json::Value const& json,
+    boost::json::value const& json,
     SField const& inName,
     int depth,
     Json::Value& error)
 {
-    if (!json.isArrayOrNull())
+    if (!(json.is_array() || json.is_null()))
     {
         error = not_an_array(json_name);
         return std::nullopt;
@@ -896,10 +897,10 @@ parseArray(
     {
         STArray tail(inName);
 
-        for (Json::UInt i = 0; json.isValidIndex(i); ++i)
+        for (std::uint64_t i = 0; i < json.as_array().size(); ++i)
         {
-            bool const isObjectOrNull(json[i].isObjectOrNull());
-            bool const singleKey(isObjectOrNull ? json[i].size() == 1 : true);
+            bool const isObjectOrNull(json.as_array()[i].is_object() || json.as_array()[i].is_null());
+            bool const singleKey(isObjectOrNull ? json.as_array()[i].as_object().size() == 1 : true);
 
             if (!isObjectOrNull || !singleKey)
             {
@@ -911,8 +912,8 @@ parseArray(
             // TODO: There doesn't seem to be a nice way to get just the
             // first/only key in an object without copying all keys into
             // a vector
-            std::string const objectName(json[i].getMemberNames()[0]);
-            ;
+            std::string const objectName(json.as_array().at(i).as_object().cbegin()->key());
+
             auto const& nameField(SField::getField(objectName));
 
             if (nameField == sfInvalid)
@@ -921,7 +922,7 @@ parseArray(
                 return std::nullopt;
             }
 
-            Json::Value const objectFields(json[i][objectName]);
+            boost::json::value const& objectFields(json.as_array().at(i).as_object().cbegin()->value());
 
             std::stringstream ss;
             ss << json_name << "."
@@ -961,7 +962,7 @@ parseArray(
 
 STParsedJSONObject::STParsedJSONObject(
     std::string const& name,
-    Json::Value const& json)
+    boost::json::value const& json)
 {
     using namespace STParsedJSONDetail;
     object = parseObject(name, json, sfGeneric, 0, error);
@@ -971,7 +972,7 @@ STParsedJSONObject::STParsedJSONObject(
 
 STParsedJSONArray::STParsedJSONArray(
     std::string const& name,
-    Json::Value const& json)
+    boost::json::value const& json)
 {
     using namespace STParsedJSONDetail;
     auto arr = parseArray(name, json, sfGeneric, 0, error);

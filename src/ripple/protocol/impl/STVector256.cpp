@@ -80,12 +80,12 @@ STVector256::isEquivalent(const STBase& t) const
     return v && (mValue == v->mValue);
 }
 
-Json::Value STVector256::getJson(JsonOptions) const
+boost::json::value STVector256::getJson(JsonOptions) const
 {
-    Json::Value ret(Json::arrayValue);
+    boost::json::array ret;
 
     for (auto const& vEntry : mValue)
-        ret.append(to_string(vEntry));
+        ret.emplace_back(to_string(vEntry));
 
     return ret;
 }

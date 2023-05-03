@@ -86,7 +86,7 @@ public:
     boost::container::flat_set<AccountID>
     getAffectedAccounts() const;
 
-    Json::Value
+    boost::json::value
     getJson(JsonOptions p) const
     {
         return getAsObject().getJson(p);

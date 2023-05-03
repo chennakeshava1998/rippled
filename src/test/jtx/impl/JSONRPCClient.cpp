@@ -28,6 +28,8 @@
 #include <boost/beast/http/write.hpp>
 #include <string>
 #include <test/jtx/JSONRPCClient.h>
+#include <boost/json.hpp>
+#include <boost/json/parse.hpp>
 
 namespace ripple {
 namespace test {
@@ -95,7 +97,7 @@ public:
             error
             result
     */
-    Json::Value
+    boost::json::value
     invoke(std::string const& cmd, Json::Value const& params) override
     {
         using namespace boost::beast::http;
@@ -135,12 +137,15 @@ public:
         read(stream_, bin_, res);
 
         Json::Reader jr;
-        Json::Value jv;
-        jr.parse(buffer_string(res.body().data()), jv);
-        if (jv["result"].isMember("error"))
-            jv["error"] = jv["result"]["error"];
-        if (jv["result"].isMember("status"))
-            jv["status"] = jv["result"]["status"];
+        boost::json::value jv = boost::json::parse(buffer_string(res.body().data()));
+//        jr.parse(buffer_string(res.body().data()), jv);
+
+        // TODO: include an assert condition here
+//        ASSERT(jv.if_object());
+        if (jv.as_object()["result"].if_object()->contains("error"))
+            jv.as_object()["error"] = jv.as_object()["result"].as_object()["error"];
+        if (jv.as_object()["result"].if_object()->contains("status"))
+            jv.as_object()["status"] = jv.as_object()["result"].as_object()["status"];
         return jv;
     }
 

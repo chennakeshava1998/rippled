@@ -146,7 +146,7 @@ public:
     getText() const override;
 
     // TODO(tom): options should be an enum.
-    Json::Value
+    boost::json::value
     getJson(JsonOptions options) const override;
 
     void

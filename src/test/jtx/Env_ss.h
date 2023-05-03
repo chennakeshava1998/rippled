@@ -48,7 +48,7 @@ private:
         }
 
         void
-        operator()(Json::Value const& params = Json::nullValue)
+        operator()(boost::json::value const& params = boost::json::object())
         {
             env_.sign_and_submit(jt_, params);
         }

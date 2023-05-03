@@ -82,14 +82,14 @@ accountFromStringWithCode(
     return rpcSUCCESS;
 }
 
-Json::Value
+boost::json::value
 accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
 {
     error_code_i code = accountFromStringWithCode(result, strIdent, bStrict);
     if (code != rpcSUCCESS)
         return rpcError(code);
     else
-        return Json::objectValue;
+        return boost::json::object();
 }
 
 std::uint64_t
@@ -155,7 +155,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
-    Json::Value& jvResult)
+    boost::json::object& jvResult)
 {
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
@@ -182,7 +182,7 @@ getAccountObjects(
             iterateNFTPages = false;
     }
 
-    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
+    boost::json::array& jvObjects = jvResult[jss::account_objects.c_str()].emplace_array();
 
     // this is a mutable version of limit, used to seemlessly switch
     // to iterating directory entries when nftokenpages are exhausted
@@ -205,7 +205,7 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::none));
+            jvObjects.emplace_back(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
                 cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
@@ -216,8 +216,8 @@ getAccountObjects(
             {
                 if (cp)
                 {
-                    jvResult[jss::limit] = limit;
-                    jvResult[jss::marker] = std::string("0,") + to_string(ck);
+                    jvResult[jss::limit.c_str()] = limit;
+                    jvResult[jss::marker.c_str()] = std::string("0,") + to_string(ck);
                     return true;
                 }
             }
@@ -271,8 +271,8 @@ getAccountObjects(
         // response.  Check for that condition.
         if (i == mlimit && mlimit < limit)
         {
-            jvResult[jss::limit] = limit;
-            jvResult[jss::marker] =
+            jvResult[jss::limit.c_str()] = limit;
+            jvResult[jss::marker.c_str()] =
                 to_string(dirIndex) + ',' + to_string(*iter);
             return true;
         }
@@ -284,15 +284,15 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::none));
+                jvObjects.emplace_back(sleNode->getJson(JsonOptions::none));
             }
 
             if (++i == mlimit)
             {
                 if (++iter != entries.end())
                 {
-                    jvResult[jss::limit] = limit;
-                    jvResult[jss::marker] =
+                    jvResult[jss::limit.c_str()] = limit;
+                    jvResult[jss::marker.c_str()] =
                         to_string(dirIndex) + ',' + to_string(*iter);
                     return true;
                 }
@@ -315,8 +315,8 @@ getAccountObjects(
             auto const& e = dir->getFieldV256(sfIndexes);
             if (!e.empty())
             {
-                jvResult[jss::limit] = limit;
-                jvResult[jss::marker] =
+                jvResult[jss::limit.c_str()] = limit;
+                jvResult[jss::marker.c_str()] =
                     to_string(dirIndex) + ',' + to_string(*e.begin());
             }
 
@@ -675,7 +675,7 @@ Status
 lookupLedger(
     std::shared_ptr<ReadView const>& ledger,
     JsonContext& context,
-    Json::Value& result)
+    boost::json::object& result)
 {
     if (auto status = ledgerFromRequest(ledger, context))
         return status;
@@ -684,31 +684,31 @@ lookupLedger(
 
     if (!ledger->open())
     {
-        result[jss::ledger_hash] = to_string(info.hash);
-        result[jss::ledger_index] = info.seq;
+        result[jss::ledger_hash.c_str()] = to_string(info.hash);
+        result[jss::ledger_index.c_str()] = info.seq;
     }
     else
     {
-        result[jss::ledger_current_index] = info.seq;
+        result[jss::ledger_current_index.c_str()] = info.seq;
     }
 
-    result[jss::validated] =
+    result[jss::validated.c_str()] =
         isValidated(context.ledgerMaster, *ledger, context.app);
     return Status::OK;
 }
 
-Json::Value
+boost::json::value
 lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
 {
-    Json::Value result;
+    boost::json::value result;
     if (auto status = lookupLedger(ledger, context, result))
-        status.inject(result);
+        status.inject(result.as_object());
 
     return result;
 }
 
 hash_set<AccountID>
-parseAccountIds(Json::Value const& jvArray)
+parseAccountIds(boost::json::value const& jvArray)
 {
     hash_set<AccountID> result;
     for (auto const& jv : jvArray)
@@ -724,7 +724,7 @@ parseAccountIds(Json::Value const& jvArray)
 }
 
 void
-injectSLE(Json::Value& jv, SLE const& sle)
+injectSLE(boost::json::value& jv, SLE const& sle)
 {
     jv = sle.getJson(JsonOptions::none);
     if (sle.getType() == ltACCOUNT_ROOT)
@@ -738,17 +738,17 @@ injectSLE(Json::Value& jv, SLE const& sle)
             // VFALCO TODO Give a name and move this constant
             //             to a more visible location. Also
             //             shouldn't this be https?
-            jv[jss::urlgravatar] =
+            jv.as_object()[jss::urlgravatar.c_str()] =
                 str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
         }
     }
     else
     {
-        jv[jss::Invalid] = true;
+        jv.as_object()[jss::Invalid.c_str()] = true;
     }
 }
 
-std::optional<Json::Value>
+std::optional<boost::json::value>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const& range,
@@ -768,7 +768,7 @@ readLimitField(
 }
 
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& value)
+parseRippleLibSeed(boost::json::value const& value)
 {
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While rippled never encode seeds that way, we
@@ -787,7 +787,7 @@ parseRippleLibSeed(Json::Value const& value)
 }
 
 std::optional<Seed>
-getSeedFromRPC(Json::Value const& params, Json::Value& error)
+getSeedFromRPC(boost::json::value const& params, boost::json::value& error)
 {
     using string_to_seed_t =
         std::function<std::optional<Seed>(std::string const&)>;
@@ -846,9 +846,9 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 }
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error)
+keypairForSignature(boost::json::object const& params, boost::json::value& error)
 {
-    bool const has_key_type = params.isMember(jss::key_type);
+    bool const has_key_type = params.contains(jss::key_type.c_str());
 
     // All of the secret types we allow, but only one at a time.
     static char const* const secretTypes[]{
@@ -862,7 +862,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     int count = 0;
     for (auto t : secretTypes)
     {
-        if (params.isMember(t))
+        if (params.contains(t))
         {
             ++count;
             secretType = t;
@@ -890,13 +890,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
     if (has_key_type)
     {
-        if (!params[jss::key_type].isString())
+        if (!params.at(jss::key_type.c_str()).is_string())
         {
             error = RPC::expected_field_error(jss::key_type, "string");
             return {};
         }
 
-        keyType = keyTypeFromString(params[jss::key_type].asString());
+        keyType = keyTypeFromString(serialize(params.at(jss::key_type.c_str()).as_string()));
 
         if (!keyType)
         {
@@ -922,7 +922,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
     if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
-        seed = RPC::parseRippleLibSeed(params[secretType]);
+        seed = RPC::parseRippleLibSeed(params.at(secretType));
 
         if (seed)
         {
@@ -948,13 +948,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
             seed = getSeedFromRPC(params, error);
         else
         {
-            if (!params[jss::secret].isString())
+            if (!params.at(jss::secret.c_str()).is_string())
             {
                 error = RPC::expected_field_error(jss::secret, "string");
                 return {};
             }
 
-            seed = parseGenericSeed(params[jss::secret].asString());
+            seed = parseGenericSeed(serialize(params.at(jss::secret.c_str()).as_string()));
         }
     }
 
@@ -976,10 +976,10 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 }
 
 std::pair<RPC::Status, LedgerEntryType>
-chooseLedgerEntryType(Json::Value const& params)
+chooseLedgerEntryType(boost::json::object const& params)
 {
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
-    if (params.isMember(jss::type))
+    if (params.contains(jss::type.c_str()))
     {
         static constexpr std::array<std::pair<char const*, LedgerEntryType>, 15>
             types{
@@ -1030,27 +1030,30 @@ beast::SemanticVersion const goodVersion("1.0.0");
 beast::SemanticVersion const lastVersion("1.0.0");
 
 unsigned int
-getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
+getAPIVersionNumber(boost::json::value const& jv, bool betaEnabled)
 {
-    static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    static Json::Value const invalidVersion(RPC::apiInvalidVersion);
+    static boost::json::value const minVersion(RPC::apiMinimumSupportedVersion);
+    static boost::json::value const invalidVersion(RPC::apiInvalidVersion);
 
-    Json::Value const maxVersion(
+    boost::json::value const maxVersion(
         betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
-    Json::Value requestedVersion(RPC::apiVersionIfUnspecified);
-    if (jv.isObject())
+    boost::json::value requestedVersion(RPC::apiVersionIfUnspecified);
+    if (jv.is_object())
     {
-        requestedVersion = jv.get(jss::api_version, requestedVersion);
+        if (!jv.at(jss::api_version.c_str()).is_null())
+            requestedVersion = jv.at(jss::api_version.c_str());
     }
-    if (!(requestedVersion.isInt() || requestedVersion.isUInt()) ||
-        requestedVersion < minVersion || requestedVersion > maxVersion)
+
+    // Keshava: Split the two conditions and typecase the values individually
+    if (!(requestedVersion.is_int64() || requestedVersion.is_uint64()) ||
+        requestedVersion.as_uint64() < minVersion.as_uint64() || requestedVersion.as_uint64() > maxVersion.as_uint64())
     {
         requestedVersion = invalidVersion;
     }
-    return requestedVersion.asUInt();
+    return requestedVersion.as_uint64();
 }
 
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
+std::variant<std::shared_ptr<Ledger const>, boost::json::value>
 getLedgerByContext(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -1119,17 +1122,17 @@ getLedgerByContext(RPC::JsonContext& context)
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
-                    Json::Value jvResult = RPC::make_error(
+                    boost::json::value jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND,
                         "acquiring ledger containing requested index");
-                    jvResult[jss::acquiring] =
+                    jvResult.as_object()[jss::acquiring.c_str()] =
                         getJson(LedgerFill(*il, &context));
                     return jvResult;
                 }
 
                 if (auto il = context.app.getInboundLedgers().find(*refHash))
                 {
-                    Json::Value jvResult = RPC::make_error(
+                    boost::json::value jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND,
                         "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = il->getJson(0);
@@ -1137,7 +1140,7 @@ getLedgerByContext(RPC::JsonContext& context)
                 }
 
                 // Likely the app is shutting down
-                return Json::Value();
+                return boost::json::value();
             }
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);

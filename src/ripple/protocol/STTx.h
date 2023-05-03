@@ -106,9 +106,9 @@ public:
     uint256
     getTransactionID() const;
 
-    Json::Value
+    boost::json::value
     getJson(JsonOptions options) const override;
-    Json::Value
+    boost::json::value
     getJson(JsonOptions options, bool binary) const;
 
     void

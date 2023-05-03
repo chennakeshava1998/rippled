@@ -75,6 +75,10 @@ public:
         return str_;
     }
 
+    operator std::string_view() const {
+        return std::string_view{str_};
+    }
+
 private:
     const char* str_;
 };

@@ -29,6 +29,7 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/Serializer.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -183,7 +184,7 @@ public:
     zeroed() const;
 
     void
-    setJson(Json::Value&) const;
+    setJson(boost::json::value&) const;
 
     STAmount const&
     value() const noexcept;
@@ -247,7 +248,7 @@ public:
     std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    boost::json::value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
@@ -300,10 +301,10 @@ STAmount
 amountFromString(Issue const& issue, std::string const& amount);
 
 STAmount
-amountFromJson(SField const& name, Json::Value const& v);
+amountFromJson(SField const& name, boost::json::value const& v);
 
 bool
-amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
+amountFromJsonNoThrow(STAmount& result, boost::json::value const& jvSource);
 
 // IOUAmount and XRPAmount define toSTAmount, defining this
 // trivial conversion here makes writing generic code easier

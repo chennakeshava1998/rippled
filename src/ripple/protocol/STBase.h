@@ -29,6 +29,7 @@
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
+#include <boost/json.hpp>
 namespace ripple {
 
 enum class JsonOptions { none = 0, include_date = 1 };
@@ -98,7 +99,7 @@ public:
     virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions /*options*/) const;
+    virtual boost::json::value getJson(JsonOptions /*options*/) const;
 
     virtual void
     add(Serializer& s) const;

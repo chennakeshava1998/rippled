@@ -28,59 +28,59 @@ namespace jtx {
 namespace check {
 
 // Create a check.
-Json::Value
+boost::json::value
 create(
     jtx::Account const& account,
     jtx::Account const& dest,
     STAmount const& sendMax)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::none);
-    jv[sfDestination.jsonName] = dest.human();
-    jv[sfTransactionType.jsonName] = jss::CheckCreate;
-    jv[sfFlags.jsonName] = tfUniversal;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = account.human();
+    jv[std::string{sfSendMax.jsonName}] = sendMax.getJson(JsonOptions::none);
+    jv[std::string{sfDestination.jsonName}] = dest.human();
+    jv[std::string{sfTransactionType.jsonName}] = jss::CheckCreate;
+    jv[std::string{sfFlags.jsonName}] = tfUniversal;
     return jv;
 }
 
 // Cash a check requiring that a specific amount be delivered.
-Json::Value
+boost::json::value
 cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = dest.human();
-    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::none);
-    jv[sfCheckID.jsonName] = to_string(checkId);
-    jv[sfTransactionType.jsonName] = jss::CheckCash;
-    jv[sfFlags.jsonName] = tfUniversal;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = dest.human();
+    jv[std::string{sfAmount.jsonName}] = amount.getJson(JsonOptions::none);
+    jv[std::string{sfCheckID.jsonName}] = to_string(checkId);
+    jv[std::string{sfTransactionType.jsonName}] = jss::CheckCash;
+    jv[std::string{sfFlags.jsonName}] = tfUniversal;
     return jv;
 }
 
 // Cash a check requiring that at least a minimum amount be delivered.
-Json::Value
+boost::json::value
 cash(
     jtx::Account const& dest,
     uint256 const& checkId,
     DeliverMin const& atLeast)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = dest.human();
-    jv[sfDeliverMin.jsonName] = atLeast.value.getJson(JsonOptions::none);
-    jv[sfCheckID.jsonName] = to_string(checkId);
-    jv[sfTransactionType.jsonName] = jss::CheckCash;
-    jv[sfFlags.jsonName] = tfUniversal;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = dest.human();
+    jv[std::string{sfDeliverMin.jsonName}] = atLeast.value.getJson(JsonOptions::none);
+    jv[std::string{sfCheckID.jsonName}] = to_string(checkId);
+    jv[std::string{sfTransactionType.jsonName}] = jss::CheckCash;
+    jv[std::string{sfFlags.jsonName}] = tfUniversal;
     return jv;
 }
 
 // Cancel a check.
-Json::Value
+boost::json::value
 cancel(jtx::Account const& dest, uint256 const& checkId)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = dest.human();
-    jv[sfCheckID.jsonName] = to_string(checkId);
-    jv[sfTransactionType.jsonName] = jss::CheckCancel;
-    jv[sfFlags.jsonName] = tfUniversal;
+    boost::json::object jv;
+    jv[std::string{sfAccount.jsonName}] = dest.human();
+    jv[std::string{sfCheckID.jsonName}] = to_string(checkId);
+    jv[std::string{sfTransactionType.jsonName}] = jss::CheckCancel;
+    jv[std::string{sfFlags.jsonName}] = tfUniversal;
     return jv;
 }
 

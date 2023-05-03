@@ -20,21 +20,22 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx/pay.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::value
 pay(Account const& account, Account const& to, AnyAmount amount)
 {
     amount.to(to);
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.value.getJson(JsonOptions::none);
-    jv[jss::Destination] = to.human();
-    jv[jss::TransactionType] = jss::Payment;
-    jv[jss::Flags] = tfUniversal;
+    boost::json::object jv;
+    jv[std::string{jss::Account}] = account.human();
+    jv[std::string{jss::Amount}] = amount.value.getJson(JsonOptions::none);
+    jv[std::string{jss::Destination}] = to.human();
+    jv[std::string{jss::TransactionType}] = jss::Payment;
+    jv[std::string{jss::Flags}] = tfUniversal;
     return jv;
 }
 

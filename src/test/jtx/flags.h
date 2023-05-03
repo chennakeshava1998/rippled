@@ -32,11 +32,11 @@ namespace jtx {
 // JSON generators
 
 /** Add and/or remove flag. */
-Json::Value
+boost::json::value
 fset(Account const& account, std::uint32_t on, std::uint32_t off = 0);
 
 /** Remove account flag. */
-inline Json::Value
+inline boost::json::value
 fclear(Account const& account, std::uint32_t off)
 {
     return fset(account, 0, off);

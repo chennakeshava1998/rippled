@@ -163,38 +163,38 @@ STPath::hasSeen(
     return false;
 }
 
-Json::Value STPath::getJson(JsonOptions) const
+boost::json::value STPath::getJson(JsonOptions) const
 {
-    Json::Value ret(Json::arrayValue);
+    boost::json::array ret;
 
     for (auto it : mPath)
     {
-        Json::Value elem(Json::objectValue);
+        boost::json::object elem;
         auto const iType = it.getNodeType();
 
-        elem[jss::type] = iType;
+        elem[jss::type.c_str()] = iType;
 
         if (iType & STPathElement::typeAccount)
-            elem[jss::account] = to_string(it.getAccountID());
+            elem[jss::account.c_str()] = to_string(it.getAccountID());
 
         if (iType & STPathElement::typeCurrency)
-            elem[jss::currency] = to_string(it.getCurrency());
+            elem[jss::currency.c_str()] = to_string(it.getCurrency());
 
         if (iType & STPathElement::typeIssuer)
-            elem[jss::issuer] = to_string(it.getIssuerID());
+            elem[jss::issuer.c_str()] = to_string(it.getIssuerID());
 
-        ret.append(elem);
+        ret.emplace_back(elem);
     }
 
     return ret;
 }
 
-Json::Value
+boost::json::value
 STPathSet::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::arrayValue);
+    boost::json::array ret;
     for (auto it : value)
-        ret.append(it.getJson(options));
+        ret.emplace_back(it.getJson(options));
 
     return ret;
 }

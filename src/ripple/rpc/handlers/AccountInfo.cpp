@@ -133,13 +133,13 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            Json::Value jvSignerList = Json::arrayValue;
+            boost::json::array jvSignerList;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
-                jvSignerList.append(sleSigners->getJson(JsonOptions::none));
+                jvSignerList.emplace_back(sleSigners->getJson(JsonOptions::none));
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
@@ -158,16 +158,16 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            Json::Value jvQueueData = Json::objectValue;
+            boost::json::object jvQueueData;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
-                jvQueueData[jss::txn_count] =
-                    static_cast<Json::UInt>(txs.size());
+                jvQueueData[jss::txn_count.c_str()] =
+                    static_cast<std::uint64_t>(txs.size());
 
-                auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = Json::arrayValue;
+                boost::json::value& jvQueueTx = jvQueueData[jss::transactions.c_str()];
+                jvQueueTx.emplace_array();
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -183,13 +183,13 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    Json::Value jvTx = Json::objectValue;
+                    boost::json::object jvTx;
 
                     if (tx.seqProxy.isSeq())
                     {
                         assert(prevSeqProxy < tx.seqProxy);
                         prevSeqProxy = tx.seqProxy;
-                        jvTx[jss::seq] = tx.seqProxy.value();
+                        jvTx[jss::seq.c_str()] = tx.seqProxy.value();
                         ++seqCount;
                         if (!lowestSeq)
                             lowestSeq = tx.seqProxy.value();
@@ -199,26 +199,26 @@ doAccountInfo(RPC::JsonContext& context)
                     {
                         assert(prevSeqProxy < tx.seqProxy);
                         prevSeqProxy = tx.seqProxy;
-                        jvTx[jss::ticket] = tx.seqProxy.value();
+                        jvTx[jss::ticket.c_str()] = tx.seqProxy.value();
                         ++ticketCount;
                         if (!lowestTicket)
                             lowestTicket = tx.seqProxy.value();
                         highestTicket = tx.seqProxy.value();
                     }
 
-                    jvTx[jss::fee_level] = to_string(tx.feeLevel);
+                    jvTx[jss::fee_level.c_str()] = to_string(tx.feeLevel);
                     if (tx.lastValid)
-                        jvTx[jss::LastLedgerSequence] = *tx.lastValid;
+                        jvTx[jss::LastLedgerSequence.c_str()] = *tx.lastValid;
 
-                    jvTx[jss::fee] = to_string(tx.consequences.fee());
+                    jvTx[jss::fee.c_str()] = to_string(tx.consequences.fee());
                     auto const spend = tx.consequences.potentialSpend() +
                         tx.consequences.fee();
-                    jvTx[jss::max_spend_drops] = to_string(spend);
+                    jvTx[jss::max_spend_drops.c_str()] = to_string(spend);
                     totalSpend += spend;
                     bool const authChanged = tx.consequences.isBlocker();
                     if (authChanged)
                         anyAuthChanged = authChanged;
-                    jvTx[jss::auth_change] = authChanged;
+                    jvTx[jss::auth_change.c_str()] = authChanged;
 
                     jvQueueTx.append(std::move(jvTx));
                 }

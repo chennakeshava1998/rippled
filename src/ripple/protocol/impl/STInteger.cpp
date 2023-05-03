@@ -61,14 +61,14 @@ STUInt8::getText() const
 }
 
 template <>
-Json::Value STUInt8::getJson(JsonOptions) const
+boost::json::value STUInt8::getJson(JsonOptions) const
 {
     if (getFName() == sfTransactionResult)
     {
         std::string token, human;
 
         if (transResultInfo(TER::fromInt(value_), token, human))
-            return token;
+            return boost::json::string(token);
 
         JLOG(debugLog().error())
             << "Unknown result code in metadata: " << value_;
@@ -118,7 +118,7 @@ STUInt16::getText() const
 }
 
 template <>
-Json::Value STUInt16::getJson(JsonOptions) const
+boost::json::value STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
     {
@@ -126,7 +126,7 @@ Json::Value STUInt16::getJson(JsonOptions) const
             safe_cast<LedgerEntryType>(value_));
 
         if (item != nullptr)
-            return item->getName();
+            return boost::json::string(item->getName());
     }
 
     if (getFName() == sfTransactionType)
@@ -135,7 +135,7 @@ Json::Value STUInt16::getJson(JsonOptions) const
             TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
 
         if (item != nullptr)
-            return item->getName();
+            return boost::json::string(item->getName());
     }
 
     return value_;
@@ -164,7 +164,7 @@ STUInt32::getText() const
 }
 
 template <>
-Json::Value STUInt32::getJson(JsonOptions) const
+boost::json::value STUInt32::getJson(JsonOptions) const
 {
     return value_;
 }
@@ -192,13 +192,13 @@ STUInt64::getText() const
 }
 
 template <>
-Json::Value STUInt64::getJson(JsonOptions) const
+boost::json::value STUInt64::getJson(JsonOptions) const
 {
     std::string str(16, 0);
     auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);
     assert(ret.ec == std::errc());
     str.resize(std::distance(str.data(), ret.ptr));
-    return str;
+    return boost::json::string(str);
 }
 
 }  // namespace ripple

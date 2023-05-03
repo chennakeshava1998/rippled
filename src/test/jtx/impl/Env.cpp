@@ -134,15 +134,15 @@ Env::close(
     else
     {
         auto resp = rpc("ledger_accept");
-        if (resp["result"]["status"] != std::string("success"))
+        if (serialize(resp.as_object().at("result").as_object().at("status")) != std::string("success"))
         {
             std::string reason = "internal error";
-            if (resp.isMember("error_what"))
-                reason = resp["error_what"].asString();
-            else if (resp.isMember("error_message"))
-                reason = resp["error_message"].asString();
-            else if (resp.isMember("error"))
-                reason = resp["error"].asString();
+            if (resp.as_object().contains("error_what"))
+                reason = serialize(resp.as_object()["error_what"]);
+            else if (resp.as_object().contains("error_message"))
+                reason = serialize(resp.as_object()["error_message"]);
+            else if (resp.as_object().contains("error"))
+                reason = serialize(resp.as_object()["error"]);
 
             JLOG(journal.error()) << "Env::close() failed: " << reason;
             res = false;
@@ -273,12 +273,12 @@ Env::trust(STAmount const& amount, Account const& account)
 }
 
 std::pair<TER, bool>
-Env::parseResult(Json::Value const& jr)
+Env::parseResult(boost::json::value const& jr)
 {
     TER ter;
-    if (jr.isObject() && jr.isMember(jss::result) &&
-        jr[jss::result].isMember(jss::engine_result_code))
-        ter = TER::fromInt(jr[jss::result][jss::engine_result_code].asInt());
+    if (jr.is_object() && jr.as_object().contains(std::string{jss::result}) &&
+        jr.as_object().at(std::string{jss::result}).as_object().contains(std::string{jss::engine_result_code}))
+        ter = TER::fromInt(jr.as_object().at(std::string{jss::result}).as_object().at(std::string{jss::engine_result_code}).as_int64());
     else
         ter = temINVALID;
     return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
@@ -308,15 +308,15 @@ Env::submit(JTx const& jt)
 }
 
 void
-Env::sign_and_submit(JTx const& jt, Json::Value params)
+Env::sign_and_submit(JTx const& jt, boost::json::value params)
 {
     bool didApply;
 
-    auto const account = lookup(jt.jv[jss::Account].asString());
+    auto const account = lookup(serialize(jt.jv.as_object().at(std::string{jss::Account})));
     auto const& passphrase = account.name();
 
-    Json::Value jr;
-    if (params.isNull())
+    boost::json::value jr;
+    if (params.is_null())
     {
         // Use the command line interface
         auto const jv = boost::lexical_cast<std::string>(jt.jv);
@@ -326,18 +326,18 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     {
         // Use the provided parameters, and go straight
         // to the (RPC) client.
-        assert(params.isObject());
-        if (!params.isMember(jss::secret) && !params.isMember(jss::key_type) &&
-            !params.isMember(jss::seed) && !params.isMember(jss::seed_hex) &&
-            !params.isMember(jss::passphrase))
+        assert(params.is_object());
+        if (!params.as_object().contains(std::string{jss::secret}) && !params.as_object().contains(std::string{jss::key_type}) &&
+            !params.as_object().contains(std::string{jss::seed}) && !params.as_object().contains(std::string{jss::seed_hex}) &&
+            !params.as_object().contains(std::string{jss::passphrase}))
         {
-            params[jss::secret] = passphrase;
+            params.as_object()[std::string{jss::secret}] = passphrase;
         }
-        params[jss::tx_json] = jt.jv;
+        params.as_object()[std::string{jss::tx_json}] = jt.jv;
         jr = client().invoke("submit", params);
     }
 
-    if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
+    if (!txid_.parseHex(serialize(jr.as_object()[std::string{jss::result}].as_object()[std::string{jss::tx_json}].as_object()[std::string{jss::hash}])))
         txid_.zero();
 
     std::tie(ter_, didApply) = parseResult(jr);
@@ -355,7 +355,7 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
                 "); Expected " + transToken(*jt.ter) + " (" +
                 transHuman(*jt.ter) + ")"))
     {
-        test.log << pretty(jt.jv) << std::endl;
+        test.log << serialize(jt.jv) << std::endl;
         // Don't check postconditions if
         // we didn't get the expected result.
         return;
@@ -364,7 +364,7 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
     {
         if (trace_ > 0)
             --trace_;
-        test.log << pretty(jt.jv) << std::endl;
+        test.log << serialize(jt.jv) << std::endl;
     }
     for (auto const& f : jt.require)
         f(*this);
@@ -422,7 +422,7 @@ Env::autofill(JTx& jt)
     }
     catch (parse_error const&)
     {
-        test.log << "parse failed:\n" << pretty(jv) << std::endl;
+        test.log << "parse failed:\n" << serialize(jv) << std::endl;
         Rethrow();
     }
 }
@@ -439,7 +439,7 @@ Env::st(JTx const& jt)
     }
     catch (jtx::parse_error const&)
     {
-        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
+        test.log << "Exception: parse_error\n" << serialize(jt.jv) << std::endl;
         Rethrow();
     }
 
@@ -453,7 +453,7 @@ Env::st(JTx const& jt)
     return nullptr;
 }
 
-Json::Value
+boost::json::value
 Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)

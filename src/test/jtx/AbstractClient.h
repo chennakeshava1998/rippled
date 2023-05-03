@@ -20,7 +20,8 @@
 #ifndef RIPPLE_TEST_ABSTRACTCLIENT_H_INCLUDED
 #define RIPPLE_TEST_ABSTRACTCLIENT_H_INCLUDED
 
-#include <ripple/json/json_value.h>
+//#include <ripple/json/json_value.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
@@ -50,8 +51,8 @@ public:
                       with zero or more key/value pairs.
         @return The server response in normalized format.
     */
-    virtual Json::Value
-    invoke(std::string const& cmd, Json::Value const& params = {}) = 0;
+    virtual boost::json::value
+    invoke(std::string const& cmd, boost::json::value const& params = {}) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
     virtual unsigned

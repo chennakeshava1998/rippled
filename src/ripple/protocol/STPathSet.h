@@ -143,7 +143,7 @@ public:
         Currency const& currency,
         AccountID const& issuer) const;
 
-    Json::Value getJson(JsonOptions) const;
+    boost::json::value getJson(JsonOptions) const;
 
     std::vector<STPathElement>::const_iterator
     begin() const;
@@ -186,7 +186,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    boost::json::value getJson(JsonOptions) const override;
 
     SerializedTypeID
     getSType() const override;

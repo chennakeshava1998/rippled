@@ -2642,59 +2642,77 @@ public:
 
         Env env(*this);
 
-        auto fee = env.rpc("fee");
+        boost::json::value feeJson = env.rpc("fee");
+        BEAST_EXPECT(feeJson.is_object());
+        boost::json::object fee = feeJson.as_object();
 
-        if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+        if (BEAST_EXPECT(fee.contains(jss::result.c_str())) &&
+            BEAST_EXPECT(!RPC::contains_error(fee[jss::result.c_str()])))
         {
-            auto const& result = fee[jss::result];
+            boost::json::value const& resultJson = fee[jss::result.c_str()];
+            BEAST_EXPECT(resultJson.is_object());
+            boost::json::object result = resultJson.as_object();
             BEAST_EXPECT(
-                result.isMember(jss::ledger_current_index) &&
-                result[jss::ledger_current_index] == 3);
-            BEAST_EXPECT(result.isMember(jss::current_ledger_size));
-            BEAST_EXPECT(result.isMember(jss::current_queue_size));
-            BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
-            BEAST_EXPECT(!result.isMember(jss::max_queue_size));
-            BEAST_EXPECT(result.isMember(jss::drops));
-            auto const& drops = result[jss::drops];
-            BEAST_EXPECT(drops.isMember(jss::base_fee));
-            BEAST_EXPECT(drops.isMember(jss::median_fee));
-            BEAST_EXPECT(drops.isMember(jss::minimum_fee));
-            BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
-            BEAST_EXPECT(result.isMember(jss::levels));
-            auto const& levels = result[jss::levels];
-            BEAST_EXPECT(levels.isMember(jss::median_level));
-            BEAST_EXPECT(levels.isMember(jss::minimum_level));
-            BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
-            BEAST_EXPECT(levels.isMember(jss::reference_level));
+                result.contains(jss::ledger_current_index.c_str()) &&
+                result[jss::ledger_current_index.c_str()] == 3);
+            BEAST_EXPECT(result.contains(jss::current_ledger_size.c_str()));
+            BEAST_EXPECT(result.contains(jss::current_queue_size.c_str()));
+            BEAST_EXPECT(result.contains(jss::expected_ledger_size.c_str()));
+            BEAST_EXPECT(!result.contains(jss::max_queue_size.c_str()));
+            BEAST_EXPECT(result.contains(jss::drops.c_str()));
+            boost::json::value const& dropsJson = result[jss::drops.c_str()];
+            BEAST_EXPECT(dropsJson.is_object());
+            boost::json::object drops = dropsJson.as_object();
+            BEAST_EXPECT(drops.contains(jss::base_fee.c_str()));
+            BEAST_EXPECT(drops.contains(jss::median_fee.c_str()));
+            BEAST_EXPECT(drops.contains(jss::minimum_fee.c_str()));
+            BEAST_EXPECT(drops.contains(jss::open_ledger_fee.c_str()));
+            BEAST_EXPECT(result.contains(jss::levels.c_str()));
+            boost::json::value const& levelsJson = result[jss::levels.c_str()];
+            BEAST_EXPECT(levelsJson.is_object());
+            boost::json::object levels = levelsJson.as_object();
+
+            BEAST_EXPECT(levels.contains(jss::median_level.c_str()));
+            BEAST_EXPECT(levels.contains(jss::minimum_level.c_str()));
+            BEAST_EXPECT(levels.contains(jss::open_ledger_level.c_str()));
+            BEAST_EXPECT(levels.contains(jss::reference_level.c_str()));
         }
 
         env.close();
 
-        fee = env.rpc("fee");
+        feeJson = env.rpc("fee");
+        BEAST_EXPECT(feeJson.is_object());
 
-        if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+        fee = feeJson.as_object();
+
+        if (BEAST_EXPECT(fee.contains(jss::result.c_str())) &&
+            BEAST_EXPECT(!RPC::contains_error(fee[jss::result.c_str()])))
         {
-            auto const& result = fee[jss::result];
+            boost::json::value const& resultJson = fee[jss::result.c_str()];
+            BEAST_EXPECT(resultJson.is_object());
+            boost::json::object result = resultJson.as_object();
             BEAST_EXPECT(
-                result.isMember(jss::ledger_current_index) &&
-                result[jss::ledger_current_index] == 4);
-            BEAST_EXPECT(result.isMember(jss::current_ledger_size));
-            BEAST_EXPECT(result.isMember(jss::current_queue_size));
-            BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
-            BEAST_EXPECT(result.isMember(jss::max_queue_size));
-            auto const& drops = result[jss::drops];
-            BEAST_EXPECT(drops.isMember(jss::base_fee));
-            BEAST_EXPECT(drops.isMember(jss::median_fee));
-            BEAST_EXPECT(drops.isMember(jss::minimum_fee));
-            BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
-            BEAST_EXPECT(result.isMember(jss::levels));
-            auto const& levels = result[jss::levels];
-            BEAST_EXPECT(levels.isMember(jss::median_level));
-            BEAST_EXPECT(levels.isMember(jss::minimum_level));
-            BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
-            BEAST_EXPECT(levels.isMember(jss::reference_level));
+                result.contains(jss::ledger_current_index.c_str()) &&
+                result[jss::ledger_current_index.c_str()] == 4);
+            BEAST_EXPECT(result.contains(jss::current_ledger_size.c_str()));
+            BEAST_EXPECT(result.contains(jss::current_queue_size.c_str()));
+            BEAST_EXPECT(result.contains(jss::expected_ledger_size.c_str()));
+            BEAST_EXPECT(result.contains(jss::max_queue_size.c_str()));
+            boost::json::value const& dropsJson = result[jss::drops.c_str()];
+            BEAST_EXPECT(dropsJson.is_object());
+            boost::json::object drops = dropsJson.as_object();
+            BEAST_EXPECT(drops.contains(jss::base_fee.c_str()));
+            BEAST_EXPECT(drops.contains(jss::median_fee.c_str()));
+            BEAST_EXPECT(drops.contains(jss::minimum_fee.c_str()));
+            BEAST_EXPECT(drops.contains(jss::open_ledger_fee.c_str()));
+            BEAST_EXPECT(result.contains(jss::levels.c_str()));
+            boost::json::value const& levelsJson = result[jss::levels.c_str()];
+            BEAST_EXPECT(levelsJson.is_object());
+            boost::json::object levels = levelsJson.as_object();
+            BEAST_EXPECT(levels.contains(jss::median_level.c_str()));
+            BEAST_EXPECT(levels.contains(jss::minimum_level.c_str()));
+            BEAST_EXPECT(levels.contains(jss::open_ledger_level.c_str()));
+            BEAST_EXPECT(levels.contains(jss::reference_level.c_str()));
         }
     }
 

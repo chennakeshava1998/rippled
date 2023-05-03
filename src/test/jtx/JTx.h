@@ -41,7 +41,7 @@ class Env;
 */
 struct JTx
 {
-    Json::Value jv;
+    boost::json::value jv;
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
     bool fill_fee = true;
@@ -58,16 +58,16 @@ struct JTx
     JTx&
     operator=(JTx&&) = default;
 
-    JTx(Json::Value&& jv_) : jv(std::move(jv_))
+    JTx(boost::json::value&& jv_) : jv(std::move(jv_))
     {
     }
 
-    JTx(Json::Value const& jv_) : jv(jv_)
+    JTx(boost::json::value const& jv_) : jv(jv_)
     {
     }
 
     template <class Key>
-    Json::Value&
+    boost::json::value&
     operator[](Key const& key)
     {
         return jv[key];

@@ -19,25 +19,25 @@
 
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
-
+#include <boost/json.hpp>
 namespace ripple {
 
 struct RPCErr;
 
 // VFALCO NOTE Deprecated function
-Json::Value
+boost::json::value
 rpcError(int iError)
 {
-    Json::Value jvResult(Json::objectValue);
+    boost::json::object jvResult;
     RPC::inject_error(iError, jvResult);
     return jvResult;
 }
 
 // VFALCO NOTE Deprecated function
 bool
-isRpcError(Json::Value jvResult)
+isRpcError(boost::json::value jvResult)
 {
-    return jvResult.isObject() && jvResult.isMember(jss::error);
+    return jvResult.is_object() && jvResult.as_object().contains(jss::error.c_str());
 }
 
 }  // namespace ripple

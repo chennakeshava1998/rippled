@@ -26,20 +26,20 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::value
 trust(Account const& account, STAmount const& amount, std::uint32_t flags)
 {
     if (isXRP(amount))
         Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
-    jv[jss::TransactionType] = jss::TrustSet;
-    jv[jss::Flags] = flags;
+    boost::json::object jv;
+    jv[std::string{jss::Account}] = account.human();
+    jv[std::string{jss::LimitAmount}] = amount.getJson(JsonOptions::none);
+    jv[std::string{jss::TransactionType}] = jss::TrustSet;
+    jv[std::string{jss::Flags}] = flags;
     return jv;
 }
 
-Json::Value
+boost::json::value
 trust(
     Account const& account,
     STAmount const& amount,
@@ -48,14 +48,14 @@ trust(
 {
     if (isXRP(amount))
         Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
-    jv[jss::Account] = account.human();
+    boost::json::object jv;
+    jv[std::string{jss::Account}] = account.human();
     {
-        auto& ja = jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
-        ja[jss::issuer] = peer.human();
+        auto& ja = jv[std::string{jss::LimitAmount}] = amount.getJson(JsonOptions::none);
+        ja.as_object()[std::string{jss::issuer}] = peer.human();
     }
-    jv[jss::TransactionType] = jss::TrustSet;
-    jv[jss::Flags] = flags;
+    jv[std::string{jss::TransactionType}] = jss::TrustSet;
+    jv[std::string{jss::Flags}] = flags;
     return jv;
 }
 

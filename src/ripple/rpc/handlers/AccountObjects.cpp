@@ -48,7 +48,7 @@ namespace ripple {
     }
 */
 
-Json::Value
+boost::json::value
 doAccountNFTs(RPC::JsonContext& context)
 {
     auto const& params = context.params;
@@ -134,7 +134,7 @@ doAccountNFTs(RPC::JsonContext& context)
             pastMarker = true;
 
             {
-                Json::Value& obj = nfts.append(o.getJson(JsonOptions::none));
+                boost::json::value& obj = nfts.append(o.getJson(JsonOptions::none));
 
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
@@ -165,7 +165,7 @@ doAccountNFTs(RPC::JsonContext& context)
     return result;
 }
 
-Json::Value
+boost::json::value
 doAccountObjects(RPC::JsonContext& context)
 {
     auto const& params = context.params;

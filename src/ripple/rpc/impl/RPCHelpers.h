@@ -53,8 +53,8 @@ accountFromStringStrict(std::string const&);
 // --> strIdent: public key, account ID, or regular seed.
 // --> bStrict: Only allow account id or public key.
 //
-// Returns a Json::objectValue, containing error information if there was one.
-Json::Value
+// Returns a boost::json::object, containing error information if there was one.
+boost::json::value
 accountFromString(
     AccountID& result,
     std::string const& strIdent,
@@ -108,7 +108,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
-    Json::Value& jvResult);
+    boost::json::value& jvResult);
 
 /** Get ledger by hash
     If there is no error in the return value, the ledger pointer will have
@@ -141,7 +141,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
     If there is no error in the return value, then the ledger pointer will have
     been filled.
 */
-Json::Value
+boost::json::value
 lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
@@ -153,7 +153,7 @@ Status
 lookupLedger(
     std::shared_ptr<ReadView const>&,
     JsonContext&,
-    Json::Value& result);
+    boost::json::value& result);
 
 template <class T, class R>
 Status
@@ -173,7 +173,7 @@ isValidated(
     Application& app);
 
 hash_set<AccountID>
-parseAccountIds(Json::Value const& jvArray);
+parseAccountIds(boost::json::value const& jvArray);
 
 bool
 isHexTxID(std::string const& txid);
@@ -187,27 +187,27 @@ isHexTxID(std::string const& txid);
         urlgravatar field JSON if sfEmailHash is present.
 */
 void
-injectSLE(Json::Value& jv, SLE const& sle);
+injectSLE(boost::json::value& jv, SLE const& sle);
 
 /** Retrieve the limit value from a JsonContext, or set a default -
     then restrict the limit by max and min if not an ADMIN request.
 
     If there is an error, return it as JSON.
 */
-std::optional<Json::Value>
+std::optional<boost::json::value>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const&,
     JsonContext const&);
 
 std::optional<Seed>
-getSeedFromRPC(Json::Value const& params, Json::Value& error);
+getSeedFromRPC(boost::json::value const& params, Json::Value& error);
 
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& params);
+parseRippleLibSeed(boost::json::value const& params);
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error);
+keypairForSignature(boost::json::value const& params, Json::Value& error);
 
 /**
  * API version numbers used in API version 1
@@ -269,7 +269,7 @@ setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
 }
 
 std::pair<RPC::Status, LedgerEntryType>
-chooseLedgerEntryType(Json::Value const& params);
+chooseLedgerEntryType(boost::json::value const& params);
 
 /**
  * Retrieve the api version number from the json value
@@ -286,11 +286,11 @@ chooseLedgerEntryType(Json::Value const& params);
  * @return the api version number
  */
 unsigned int
-getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
+getAPIVersionNumber(const boost::json::value& value, bool betaEnabled);
 
 /** Return a ledger based on ledger_hash or ledger_index,
     or an RPC error */
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
+std::variant<std::shared_ptr<Ledger const>, boost::json::value>
 getLedgerByContext(RPC::JsonContext& context);
 
 }  // namespace RPC

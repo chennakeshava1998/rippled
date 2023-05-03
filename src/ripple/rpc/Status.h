@@ -23,6 +23,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/TER.h>
 #include <cassert>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace RPC {
@@ -146,7 +147,7 @@ public:
         If the Status is OK, fillJson has no effect.
         Not currently used. */
     void
-    fillJson(Json::Value&);
+    fillJson(boost::json::value&);
 
 private:
     Type type_ = Type::none;

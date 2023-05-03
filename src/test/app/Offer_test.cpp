@@ -2264,17 +2264,17 @@ public:
         // WS client is used here because the RPC client could not
         // be convinced to pass the build_path argument
         auto wsc = makeWSClient(env.app().config());
-        Json::Value payment;
-        payment[jss::secret] = toBase58(generateSeed("bob"));
-        payment[jss::id] = env.seq(bob);
-        payment[jss::build_path] = true;
-        payment[jss::tx_json] = pay(bob, bob, bob["XXX"](1));
-        payment[jss::tx_json][jss::Sequence] =
+        boost::json::object payment;
+        payment[std::string{jss::secret}] = toBase58(generateSeed("bob"));
+        payment[std::string{jss::id}] = env.seq(bob);
+        payment[std::string{jss::build_path}] = true;
+        payment[std::string{jss::tx_json}] = pay(bob, bob, bob["XXX"](1));
+        payment[std::string{jss::tx_json}][std::string{jss::Sequence}] =
             env.current()
                 ->read(keylet::account(bob.id()))
                 ->getFieldU32(sfSequence);
-        payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] =
+        payment[std::string{jss::tx_json}][std::string{jss::Fee}] = to_string(env.current()->fees().base);
+        payment[std::string{jss::tx_json][jss::SendMax] =
             bob["XTS"](1.5).value().getJson(JsonOptions::none);
         auto jrr = wsc->invoke("submit", payment);
         BEAST_EXPECT(jrr[jss::status] == "success");

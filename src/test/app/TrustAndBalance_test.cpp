@@ -259,7 +259,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
             jvs[jss::streams].append("transactions");
             jvs[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", jvs);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv.as_object()[std::string{jss::status}] == "success");
 
             env.close();
 

@@ -29,7 +29,7 @@ namespace test {
 namespace jtx {
 
 /** Create a payment. */
-Json::Value
+boost::json::value
 pay(Account const& account, Account const& to, AnyAmount amount);
 
 }  // namespace jtx

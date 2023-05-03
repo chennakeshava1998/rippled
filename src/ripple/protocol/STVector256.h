@@ -46,7 +46,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    boost::json::value getJson(JsonOptions) const override;
 
     bool
     isEquivalent(const STBase& t) const override;

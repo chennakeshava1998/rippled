@@ -226,22 +226,22 @@ STTx::checkSign(
     return Unexpected("Internal signature check failure.");
 }
 
-Json::Value STTx::getJson(JsonOptions) const
+boost::json::value STTx::getJson(JsonOptions) const
 {
-    Json::Value ret = STObject::getJson(JsonOptions::none);
-    ret[jss::hash] = to_string(getTransactionID());
+    boost::json::value ret = STObject::getJson(JsonOptions::none);
+    ret.as_object()[jss::hash.c_str()] = to_string(getTransactionID());
     return ret;
 }
 
-Json::Value
+boost::json::value
 STTx::getJson(JsonOptions options, bool binary) const
 {
     if (binary)
     {
-        Json::Value ret;
+        boost::json::value ret;
         Serializer s = STObject::getSerializer();
-        ret[jss::tx] = strHex(s.peekData());
-        ret[jss::hash] = to_string(getTransactionID());
+        ret.as_object()[jss::tx.c_str()] = strHex(s.peekData());
+        ret.as_object()[jss::hash.c_str()] = to_string(getTransactionID());
         return ret;
     }
     return getJson(options);

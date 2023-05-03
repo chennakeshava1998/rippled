@@ -212,10 +212,20 @@ void
 inject_error(error_code_i code, JsonValue& json)
 {
     ErrorInfo const& info(get_error_info(code));
-    json[jss::error] = info.token;
-    json[jss::error_code] = info.code;
-    json[jss::error_message] = info.message;
+    json[jss::error.c_str()] = info.token;
+    json[jss::error_code.c_str()] = info.code;
+    json[jss::error_message.c_str()] = info.message;
 }
+
+//// concrete overload for boost::json::object& types
+//// The other template specializations do not work although boost::json:object has an overloaded operator[]
+//// Moreover, the keys to the boost::json::object need to be string-like types
+//void inject_error(error_code_i code, boost::json::object& json) {
+//    ErrorInfo const& info(get_error_info(code));
+//    json[jss::error.c_str()] = info.token;
+//    json[jss::error_code.c_str()] = info.code;
+//    json[jss::error_message.c_str()] = info.message;
+//}
 
 template <class JsonValue>
 void
@@ -229,24 +239,24 @@ void
 inject_error(error_code_i code, std::string const& message, JsonValue& json)
 {
     ErrorInfo const& info(get_error_info(code));
-    json[jss::error] = info.token;
-    json[jss::error_code] = info.code;
-    json[jss::error_message] = message;
+    json[jss::error.c_str()] = info.token;
+    json[jss::error_code.c_str()] = info.code;
+    json[jss::error_message.c_str()] = message;
 }
 
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
 /** @{ */
-Json::Value
+boost::json::value
 make_error(error_code_i code);
-Json::Value
+boost::json::value
 make_error(error_code_i code, std::string const& message);
 /** @} */
 
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
-inline Json::Value
+inline boost::json::value
 make_param_error(std::string const& message)
 {
     return make_error(rpcINVALID_PARAMS, message);
@@ -258,13 +268,13 @@ missing_field_message(std::string const& name)
     return "Missing field '" + name + "'.";
 }
 
-inline Json::Value
+inline boost::json::value
 missing_field_error(std::string const& name)
 {
     return make_param_error(missing_field_message(name));
 }
 
-inline Json::Value
+inline boost::json::value
 missing_field_error(Json::StaticString name)
 {
     return missing_field_error(std::string(name));
@@ -276,13 +286,13 @@ object_field_message(std::string const& name)
     return "Invalid field '" + name + "', not object.";
 }
 
-inline Json::Value
+inline boost::json::value
 object_field_error(std::string const& name)
 {
     return make_param_error(object_field_message(name));
 }
 
-inline Json::Value
+inline boost::json::value
 object_field_error(Json::StaticString name)
 {
     return object_field_error(std::string(name));
@@ -300,13 +310,13 @@ invalid_field_message(Json::StaticString name)
     return invalid_field_message(std::string(name));
 }
 
-inline Json::Value
+inline boost::json::value
 invalid_field_error(std::string const& name)
 {
     return make_param_error(invalid_field_message(name));
 }
 
-inline Json::Value
+inline boost::json::value
 invalid_field_error(Json::StaticString name)
 {
     return invalid_field_error(std::string(name));
@@ -324,19 +334,19 @@ expected_field_message(Json::StaticString name, std::string const& type)
     return expected_field_message(std::string(name), type);
 }
 
-inline Json::Value
+inline boost::json::value
 expected_field_error(std::string const& name, std::string const& type)
 {
     return make_param_error(expected_field_message(name, type));
 }
 
-inline Json::Value
+inline boost::json::value
 expected_field_error(Json::StaticString name, std::string const& type)
 {
     return expected_field_error(std::string(name), type);
 }
 
-inline Json::Value
+inline boost::json::value
 not_validator_error()
 {
     return make_param_error("not a validator");
@@ -346,7 +356,7 @@ not_validator_error()
 
 /** Returns `true` if the json contains an rpc error specification. */
 bool
-contains_error(Json::Value const& json);
+contains_error(boost::json::value const& json);
 
 /** Returns http status that corresponds to the error code. */
 int
@@ -356,7 +366,7 @@ error_code_http_status(error_code_i code);
 
 /** Returns a single string with the contents of an RPC error. */
 std::string
-rpcErrorString(Json::Value const& jv);
+rpcErrorString(boost::json::value const& jv);
 
 }  // namespace ripple
 

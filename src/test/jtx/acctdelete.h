@@ -28,7 +28,7 @@ namespace test {
 namespace jtx {
 
 /** Delete account.  If successful transfer remaining XRP to dest. */
-Json::Value
+boost::json::value
 acctdelete(Account const& account, Account const& dest);
 
 }  // namespace jtx

@@ -24,16 +24,16 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::value
 fset(Account const& account, std::uint32_t on, std::uint32_t off)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = jss::AccountSet;
+    boost::json::object jv;
+    jv[std::string{jss::Account}] = account.human();
+    jv[std::string{jss::TransactionType}] = jss::AccountSet;
     if (on != 0)
-        jv[jss::SetFlag] = on;
+        jv[std::string{jss::SetFlag}] = on;
     if (off != 0)
-        jv[jss::ClearFlag] = off;
+        jv[std::string{jss::ClearFlag}] = off;
     return jv;
 }
 

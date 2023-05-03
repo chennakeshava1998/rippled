@@ -139,16 +139,16 @@ STArray::getText() const
     return r;
 }
 
-Json::Value
+boost::json::value
 STArray::getJson(JsonOptions p) const
 {
-    Json::Value v = Json::arrayValue;
+    boost::json::array v;
     for (auto const& object : v_)
     {
         if (object.getSType() != STI_NOTPRESENT)
         {
-            Json::Value& inner = v.append(Json::objectValue);
-            inner[object.getFName().getJsonName()] = object.getJson(p);
+            boost::json::value& inner = v.emplace_back(boost::json::object());
+            inner.as_object()[object.getFName().getJsonName()] = object.getJson(p);
         }
     }
     return v;
