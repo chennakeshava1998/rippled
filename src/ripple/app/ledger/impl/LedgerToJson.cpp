@@ -51,62 +51,63 @@ template <class Object>
 void
 fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
-    json[jss::parent_hash] = to_string(info.parentHash);
-    json[jss::ledger_index] = to_string(info.seq);
-    json[jss::seqNum] = to_string(info.seq);  // DEPRECATED
+    json.as_object()[jss::parent_hash.c_str()] = to_string(info.parentHash);
+    json.as_object()[jss::ledger_index.c_str()] = to_string(info.seq);
+    json.as_object()[jss::seqNum.c_str()] = to_string(info.seq);  // DEPRECATED
 
     if (closed)
     {
-        json[jss::closed] = true;
+        json.as_object()[jss::closed.c_str()] = true;
     }
     else if (!bFull)
     {
-        json[jss::closed] = false;
+        json.as_object()[jss::closed.c_str()] = false;
         return;
     }
 
-    json[jss::ledger_hash] = to_string(info.hash);
-    json[jss::transaction_hash] = to_string(info.txHash);
-    json[jss::account_hash] = to_string(info.accountHash);
-    json[jss::total_coins] = to_string(info.drops);
+    json.as_object()[jss::ledger_hash.c_str()] = to_string(info.hash);
+    json.as_object()[jss::transaction_hash.c_str()] = to_string(info.txHash);
+    json.as_object()[jss::account_hash.c_str()] = to_string(info.accountHash);
+    json.as_object()[jss::total_coins.c_str()] = to_string(info.drops);
 
     // These next three are DEPRECATED.
-    json[jss::hash] = to_string(info.hash);
-    json[jss::totalCoins] = to_string(info.drops);
-    json[jss::accepted] = closed;
-    json[jss::close_flags] = info.closeFlags;
+    json.as_object()[jss::hash.c_str()] = to_string(info.hash);
+    json.as_object()[jss::totalCoins.c_str()] = to_string(info.drops);
+    json.as_object()[jss::accepted.c_str()] = closed;
+    json.as_object()[jss::close_flags.c_str()] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
-    json[jss::parent_close_time] =
+    json.as_object()[jss::parent_close_time.c_str()] =
         info.parentCloseTime.time_since_epoch().count();
-    json[jss::close_time] = info.closeTime.time_since_epoch().count();
-    json[jss::close_time_resolution] = info.closeTimeResolution.count();
+    json.as_object()[jss::close_time.c_str()] = info.closeTime.time_since_epoch().count();
+    json.as_object()[jss::close_time_resolution.c_str()] = info.closeTimeResolution.count();
 
     if (info.closeTime != NetClock::time_point{})
     {
-        json[jss::close_time_human] = to_string(info.closeTime);
+        json.as_object()[jss::close_time_human.c_str()] = to_string(info.closeTime);
         if (!getCloseAgree(info))
-            json[jss::close_time_estimated] = true;
+            json.as_object()[jss::close_time_estimated.c_str()] = true;
     }
 }
 
+// Keshava: This template might be instantiated for non-boost::json::values. That will cause trouble
 template <class Object>
 void
 fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
 {
     if (!closed)
-        json[jss::closed] = false;
+        json.as_object()[jss::closed.c_str()] = false;
     else
     {
-        json[jss::closed] = true;
+        json.as_object()[jss::closed.c_str()] = true;
 
         Serializer s;
         addRaw(info, s);
-        json[jss::ledger_data] = strHex(s.peekData());
+        json.as_object()[jss::ledger_data.c_str()] = strHex(s.peekData());
     }
 }
 
-Json::Value
+boost::json::value
 fillJsonTx(
     LedgerFill const& fill,
     bool bBinary,
@@ -115,27 +116,27 @@ fillJsonTx(
     std::shared_ptr<STObject const> const& stMeta)
 {
     if (!bExpanded)
-        return to_string(txn->getTransactionID());
+        return boost::json::string(to_string(txn->getTransactionID()));
 
-    Json::Value txJson{Json::objectValue};
+    boost::json::value txJson;
     auto const txnType = txn->getTxnType();
     if (bBinary)
     {
-        txJson[jss::tx_blob] = serializeHex(*txn);
+        txJson.as_object()[jss::tx_blob.c_str()] = serializeHex(*txn);
         if (stMeta)
-            txJson[jss::meta] = serializeHex(*stMeta);
+            txJson.as_object()[jss::meta.c_str()] = serializeHex(*stMeta);
     }
     else
     {
-        copyFrom(txJson, txn->getJson(JsonOptions::none));
+        txJson = txn->getJson(JsonOptions::none);
         if (stMeta)
         {
-            txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
+            txJson.as_object()[jss::metaData.c_str()] = stMeta->getJson(JsonOptions::none);
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
                 RPC::insertDeliveredAmount(
-                    txJson[jss::metaData],
+                    txJson.as_object()[jss::metaData.c_str()].as_object(),
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
@@ -158,7 +159,7 @@ fillJsonTx(
                 amount,
                 fhIGNORE_FREEZE,
                 beast::Journal{beast::Journal::getNullSink()});
-            txJson[jss::owner_funds] = ownerFunds.getText();
+            txJson.as_object()[jss::owner_funds.c_str()] = ownerFunds.getText();
         }
     }
 
@@ -169,7 +170,7 @@ template <class Object>
 void
 fillJsonTx(Object& json, LedgerFill const& fill)
 {
-    auto&& txns = setArray(json, jss::transactions);
+    boost::json::array& txns = json.as_object()[jss::transactions.c_str()].emplace_array();
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -178,7 +179,7 @@ fillJsonTx(Object& json, LedgerFill const& fill)
         auto appendAll = [&](auto const& txs) {
             for (auto& i : txs)
             {
-                txns.append(
+                txns.emplace_back(
                     fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
             }
         };
@@ -208,7 +209,7 @@ void
 fillJsonState(Object& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto&& array = Json::setArray(json, jss::accountState);
+    boost::json::array& array = json.as_object()[jss::accountState.c_str()].emplace_array();
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -218,14 +219,14 @@ fillJsonState(Object& json, LedgerFill const& fill)
         {
             if (binary)
             {
-                auto&& obj = appendObject(array);
-                obj[jss::hash] = to_string(sle->key());
-                obj[jss::tx_blob] = serializeHex(*sle);
+                boost::json::object& obj = array.emplace_back(boost::json::object()).as_object();
+                obj[jss::hash.c_str()] = to_string(sle->key());
+                obj[jss::tx_blob.c_str()] = serializeHex(*sle);
             }
             else if (expanded)
-                array.append(sle->getJson(JsonOptions::none));
+                array.emplace_back(sle->getJson(JsonOptions::none));
             else
-                array.append(to_string(sle->key()));
+                array.emplace_back(to_string(sle->key()));
         }
     }
 }
@@ -234,30 +235,31 @@ template <class Object>
 void
 fillJsonQueue(Object& json, LedgerFill const& fill)
 {
-    auto&& queueData = Json::setArray(json, jss::queue_data);
+    boost::json::array& queueData = json.as_object()[jss::queue_data.c_str()].emplace_array();
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto&& txJson = appendObject(queueData);
-        txJson[jss::fee_level] = to_string(tx.feeLevel);
-        if (tx.lastValid)
-            txJson[jss::LastLedgerSequence] = *tx.lastValid;
 
-        txJson[jss::fee] = to_string(tx.consequences.fee());
+        boost::json::object& txJson = queueData.emplace_back(boost::json::object()).as_object();
+        txJson[jss::fee_level.c_str()] = to_string(tx.feeLevel);
+        if (tx.lastValid)
+            txJson[jss::LastLedgerSequence.c_str()] = *tx.lastValid;
+
+        txJson[jss::fee.c_str()] = to_string(tx.consequences.fee());
         auto const spend =
             tx.consequences.potentialSpend() + tx.consequences.fee();
-        txJson[jss::max_spend_drops] = to_string(spend);
-        txJson[jss::auth_change] = tx.consequences.isBlocker();
+        txJson[jss::max_spend_drops.c_str()] = to_string(spend);
+        txJson[jss::auth_change.c_str()] = tx.consequences.isBlocker();
 
-        txJson[jss::account] = to_string(tx.account);
+        txJson[jss::account.c_str()] = to_string(tx.account);
         txJson["retries_remaining"] = tx.retriesRemaining;
         txJson["preflight_result"] = transToken(tx.preflightResult);
         if (tx.lastResult)
             txJson["last_result"] = transToken(*tx.lastResult);
 
-        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        txJson[jss::tx.c_str()] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
     }
 }
 
@@ -283,19 +285,20 @@ fillJson(Object& json, LedgerFill const& fill)
 }  // namespace
 
 void
-addJson(Json::Value& json, LedgerFill const& fill)
+addJson(boost::json::value& json, LedgerFill const& fill)
 {
-    auto&& object = Json::addObject(json, jss::ledger);
+    json.as_object()[jss::ledger.c_str()].emplace_object();
+    auto&& object = json.as_object()[jss::ledger.c_str()];
     fillJson(object, fill);
 
     if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())
         fillJsonQueue(json, fill);
 }
 
-Json::Value
+boost::json::value
 getJson(LedgerFill const& fill)
 {
-    Json::Value json;
+    boost::json::value json;
     fillJson(json, fill);
     return json;
 }

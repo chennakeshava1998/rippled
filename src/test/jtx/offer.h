@@ -29,7 +29,7 @@ namespace test {
 namespace jtx {
 
 /** Create an offer. */
-Json::Value
+boost::json::object
 offer(
     Account const& account,
     STAmount const& takerPays,
@@ -37,7 +37,7 @@ offer(
     std::uint32_t flags = 0);
 
 /** Cancel an offer. */
-Json::Value
+boost::json::object
 offer_cancel(Account const& account, std::uint32_t offerSeq);
 
 }  // namespace jtx

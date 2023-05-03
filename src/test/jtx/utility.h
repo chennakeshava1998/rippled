@@ -45,21 +45,21 @@ struct parse_error : std::logic_error
           this set of unit test routines.
 */
 STObject
-parse(Json::Value const& jv);
+parse(boost::json::value const& jv);
 
 /** Sign automatically.
     @note This only works on accounts with multi-signing off.
 */
 void
-sign(Json::Value& jv, Account const& account);
+sign(boost::json::value& jv, Account const& account);
 
 /** Set the fee automatically. */
 void
-fill_fee(Json::Value& jv, ReadView const& view);
+fill_fee(boost::json::value& jv, ReadView const& view);
 
 /** Set the sequence number automatically. */
 void
-fill_seq(Json::Value& jv, ReadView const& view);
+fill_seq(boost::json::value& jv, ReadView const& view);
 
 }  // namespace jtx
 }  // namespace test

@@ -22,6 +22,7 @@
 
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/jss.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 

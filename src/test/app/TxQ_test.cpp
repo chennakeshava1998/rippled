@@ -2996,7 +2996,7 @@ public:
         auto const aliceSeq = env.seq(alice);
         auto const lastLedgerSeq = env.current()->info().seq + 2;
 
-        auto submitParams = Json::Value(Json::objectValue);
+        boost::json::object submitParams;
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
@@ -3130,27 +3130,30 @@ public:
             // account_info without the "queue" argument.
             auto const info = env.rpc("json", "account_info", withoutQueue);
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            BEAST_EXPECT(!info[jss::result].isMember(jss::queue_data));
+                info.as_object().contains(jss::result.c_str()) &&
+                info.as_object().at(jss::result.c_str()).as_object().contains(jss::account_data.c_str()));
+            BEAST_EXPECT(!info.as_object().at(jss::result.c_str()).as_object().contains(jss::queue_data.c_str()));
         }
         {
             // account_info with the "queue" argument.
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const infoJson = env.rpc("json", "account_info", withQueue);
+            boost::json::object const& info = infoJson.as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            auto const& result = info[jss::result];
-            BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
-            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+                info.contains(jss::result.c_str()) &&
+                info.at(jss::result.c_str()).as_object().contains(jss::account_data.c_str()));
+            auto const& resultJson = info.at(jss::result.c_str());
+            boost::json::object const& result = resultJson.as_object();
+            BEAST_EXPECT(result.contains(jss::queue_data.c_str()));
+            auto const& queue_dataJson = result.at(jss::queue_data.c_str());
+            boost::json::object const& queue_data = queue_dataJson.as_object();
+            
+            BEAST_EXPECT(queue_data.contains(jss::txn_count.c_str()));
+            BEAST_EXPECT(queue_data.at(jss::txn_count.c_str()) == 0);
+            BEAST_EXPECT(!queue_data.contains(jss::lowest_sequence.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::highest_sequence.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::auth_change_queued.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::max_spend_drops_total.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::transactions.c_str()));
         }
         checkMetrics(__LINE__, env, 0, 6, 0, 3, 256);
 
@@ -3158,24 +3161,27 @@ public:
         checkMetrics(__LINE__, env, 0, 6, 4, 3, 256);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto infoJson = env.rpc("json", "account_info", withQueue);
+            // Keshava: temporarily removing const-qualifier for quick prototype testing
+            boost::json::object& info = infoJson.as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            auto const& result = info[jss::result];
-            BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
-            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+                info.contains(jss::result.c_str()) &&
+                info[jss::result.c_str()].as_object().contains(jss::account_data.c_str()));
+            auto& resultJson = info[jss::result.c_str()];
+            boost::json::object& result = resultJson.as_object();
+            BEAST_EXPECT(result.contains(jss::queue_data.c_str()));
+            auto& queue_dataJson = result[jss::queue_data.c_str()];
+            boost::json::object& queue_data = queue_dataJson.as_object();
+            BEAST_EXPECT(queue_data.contains(jss::txn_count.c_str()));
+            BEAST_EXPECT(queue_data[jss::txn_count.c_str()] == 0);
+            BEAST_EXPECT(!queue_data.contains(jss::lowest_sequence.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::highest_sequence.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::auth_change_queued.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::max_spend_drops_total.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::transactions.c_str()));
         }
 
-        auto submitParams = Json::Value(Json::objectValue);
+        boost::json::object submitParams;
         envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
         envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
         envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
@@ -3183,45 +3189,46 @@ public:
         checkMetrics(__LINE__, env, 4, 6, 4, 3, 256);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto infoJson = env.rpc("json", "account_info", withQueue);
+            boost::json::object& info = infoJson.as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            auto const& result = info[jss::result];
-            auto const& data = result[jss::account_data];
-            BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 4);
-            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
+                info.contains(jss::result.c_str()) &&
+                info[jss::result.c_str()].as_object().contains(jss::account_data.c_str()));
+            auto& result = info[jss::result.c_str()];
+            auto& data = result.as_object()[jss::account_data.c_str()];
+            BEAST_EXPECT(result.as_object().contains(jss::queue_data.c_str()));
+            auto& queue_dataJson = result.as_object()[jss::queue_data.c_str()];
+            auto& queue_data = queue_dataJson.as_object();
+            BEAST_EXPECT(queue_data.contains(jss::txn_count.c_str()));
+            BEAST_EXPECT(queue_data[jss::txn_count.c_str()] == 4);
+            BEAST_EXPECT(queue_data.contains(jss::lowest_sequence.c_str()));
             BEAST_EXPECT(
-                queue_data[jss::lowest_sequence] == data[jss::Sequence]);
-            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+                queue_data[jss::lowest_sequence.c_str()] == data.as_object()[jss::Sequence.c_str()]);
+            BEAST_EXPECT(queue_data.contains(jss::highest_sequence.c_str()));
             BEAST_EXPECT(
-                queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() +
-                    queue_data[jss::txn_count].asUInt() - 1);
-            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(queue_data[jss::auth_change_queued] == false);
-            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == "400");
-            BEAST_EXPECT(queue_data.isMember(jss::transactions));
-            auto const& queued = queue_data[jss::transactions];
-            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+                queue_data[jss::highest_sequence.c_str()] ==
+                data.as_object()[jss::Sequence.c_str()].as_uint64() +
+                    queue_data[jss::txn_count.c_str()].as_uint64() - 1);
+            BEAST_EXPECT(queue_data.contains(jss::auth_change_queued.c_str()));
+            BEAST_EXPECT(queue_data[jss::auth_change_queued.c_str()] == false);
+            BEAST_EXPECT(queue_data.contains(jss::max_spend_drops_total.c_str()));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total.c_str()] == "400");
+            BEAST_EXPECT(queue_data.contains(jss::transactions.c_str()));
+            auto& queued = queue_data[jss::transactions.c_str()].as_array();
+            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count.c_str()]);
             for (unsigned i = 0; i < queued.size(); ++i)
             {
-                auto const& item = queued[i];
-                BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
-                BEAST_EXPECT(item[jss::fee_level] == "2560");
-                BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
+                auto& item = queued[i].as_object();
+                BEAST_EXPECT(item[jss::seq.c_str()] == data.as_object()[jss::Sequence.c_str()].as_int64() + i);
+                BEAST_EXPECT(item[jss::fee_level.c_str()] == "2560");
+                BEAST_EXPECT(!item.contains(jss::LastLedgerSequence.c_str()));
 
-                BEAST_EXPECT(item.isMember(jss::fee));
-                BEAST_EXPECT(item[jss::fee] == "100");
-                BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                BEAST_EXPECT(item[jss::max_spend_drops] == "100");
-                BEAST_EXPECT(item.isMember(jss::auth_change));
-                BEAST_EXPECT(item[jss::auth_change].asBool() == false);
+                BEAST_EXPECT(item.contains(jss::fee.c_str()));
+                BEAST_EXPECT(item[jss::fee.c_str()] == "100");
+                BEAST_EXPECT(item.contains(jss::max_spend_drops.c_str()));
+                BEAST_EXPECT(item[jss::max_spend_drops.c_str()] == "100");
+                BEAST_EXPECT(item.contains(jss::auth_change.c_str()));
+                BEAST_EXPECT(item[jss::auth_change.c_str()].as_bool() == false);
             }
         }
 
@@ -3241,53 +3248,52 @@ public:
         checkMetrics(__LINE__, env, 1, 8, 5, 4, 256);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto info = env.rpc("json", "account_info", withQueue).as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            auto const& result = info[jss::result];
-            auto const& data = result[jss::account_data];
-            BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 1);
-            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
+                info.contains(jss::result.c_str()) &&
+                info[jss::result.c_str()].as_object().contains(jss::account_data.c_str()));
+            auto & result = info[jss::result.c_str()].as_object();
+            auto & data = result[jss::account_data.c_str()].as_object();
+            BEAST_EXPECT(result.contains(jss::queue_data.c_str()));
+            auto & queue_data = result[jss::queue_data.c_str()].as_object();
+            BEAST_EXPECT(queue_data.contains(jss::txn_count.c_str()));
+            BEAST_EXPECT(queue_data[jss::txn_count.c_str()] == 1);
+            BEAST_EXPECT(queue_data.contains(jss::lowest_sequence.c_str()));
             BEAST_EXPECT(
-                queue_data[jss::lowest_sequence] == data[jss::Sequence]);
-            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+                queue_data[jss::lowest_sequence.c_str()] == data[jss::Sequence.c_str()]);
+            BEAST_EXPECT(queue_data.contains(jss::highest_sequence.c_str()));
             BEAST_EXPECT(
-                queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() +
-                    queue_data[jss::txn_count].asUInt() - 1);
-            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(queue_data[jss::auth_change_queued] == true);
-            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == "100");
-            BEAST_EXPECT(queue_data.isMember(jss::transactions));
-            auto const& queued = queue_data[jss::transactions];
-            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+                queue_data[jss::highest_sequence.c_str()] ==
+                data[jss::Sequence.c_str()].as_uint64() +
+                    queue_data[jss::txn_count.c_str()].as_uint64() - 1);
+            BEAST_EXPECT(queue_data.contains(jss::auth_change_queued.c_str()));
+            BEAST_EXPECT(queue_data[jss::auth_change_queued.c_str()] == true);
+            BEAST_EXPECT(queue_data.contains(jss::max_spend_drops_total.c_str()));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total.c_str()] == "100");
+            BEAST_EXPECT(queue_data.contains(jss::transactions.c_str()));
+            auto & queued = queue_data[jss::transactions.c_str()].as_array();
+            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count.c_str()]);
             for (unsigned i = 0; i < queued.size(); ++i)
             {
-                auto const& item = queued[i];
-                BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
-                BEAST_EXPECT(item[jss::fee_level] == "2560");
-                BEAST_EXPECT(item.isMember(jss::fee));
-                BEAST_EXPECT(item[jss::fee] == "100");
-                BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                BEAST_EXPECT(item[jss::max_spend_drops] == "100");
-                BEAST_EXPECT(item.isMember(jss::auth_change));
+                auto& item = queued[i].as_object();
+                BEAST_EXPECT(item[jss::seq.c_str()] == data[jss::Sequence.c_str()].as_int64() + i);
+                BEAST_EXPECT(item[jss::fee_level.c_str()] == "2560");
+                BEAST_EXPECT(item.contains(jss::fee.c_str()));
+                BEAST_EXPECT(item[jss::fee.c_str()] == "100");
+                BEAST_EXPECT(item.contains(jss::max_spend_drops.c_str()));
+                BEAST_EXPECT(item[jss::max_spend_drops.c_str()] == "100");
+                BEAST_EXPECT(item.contains(jss::auth_change.c_str()));
 
                 if (i == queued.size() - 1)
                 {
-                    BEAST_EXPECT(item[jss::auth_change].asBool() == true);
-                    BEAST_EXPECT(item.isMember(jss::LastLedgerSequence));
-                    BEAST_EXPECT(item[jss::LastLedgerSequence] == 10);
+                    BEAST_EXPECT(item[jss::auth_change.c_str()].as_bool() == true);
+                    BEAST_EXPECT(item.contains(jss::LastLedgerSequence.c_str()));
+                    BEAST_EXPECT(item[jss::LastLedgerSequence.c_str()] == 10);
                 }
                 else
                 {
-                    BEAST_EXPECT(item[jss::auth_change].asBool() == false);
-                    BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
+                    BEAST_EXPECT(item[jss::auth_change.c_str()].as_bool() == false);
+                    BEAST_EXPECT(!item.contains(jss::LastLedgerSequence.c_str()));
                 }
             }
         }
@@ -3297,68 +3303,67 @@ public:
         checkMetrics(__LINE__, env, 1, 8, 5, 4, 256);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto info = env.rpc("json", "account_info", withQueue).as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            auto const& result = info[jss::result];
-            auto const& data = result[jss::account_data];
-            BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 1);
-            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
+                info.contains(jss::result.c_str()) &&
+                info[jss::result.c_str()].as_object().contains(jss::account_data.c_str()));
+            auto & result = info[jss::result.c_str()].as_object();
+            auto & data = result[jss::account_data.c_str()].as_object();
+            BEAST_EXPECT(result.contains(jss::queue_data.c_str()));
+            auto & queue_data = result[jss::queue_data.c_str()].as_object();
+            BEAST_EXPECT(queue_data.contains(jss::txn_count.c_str()));
+            BEAST_EXPECT(queue_data[jss::txn_count.c_str()] == 1);
+            BEAST_EXPECT(queue_data.contains(jss::lowest_sequence.c_str()));
             BEAST_EXPECT(
-                queue_data[jss::lowest_sequence] == data[jss::Sequence]);
-            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+                queue_data[jss::lowest_sequence.c_str()] == data[jss::Sequence.c_str()]);
+            BEAST_EXPECT(queue_data.contains(jss::highest_sequence.c_str()));
             BEAST_EXPECT(
-                queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() +
-                    queue_data[jss::txn_count].asUInt() - 1);
-            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(queue_data[jss::auth_change_queued].asBool());
-            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == "100");
-            BEAST_EXPECT(queue_data.isMember(jss::transactions));
-            auto const& queued = queue_data[jss::transactions];
-            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+                queue_data[jss::highest_sequence.c_str()] ==
+                data[jss::Sequence.c_str()].as_uint64() +
+                    queue_data[jss::txn_count.c_str()].as_uint64() - 1);
+            BEAST_EXPECT(queue_data.contains(jss::auth_change_queued.c_str()));
+            BEAST_EXPECT(queue_data[jss::auth_change_queued.c_str()].as_bool());
+            BEAST_EXPECT(queue_data.contains(jss::max_spend_drops_total.c_str()));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total.c_str()] == "100");
+            BEAST_EXPECT(queue_data.contains(jss::transactions.c_str()));
+            auto & queued = queue_data[jss::transactions.c_str()].as_array();
+            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count.c_str()]);
             for (unsigned i = 0; i < queued.size(); ++i)
             {
-                auto const& item = queued[i];
-                BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
-                BEAST_EXPECT(item[jss::fee_level] == "2560");
+                auto & item = queued[i].as_object();
+                BEAST_EXPECT(item[jss::seq.c_str()] == data[jss::Sequence.c_str()].as_int64() + i);
+                BEAST_EXPECT(item[jss::fee_level.c_str()] == "2560");
 
                 if (i == queued.size() - 1)
                 {
-                    BEAST_EXPECT(item.isMember(jss::fee));
-                    BEAST_EXPECT(item[jss::fee] == "100");
-                    BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                    BEAST_EXPECT(item[jss::max_spend_drops] == "100");
-                    BEAST_EXPECT(item.isMember(jss::auth_change));
-                    BEAST_EXPECT(item[jss::auth_change].asBool());
-                    BEAST_EXPECT(item.isMember(jss::LastLedgerSequence));
-                    BEAST_EXPECT(item[jss::LastLedgerSequence] == 10);
+                    BEAST_EXPECT(item.contains(jss::fee.c_str()));
+                    BEAST_EXPECT(item[jss::fee.c_str()] == "100");
+                    BEAST_EXPECT(item.contains(jss::max_spend_drops.c_str()));
+                    BEAST_EXPECT(item[jss::max_spend_drops.c_str()] == "100");
+                    BEAST_EXPECT(item.contains(jss::auth_change.c_str()));
+                    BEAST_EXPECT(item[jss::auth_change.c_str()].as_bool());
+                    BEAST_EXPECT(item.contains(jss::LastLedgerSequence.c_str()));
+                    BEAST_EXPECT(item[jss::LastLedgerSequence.c_str()] == 10);
                 }
                 else
                 {
-                    BEAST_EXPECT(item.isMember(jss::fee));
-                    BEAST_EXPECT(item[jss::fee] == "100");
-                    BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                    BEAST_EXPECT(item[jss::max_spend_drops] == "100");
-                    BEAST_EXPECT(item.isMember(jss::auth_change));
-                    BEAST_EXPECT(!item[jss::auth_change].asBool());
-                    BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
+                    BEAST_EXPECT(item.contains(jss::fee.c_str()));
+                    BEAST_EXPECT(item[jss::fee.c_str()] == "100");
+                    BEAST_EXPECT(item.contains(jss::max_spend_drops.c_str()));
+                    BEAST_EXPECT(item[jss::max_spend_drops.c_str()] == "100");
+                    BEAST_EXPECT(item.contains(jss::auth_change.c_str()));
+                    BEAST_EXPECT(!item[jss::auth_change.c_str()].as_bool());
+                    BEAST_EXPECT(!item.contains(jss::LastLedgerSequence.c_str()));
                 }
             }
         }
 
         {
-            auto const info =
-                env.rpc("json", "account_info", prevLedgerWithQueue);
+            auto info =
+                env.rpc("json", "account_info", prevLedgerWithQueue).as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                RPC::contains_error(info[jss::result]));
+                info.contains(jss::result.c_str()) &&
+                RPC::contains_error(info[jss::result.c_str()]));
         }
 
         env.close();
@@ -3367,21 +3372,20 @@ public:
         checkMetrics(__LINE__, env, 0, 10, 0, 5, 256);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto info = env.rpc("json", "account_info", withQueue).as_object();
             BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
-            auto const& result = info[jss::result];
-            BEAST_EXPECT(result.isMember(jss::queue_data));
-            auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
-            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
-            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
-            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
-            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
-            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+                info.contains(jss::result.c_str()) &&
+                info[jss::result.c_str()].as_object().contains(jss::account_data.c_str()));
+            auto & result = info[jss::result.c_str()].as_object();
+            BEAST_EXPECT(result.contains(jss::queue_data.c_str()));
+            auto & queue_data = result[jss::queue_data.c_str()].as_object();
+            BEAST_EXPECT(queue_data.contains(jss::txn_count.c_str()));
+            BEAST_EXPECT(queue_data[jss::txn_count.c_str()] == 0);
+            BEAST_EXPECT(!queue_data.contains(jss::lowest_sequence.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::highest_sequence.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::auth_change_queued.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::max_spend_drops_total.c_str()));
+            BEAST_EXPECT(!queue_data.contains(jss::transactions.c_str()));
         }
     }
 
@@ -3399,38 +3403,38 @@ public:
         env.close();
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto server_info = env.rpc("server_info").as_object();
             BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                server_info.contains(jss::result.c_str()) &&
+                server_info[jss::result.c_str()].as_object().contains(jss::info.c_str()));
+            auto & info = server_info[jss::result.c_str()].as_object()[jss::info.c_str()].as_object();
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) && info[jss::load_factor] == 1);
-            BEAST_EXPECT(!info.isMember(jss::load_factor_server));
-            BEAST_EXPECT(!info.isMember(jss::load_factor_local));
-            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
-            BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
+                info.contains(jss::load_factor.c_str()) && info[jss::load_factor.c_str()] == 1);
+            BEAST_EXPECT(!info.contains(jss::load_factor_server.c_str()));
+            BEAST_EXPECT(!info.contains(jss::load_factor_local.c_str()));
+            BEAST_EXPECT(!info.contains(jss::load_factor_net.c_str()));
+            BEAST_EXPECT(!info.contains(jss::load_factor_fee_escalation.c_str()));
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto server_state = env.rpc("server_state").as_object();
+            auto& state = server_state[jss::result.c_str()].as_object()[jss::state.c_str()].as_object();
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 256);
+                state.contains(jss::load_factor.c_str()) &&
+                state[jss::load_factor.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+                state.contains(jss::load_base.c_str()) && state[jss::load_base.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] == 256);
+                state.contains(jss::load_factor_server.c_str()) &&
+                state[jss::load_factor_server.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 256);
+                state.contains(jss::load_factor_fee_escalation.c_str()) &&
+                state[jss::load_factor_fee_escalation.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
+                state.contains(jss::load_factor_fee_queue.c_str()) &&
+                state[jss::load_factor_fee_queue.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.contains(jss::load_factor_fee_reference.c_str()) &&
+                state[jss::load_factor_fee_reference.c_str()] == 256);
         }
 
         checkMetrics(__LINE__, env, 0, 6, 0, 3, 256);
@@ -3439,97 +3443,97 @@ public:
         checkMetrics(__LINE__, env, 0, 6, 4, 3, 256);
 
         auto aliceSeq = env.seq(alice);
-        auto submitParams = Json::Value(Json::objectValue);
+        boost::json::object submitParams;
         for (auto i = 0; i < 4; ++i)
             envs(noop(alice), fee(100), seq(aliceSeq + i), ter(terQUEUED))(
                 submitParams);
         checkMetrics(__LINE__, env, 4, 6, 4, 3, 256);
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto server_info = env.rpc("server_info").as_object();
             BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                server_info.contains(jss::result.c_str()) &&
+                server_info[jss::result.c_str()].as_object().contains(jss::info.c_str()));
+            auto & info = server_info[jss::result.c_str()].as_object()[jss::info.c_str()].as_object();
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] > 888.88 &&
-                info[jss::load_factor] < 888.89);
+                info.contains(jss::load_factor.c_str()) &&
+                info[jss::load_factor.c_str()].as_double() > 888.88 &&
+                info[jss::load_factor.c_str()].as_double() < 888.89);
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_server) &&
-                info[jss::load_factor_server] == 1);
-            BEAST_EXPECT(!info.isMember(jss::load_factor_local));
-            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
+                info.contains(jss::load_factor_server.c_str()) &&
+                info[jss::load_factor_server.c_str()] == 1);
+            BEAST_EXPECT(!info.contains(jss::load_factor_local.c_str()));
+            BEAST_EXPECT(!info.contains(jss::load_factor_net.c_str()));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_fee_escalation) &&
-                info[jss::load_factor_fee_escalation] > 888.88 &&
-                info[jss::load_factor_fee_escalation] < 888.89);
+                info.contains(jss::load_factor_fee_escalation.c_str()) &&
+                info[jss::load_factor_fee_escalation.c_str()].as_double() > 888.88 &&
+                info[jss::load_factor_fee_escalation.c_str()].as_double() < 888.89);
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto server_state = env.rpc("server_state").as_object();
+            auto & state = server_state[jss::result.c_str()].as_object()[jss::state.c_str()].as_object();
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 227555);
+                state.contains(jss::load_factor.c_str()) &&
+                state[jss::load_factor.c_str()] == 227555);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+                state.contains(jss::load_base.c_str()) && state[jss::load_base.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] == 256);
+                state.contains(jss::load_factor_server.c_str()) &&
+                state[jss::load_factor_server.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 227555);
+                state.contains(jss::load_factor_fee_escalation.c_str()) &&
+                state[jss::load_factor_fee_escalation.c_str()] == 227555);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
+                state.contains(jss::load_factor_fee_queue.c_str()) &&
+                state[jss::load_factor_fee_queue.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.contains(jss::load_factor_fee_reference.c_str()) &&
+                state[jss::load_factor_fee_reference.c_str()] == 256);
         }
 
         env.app().getFeeTrack().setRemoteFee(256000);
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto server_info = env.rpc("server_info").as_object();
             BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                server_info.contains(jss::result.c_str()) &&
+                server_info[jss::result.c_str()].as_object().contains(jss::info.c_str()));
+            auto & info = server_info[jss::result.c_str()].as_object()[jss::info.c_str()].as_object();
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] == 1000);
-            BEAST_EXPECT(!info.isMember(jss::load_factor_server));
-            BEAST_EXPECT(!info.isMember(jss::load_factor_local));
+                info.contains(jss::load_factor.c_str()) &&
+                info[jss::load_factor.c_str()] == 1000);
+            BEAST_EXPECT(!info.contains(jss::load_factor_server.c_str()));
+            BEAST_EXPECT(!info.contains(jss::load_factor_local.c_str()));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_net) &&
-                info[jss::load_factor_net] == 1000);
+                info.contains(jss::load_factor_net.c_str()) &&
+                info[jss::load_factor_net.c_str()] == 1000);
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_fee_escalation) &&
-                info[jss::load_factor_fee_escalation] > 888.88 &&
-                info[jss::load_factor_fee_escalation] < 888.89);
+                info.contains(jss::load_factor_fee_escalation.c_str()) &&
+                info[jss::load_factor_fee_escalation.c_str()].as_double() > 888.88 &&
+                info[jss::load_factor_fee_escalation.c_str()].as_double() < 888.89);
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto  server_state = env.rpc("server_state").as_object();
+            auto & state = server_state[jss::result.c_str()].as_object()[jss::state.c_str()].as_object();
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 256000);
+                state.contains(jss::load_factor.c_str()) &&
+                state[jss::load_factor.c_str()] == 256000);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+                state.contains(jss::load_base.c_str()) && state[jss::load_base.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] == 256000);
+                state.contains(jss::load_factor_server.c_str()) &&
+                state[jss::load_factor_server.c_str()] == 256000);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 227555);
+                state.contains(jss::load_factor_fee_escalation.c_str()) &&
+                state[jss::load_factor_fee_escalation.c_str()] == 227555);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
+                state.contains(jss::load_factor_fee_queue.c_str()) &&
+                state[jss::load_factor_fee_queue.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.contains(jss::load_factor_fee_reference.c_str()) &&
+                state[jss::load_factor_fee_reference.c_str()] == 256);
         }
 
         env.app().getFeeTrack().setRemoteFee(256);
@@ -3540,109 +3544,109 @@ public:
         BEAST_EXPECT(env.app().getFeeTrack().getLoadFactor() == 625);
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto server_info = env.rpc("server_info").as_object();
             BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                server_info.contains(jss::result.c_str()) &&
+                server_info[jss::result.c_str()].as_object().contains(jss::info.c_str()));
+            auto& info = server_info[jss::result.c_str()].as_object()[jss::info.c_str()].as_object();
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] > 888.88 &&
-                info[jss::load_factor] < 888.89);
+                info.contains(jss::load_factor.c_str()) &&
+                info[jss::load_factor.c_str()].as_double() > 888.88 &&
+                info[jss::load_factor.c_str()].as_double() < 888.89);
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 1.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_server) &&
-                info[jss::load_factor_server] > 1.245 &&
-                info[jss::load_factor_server] < 2.4415);
+                info.contains(jss::load_factor_server.c_str()) &&
+                info[jss::load_factor_server.c_str()].as_double() > 1.245 &&
+                info[jss::load_factor_server.c_str()].as_double() < 2.4415);
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_local) &&
-                info[jss::load_factor_local] > 1.245 &&
-                info[jss::load_factor_local] < 2.4415);
-            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
+                info.contains(jss::load_factor_local.c_str()) &&
+                info[jss::load_factor_local.c_str()].as_double() > 1.245 &&
+                info[jss::load_factor_local.c_str()].as_double() < 2.4415);
+            BEAST_EXPECT(!info.contains(jss::load_factor_net.c_str()));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_fee_escalation) &&
-                info[jss::load_factor_fee_escalation] > 888.88 &&
-                info[jss::load_factor_fee_escalation] < 888.89);
+                info.contains(jss::load_factor_fee_escalation.c_str()) &&
+                info[jss::load_factor_fee_escalation.c_str()].as_double() > 888.88 &&
+                info[jss::load_factor_fee_escalation.c_str()].as_double() < 888.89);
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto server_state = env.rpc("server_state").as_object();
+            auto & state = server_state[jss::result.c_str()].as_object()[jss::state.c_str()].as_object();
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 227555);
+                state.contains(jss::load_factor.c_str()) &&
+                state[jss::load_factor.c_str()] == 227555);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+                state.contains(jss::load_base.c_str()) && state[jss::load_base.c_str()] == 256);
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 256.
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] >= 320 &&
-                state[jss::load_factor_server] <= 625);
+                state.contains(jss::load_factor_server.c_str()) &&
+                state[jss::load_factor_server.c_str()].as_uint64() >= 320 &&
+                state[jss::load_factor_server.c_str()].as_uint64() <= 625);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 227555);
+                state.contains(jss::load_factor_fee_escalation.c_str()) &&
+                state[jss::load_factor_fee_escalation.c_str()] == 227555);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
+                state.contains(jss::load_factor_fee_queue.c_str()) &&
+                state[jss::load_factor_fee_queue.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.contains(jss::load_factor_fee_reference.c_str()) &&
+                state[jss::load_factor_fee_reference.c_str()] == 256);
         }
 
         env.close();
 
         {
-            auto const server_info = env.rpc("server_info");
+            auto server_info = env.rpc("server_info").as_object();
             BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
-            auto const& info = server_info[jss::result][jss::info];
+                server_info.contains(jss::result.c_str()) &&
+                server_info[jss::result.c_str()].as_object().contains(jss::info.c_str()));
+            auto & info = server_info[jss::result.c_str()].as_object()[jss::info.c_str()].as_object();
             // Avoid double rounding issues by comparing to a range.
 
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 1.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] > 1.245 &&
-                info[jss::load_factor] < 2.4415);
-            BEAST_EXPECT(!info.isMember(jss::load_factor_server));
+                info.contains(jss::load_factor.c_str()) &&
+                info[jss::load_factor.c_str()].as_double() > 1.245 &&
+                info[jss::load_factor.c_str()].as_double() < 2.4415);
+            BEAST_EXPECT(!info.contains(jss::load_factor_server.c_str()));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_local) &&
-                info[jss::load_factor_local] > 1.245 &&
-                info[jss::load_factor_local] < 2.4415);
-            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
-            BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
+                info.contains(jss::load_factor_local.c_str()) &&
+                info[jss::load_factor_local.c_str()].as_double() > 1.245 &&
+                info[jss::load_factor_local.c_str()].as_double() < 2.4415);
+            BEAST_EXPECT(!info.contains(jss::load_factor_net.c_str()));
+            BEAST_EXPECT(!info.contains(jss::load_factor_fee_escalation.c_str()));
         }
         {
-            auto const server_state = env.rpc("server_state");
-            auto const& state = server_state[jss::result][jss::state];
+            auto  server_state = env.rpc("server_state").as_object();
+            auto & state = server_state[jss::result.c_str()].as_object()[jss::state.c_str()].as_object();
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] >= 320 &&
-                state[jss::load_factor] <= 625);
+                state.contains(jss::load_factor.c_str()) &&
+                state[jss::load_factor.c_str()].as_uint64() >= 320 &&
+                state[jss::load_factor.c_str()].as_uint64() <= 625);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+                state.contains(jss::load_base.c_str()) && state[jss::load_base.c_str()] == 256);
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 256.
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] >= 320 &&
-                state[jss::load_factor_server] <= 625);
+                state.contains(jss::load_factor_server.c_str()) &&
+                state[jss::load_factor_server.c_str()].as_uint64() >= 320 &&
+                state[jss::load_factor_server.c_str()].as_uint64() <= 625);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 256);
+                state.contains(jss::load_factor_fee_escalation.c_str()) &&
+                state[jss::load_factor_fee_escalation.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
+                state.contains(jss::load_factor_fee_queue.c_str()) &&
+                state[jss::load_factor_fee_queue.c_str()] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.contains(jss::load_factor_fee_reference.c_str()) &&
+                state[jss::load_factor_fee_reference.c_str()] == 256);
         }
     }
 
@@ -3654,13 +3658,13 @@ public:
 
         Env env(*this, makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}));
 
-        Json::Value stream;
-        stream[jss::streams] = Json::arrayValue;
-        stream[jss::streams].append("server");
+        boost::json::object stream;
+        stream[jss::streams.c_str()].emplace_array();
+        stream[jss::streams.c_str()].as_array().emplace_back("server");
         auto wsc = makeWSClient(env.app().config());
         {
             auto jv = wsc->invoke("subscribe", stream);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         }
 
         Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"},
@@ -3672,50 +3676,49 @@ public:
 
         // First transaction establishes the messaging
         using namespace std::chrono_literals;
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
-                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 256 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
-                jv[jss::load_factor_fee_reference] == 256;
+        BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus" &&
+                jv.as_object().contains(jss::load_factor.c_str()) && jv.as_object().at(jss::load_factor.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_base.c_str()) && jv.as_object().at(jss::load_base.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_server.c_str()) &&
+                jv.as_object().at(jss::load_factor_server.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_escalation.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_escalation.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_queue.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_queue.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_reference.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_reference.c_str()) == 256;
         }));
         // Last transaction escalates the fee
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) &&
-                jv[jss::load_factor] == 227555 && jv.isMember(jss::load_base) &&
-                jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 227555 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
-                jv[jss::load_factor_fee_reference] == 256;
+        BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus" &&
+                jv.as_object().contains(jss::load_factor.c_str()) && jv.as_object().at(jss::load_factor.c_str()) == 227555 &&
+                jv.as_object().contains(jss::load_base.c_str()) && jv.as_object().at(jss::load_base.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_server.c_str()) &&
+                jv.as_object().at(jss::load_factor_server.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_escalation.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_escalation.c_str()) == 227555 &&
+                jv.as_object().contains(jss::load_factor_fee_queue.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_queue.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_reference.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_reference.c_str()) == 256;
         }));
 
         env.close();
 
         // Closing ledger should publish a status update
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
-                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 256 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
-                jv[jss::load_factor_fee_reference] == 256;
+        BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus" &&
+                jv.as_object().contains(jss::load_factor.c_str()) && jv.as_object().at(jss::load_factor.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_base.c_str()) && jv.as_object().at(jss::load_base.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_server.c_str()) &&
+                jv.as_object().at(jss::load_factor_server.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_escalation.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_escalation.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_queue.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_queue.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_reference.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_reference.c_str()) == 256;
         }));
 
         checkMetrics(__LINE__, env, 0, 8, 0, 4, 256);
@@ -3735,60 +3738,59 @@ public:
         checkMetrics(__LINE__, env, 7, 8, 5, 4, 256);
 
         // Last transaction escalates the fee
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) &&
-                jv[jss::load_factor] == 200000 && jv.isMember(jss::load_base) &&
-                jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 200000 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
-                jv[jss::load_factor_fee_reference] == 256;
+        BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus" &&
+                jv.as_object().contains(jss::load_factor.c_str()) && jv.as_object().at(jss::load_factor.c_str()) == 200000 &&
+                jv.as_object().contains(jss::load_base.c_str()) && jv.as_object().at(jss::load_base.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_server.c_str()) &&
+                jv.as_object().at(jss::load_factor_server.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_escalation.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_escalation.c_str()) == 200000 &&
+                jv.as_object().contains(jss::load_factor_fee_queue.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_queue.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_reference.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_reference.c_str()) == 256;
         }));
 
         env.close();
         //  Ledger close publishes with escalated fees for queued transactions
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) &&
-                jv[jss::load_factor] == 184320 && jv.isMember(jss::load_base) &&
-                jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 184320 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
-                jv[jss::load_factor_fee_reference] == 256;
+        BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus" &&
+                jv.as_object().contains(jss::load_factor.c_str()) && jv.as_object().at(jss::load_factor.c_str()) == 184320 &&
+                jv.as_object().contains(jss::load_base.c_str()) && jv.as_object().at(jss::load_base.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_server.c_str()) &&
+                jv.as_object().at(jss::load_factor_server.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_escalation.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_escalation.c_str()) == 184320 &&
+                jv.as_object().contains(jss::load_factor_fee_queue.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_queue.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_reference.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_reference.c_str()) == 256;
         }));
+
 
         env.close();
         // ledger close clears queue so fee is back to normal
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
-                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 256 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
-                jv[jss::load_factor_fee_reference] == 256;
+        BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus" &&
+                jv.as_object().contains(jss::load_factor.c_str()) && jv.as_object().at(jss::load_factor.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_base.c_str()) && jv.as_object().at(jss::load_base.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_server.c_str()) &&
+                jv.as_object().at(jss::load_factor_server.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_escalation.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_escalation.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_queue.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_queue.c_str()) == 256 &&
+                jv.as_object().contains(jss::load_factor_fee_reference.c_str()) &&
+                jv.as_object().at(jss::load_factor_fee_reference.c_str()) == 256;
         }));
 
-        BEAST_EXPECT(!wsc->findMsg(1s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus";
+        BEAST_EXPECT(!wsc->findMsg(1s, [&](boost::json::value const& jv) {
+            return jv.as_object().at(jss::type.c_str()) == "serverStatus";
         }));
 
         auto jv = wsc->invoke("unsubscribe", stream);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
     }
 
     void
@@ -4834,41 +4836,41 @@ public:
         BEAST_EXPECT(env.current()->fees().base == 0);
 
         {
-            auto const fee = env.rpc("fee");
+            auto fee = env.rpc("fee").as_object();
 
-            if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+            if (BEAST_EXPECT(fee.contains(jss::result.c_str())) &&
+                BEAST_EXPECT(!RPC::contains_error(fee[jss::result.c_str()])))
             {
-                auto const& result = fee[jss::result];
+                auto & result = fee[jss::result.c_str()].as_object();
 
-                BEAST_EXPECT(result.isMember(jss::levels));
-                auto const& levels = result[jss::levels];
+                BEAST_EXPECT(result.contains(jss::levels.c_str()));
+                auto & levels = result[jss::levels.c_str()].as_object();
                 BEAST_EXPECT(
-                    levels.isMember(jss::median_level) &&
-                    levels[jss::median_level] == "128000");
+                    levels.contains(jss::median_level.c_str()) &&
+                    levels[jss::median_level.c_str()] == "128000");
                 BEAST_EXPECT(
-                    levels.isMember(jss::minimum_level) &&
-                    levels[jss::minimum_level] == "256");
+                    levels.contains(jss::minimum_level.c_str()) &&
+                    levels[jss::minimum_level.c_str()] == "256");
                 BEAST_EXPECT(
-                    levels.isMember(jss::open_ledger_level) &&
-                    levels[jss::open_ledger_level] == "256");
+                    levels.contains(jss::open_ledger_level.c_str()) &&
+                    levels[jss::open_ledger_level.c_str()] == "256");
                 BEAST_EXPECT(
-                    levels.isMember(jss::reference_level) &&
-                    levels[jss::reference_level] == "256");
+                    levels.contains(jss::reference_level.c_str()) &&
+                    levels[jss::reference_level.c_str()] == "256");
 
-                auto const& drops = result[jss::drops];
+                auto & drops = result[jss::drops.c_str()].as_object();
                 BEAST_EXPECT(
-                    drops.isMember(jss::base_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops.contains(jss::base_fee.c_str()) &&
+                    drops[jss::base_fee.c_str()] == "0");
                 BEAST_EXPECT(
-                    drops.isMember(jss::median_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops.contains(jss::median_fee.c_str()) &&
+                    drops[jss::base_fee.c_str()] == "0");
                 BEAST_EXPECT(
-                    drops.isMember(jss::minimum_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops.contains(jss::minimum_fee.c_str()) &&
+                    drops[jss::base_fee.c_str()] == "0");
                 BEAST_EXPECT(
-                    drops.isMember(jss::open_ledger_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops.contains(jss::open_ledger_fee.c_str()) &&
+                    drops[jss::base_fee.c_str()] == "0");
             }
         }
 
@@ -4902,41 +4904,41 @@ public:
         checkMetrics(__LINE__, env, 2, 6, 5, 3, 256);
 
         {
-            auto const fee = env.rpc("fee");
+            auto fee = env.rpc("fee").as_object();
 
-            if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+            if (BEAST_EXPECT(fee.contains(jss::result.c_str())) &&
+                BEAST_EXPECT(!RPC::contains_error(fee[jss::result.c_str()])))
             {
-                auto const& result = fee[jss::result];
+                auto& result = fee[jss::result.c_str()].as_object();
 
-                BEAST_EXPECT(result.isMember(jss::levels));
-                auto const& levels = result[jss::levels];
+                BEAST_EXPECT(result.contains(jss::levels.c_str()));
+                auto & levels = result[jss::levels.c_str()].as_object();
                 BEAST_EXPECT(
-                    levels.isMember(jss::median_level) &&
-                    levels[jss::median_level] == "128000");
+                    levels.contains(jss::median_level.c_str()) &&
+                    levels[jss::median_level.c_str()] == "128000");
                 BEAST_EXPECT(
-                    levels.isMember(jss::minimum_level) &&
-                    levels[jss::minimum_level] == "256");
+                    levels.contains(jss::minimum_level.c_str()) &&
+                    levels[jss::minimum_level.c_str()] == "256");
                 BEAST_EXPECT(
-                    levels.isMember(jss::open_ledger_level) &&
-                    levels[jss::open_ledger_level] == "355555");
+                    levels.contains(jss::open_ledger_level.c_str()) &&
+                    levels[jss::open_ledger_level.c_str()] == "355555");
                 BEAST_EXPECT(
-                    levels.isMember(jss::reference_level) &&
-                    levels[jss::reference_level] == "256");
+                    levels.contains(jss::reference_level.c_str()) &&
+                    levels[jss::reference_level.c_str()] == "256");
 
-                auto const& drops = result[jss::drops];
+                auto & drops = result[jss::drops.c_str()].as_object();
                 BEAST_EXPECT(
-                    drops.isMember(jss::base_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops.contains(jss::base_fee.c_str()) &&
+                    drops[jss::base_fee.c_str()] == "0");
                 BEAST_EXPECT(
-                    drops.isMember(jss::median_fee) &&
-                    drops[jss::median_fee] == "0");
+                    drops.contains(jss::median_fee.c_str()) &&
+                    drops[jss::median_fee.c_str()] == "0");
                 BEAST_EXPECT(
-                    drops.isMember(jss::minimum_fee) &&
-                    drops[jss::minimum_fee] == "0");
+                    drops.contains(jss::minimum_fee.c_str()) &&
+                    drops[jss::minimum_fee.c_str()] == "0");
                 BEAST_EXPECT(
-                    drops.isMember(jss::open_ledger_fee) &&
-                    drops[jss::open_ledger_fee] == "1389");
+                    drops.contains(jss::open_ledger_fee.c_str()) &&
+                    drops[jss::open_ledger_fee.c_str()] == "1389");
             }
         }
 

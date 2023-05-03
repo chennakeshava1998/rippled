@@ -31,36 +31,36 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::object
 signers(
     Account const& account,
     std::uint32_t quorum,
     std::vector<signer> const& v)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = jss::SignerListSet;
-    jv[sfSignerQuorum.getJsonName()] = quorum;
-    auto& ja = jv[sfSignerEntries.getJsonName()];
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::TransactionType.c_str()] = jss::SignerListSet;
+    jv[sfSignerQuorum.getJsonName().c_str()] = quorum;
+    auto& ja = jv[sfSignerEntries.getJsonName().c_str()];
     for (std::size_t i = 0; i < v.size(); ++i)
     {
         auto const& e = v[i];
-        auto& je = ja[i][sfSignerEntry.getJsonName()];
-        je[jss::Account] = e.account.human();
-        je[sfSignerWeight.getJsonName()] = e.weight;
+        boost::json::object& je = ja.as_array()[i].as_object()[sfSignerEntry.getJsonName().c_str()].as_object();
+        je[jss::Account.c_str()] = e.account.human();
+        je[sfSignerWeight.getJsonName().c_str()] = e.weight;
         if (e.tag)
-            je[sfWalletLocator.getJsonName()] = to_string(*e.tag);
+            je[sfWalletLocator.getJsonName().c_str()] = to_string(*e.tag);
     }
     return jv;
 }
 
-Json::Value
+boost::json::object
 signers(Account const& account, none_t)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = jss::SignerListSet;
-    jv[sfSignerQuorum.getJsonName()] = 0;
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::TransactionType.c_str()] = jss::SignerListSet;
+    jv[sfSignerQuorum.getJsonName().c_str()] = 0;
     return jv;
 }
 
@@ -82,7 +82,7 @@ msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     jt.signer = [mySigners, &env](Env&, JTx& jtx) {
-        jtx[sfSigningPubKey.getJsonName()] = "";
+        jtx[sfSigningPubKey.getJsonName().c_str()] = "";
         std::optional<STObject> st;
         try
         {
@@ -90,21 +90,21 @@ msig::operator()(Env& env, JTx& jt) const
         }
         catch (parse_error const&)
         {
-            env.test.log << pretty(jtx.jv) << std::endl;
+            env.test.log << serialize(jtx.jv) << std::endl;
             Rethrow();
         }
-        auto& js = jtx[sfSigners.getJsonName()];
+        auto& js = jtx[sfSigners.getJsonName().c_str()];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
         {
             auto const& e = mySigners[i];
-            auto& jo = js[i][sfSigner.getJsonName()];
-            jo[jss::Account] = e.acct.human();
-            jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
+            boost::json::object& jo = js.as_array()[i].as_object()[sfSigner.getJsonName().c_str()].as_object();
+            jo[jss::Account.c_str()] = e.acct.human();
+            jo[jss::SigningPubKey.c_str()] = strHex(e.sig.pk().slice());
 
             Serializer ss{buildMultiSigningData(*st, e.acct.id())};
             auto const sig = ripple::sign(
                 *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
-            jo[sfTxnSignature.getJsonName()] =
+            jo[sfTxnSignature.getJsonName().c_str()] =
                 strHex(Slice{sig.data(), sig.size()});
         }
     };

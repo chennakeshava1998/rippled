@@ -27,6 +27,7 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -64,10 +65,10 @@ struct LedgerFill
  */
 
 void
-addJson(Json::Value&, LedgerFill const&);
+addJson(boost::json::value&, LedgerFill const&);
 
 /** Return a new Json::Value representing the ledger with given options.*/
-Json::Value
+boost::json::value
 getJson(LedgerFill const&);
 
 /** Serialize an object to a blob. */

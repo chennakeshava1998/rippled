@@ -24,22 +24,22 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::object
 regkey(Account const& account, disabled_t)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = jss::SetRegularKey;
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::TransactionType.c_str()] = jss::SetRegularKey;
     return jv;
 }
 
-Json::Value
+boost::json::object
 regkey(Account const& account, Account const& signer)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
     jv["RegularKey"] = to_string(signer.id());
-    jv[jss::TransactionType] = jss::SetRegularKey;
+    jv[jss::TransactionType.c_str()] = jss::SetRegularKey;
     return jv;
 }
 

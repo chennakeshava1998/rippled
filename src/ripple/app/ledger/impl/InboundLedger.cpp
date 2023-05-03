@@ -1355,52 +1355,52 @@ InboundLedger::runData()
     });
 }
 
-Json::Value
+boost::json::value
 InboundLedger::getJson(int)
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     ScopedLockType sl(mtx_);
 
-    ret[jss::hash] = to_string(hash_);
+    ret[jss::hash.c_str()] = to_string(hash_);
 
     if (complete_)
-        ret[jss::complete] = true;
+        ret[jss::complete.c_str()] = true;
 
     if (failed_)
-        ret[jss::failed] = true;
+        ret[jss::failed.c_str()] = true;
 
     if (!complete_ && !failed_)
-        ret[jss::peers] = static_cast<int>(mPeerSet->getPeerIds().size());
+        ret[jss::peers.c_str()] = static_cast<int>(mPeerSet->getPeerIds().size());
 
-    ret[jss::have_header] = mHaveHeader;
+    ret[jss::have_header.c_str()] = mHaveHeader;
 
     if (mHaveHeader)
     {
-        ret[jss::have_state] = mHaveState;
-        ret[jss::have_transactions] = mHaveTransactions;
+        ret[jss::have_state.c_str()] = mHaveState;
+        ret[jss::have_transactions.c_str()] = mHaveTransactions;
     }
 
-    ret[jss::timeouts] = timeouts_;
+    ret[jss::timeouts.c_str()] = timeouts_;
 
     if (mHaveHeader && !mHaveState)
     {
-        Json::Value hv(Json::arrayValue);
+        boost::json::array hv;
         for (auto const& h : neededStateHashes(16, nullptr))
         {
-            hv.append(to_string(h));
+            hv.emplace_back(to_string(h));
         }
-        ret[jss::needed_state_hashes] = hv;
+        ret[jss::needed_state_hashes.c_str()] = hv;
     }
 
     if (mHaveHeader && !mHaveTransactions)
     {
-        Json::Value hv(Json::arrayValue);
+        boost::json::array hv;
         for (auto const& h : neededTxHashes(16, nullptr))
         {
-            hv.append(to_string(h));
+            hv.emplace_back(to_string(h));
         }
-        ret[jss::needed_transaction_hashes] = hv;
+        ret[jss::needed_transaction_hashes.c_str()] = hv;
     }
 
     return ret;

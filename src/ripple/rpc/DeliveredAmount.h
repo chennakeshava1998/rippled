@@ -25,6 +25,7 @@
 
 #include <functional>
 #include <memory>
+#include <boost/json.hpp>
 
 namespace Json {
 class Value;
@@ -54,20 +55,20 @@ struct Context;
  */
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    boost::json::object& meta,
     ReadView const&,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const&);
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    boost::json::object& meta,
     RPC::JsonContext const&,
     std::shared_ptr<Transaction> const&,
     TxMeta const&);
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    boost::json::object& meta,
     RPC::JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);

@@ -24,30 +24,30 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::object
 offer(
     Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets,
     std::uint32_t flags)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::none);
-    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::none);
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::TakerPays.c_str()] = takerPays.getJson(JsonOptions::none);
+    jv[jss::TakerGets.c_str()] = takerGets.getJson(JsonOptions::none);
     if (flags)
-        jv[jss::Flags] = flags;
-    jv[jss::TransactionType] = jss::OfferCreate;
+        jv[jss::Flags.c_str()] = flags;
+    jv[jss::TransactionType.c_str()] = jss::OfferCreate;
     return jv;
 }
 
-Json::Value
+boost::json::object
 offer_cancel(Account const& account, std::uint32_t offerSeq)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::OfferSequence] = offerSeq;
-    jv[jss::TransactionType] = jss::OfferCancel;
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::OfferSequence.c_str()] = offerSeq;
+    jv[jss::TransactionType.c_str()] = jss::OfferCancel;
     return jv;
 }
 

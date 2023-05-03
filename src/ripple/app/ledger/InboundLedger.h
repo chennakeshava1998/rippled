@@ -28,6 +28,7 @@
 #include <mutex>
 #include <set>
 #include <utility>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -101,7 +102,7 @@ public:
         std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     /** Return a Json::objectValue. */
-    Json::Value
+    boost::json::value
     getJson(int);
 
     void

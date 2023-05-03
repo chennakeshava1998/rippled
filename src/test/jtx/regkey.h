@@ -29,11 +29,11 @@ namespace test {
 namespace jtx {
 
 /** Disable the regular key. */
-Json::Value
+boost::json::object
 regkey(Account const& account, disabled_t);
 
 /** Set a regular key. */
-Json::Value
+boost::json::object
 regkey(Account const& account, Account const& signer);
 
 }  // namespace jtx

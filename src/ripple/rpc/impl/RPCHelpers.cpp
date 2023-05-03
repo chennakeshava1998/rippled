@@ -34,6 +34,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace RPC {
@@ -708,14 +709,14 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
 }
 
 hash_set<AccountID>
-parseAccountIds(boost::json::value const& jvArray)
+parseAccountIds(boost::json::array const& jvArray)
 {
     hash_set<AccountID> result;
     for (auto const& jv : jvArray)
     {
-        if (!jv.isString())
+        if (!jv.is_string())
             return hash_set<AccountID>();
-        auto const id = parseBase58<AccountID>(jv.asString());
+        auto const id = parseBase58<AccountID>(serialize(jv.as_string()));
         if (!id)
             return hash_set<AccountID>();
         result.insert(*id);
@@ -773,10 +774,10 @@ parseRippleLibSeed(boost::json::value const& value)
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While rippled never encode seeds that way, we
     // try to detect such keys to avoid user confusion.
-    if (!value.isString())
+    if (!value.is_string())
         return std::nullopt;
 
-    auto const result = decodeBase58Token(value.asString(), TokenType::None);
+    auto const result = decodeBase58Token(serialize(value.as_string()), TokenType::None);
 
     if (result.size() == 18 &&
         static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
@@ -787,7 +788,7 @@ parseRippleLibSeed(boost::json::value const& value)
 }
 
 std::optional<Seed>
-getSeedFromRPC(boost::json::value const& params, boost::json::value& error)
+getSeedFromRPC(boost::json::object const& params, boost::json::value& error)
 {
     using string_to_seed_t =
         std::function<std::optional<Seed>(std::string const&)>;
@@ -810,7 +811,7 @@ getSeedFromRPC(boost::json::value const& params, boost::json::value& error)
     int count = 0;
     for (auto const& t : seedTypes)
     {
-        if (params.isMember(t.first))
+        if (params.contains(t.first))
         {
             ++count;
             seedType = &t;
@@ -827,14 +828,14 @@ getSeedFromRPC(boost::json::value const& params, boost::json::value& error)
     }
 
     // Make sure a string is present
-    auto const& param = params[seedType->first];
-    if (!param.isString())
+    auto const& param = params.at(seedType->first);
+    if (!param.is_string())
     {
         error = RPC::expected_field_error(seedType->first, "string");
         return std::nullopt;
     }
 
-    auto const fieldContents = param.asString();
+    auto const fieldContents = serialize(param.as_string());
 
     // Convert string to seed.
     std::optional<Seed> seed = seedType->second(fieldContents);
@@ -999,8 +1000,8 @@ chooseLedgerEntryType(boost::json::object const& params)
                  {jss::nft_offer, ltNFTOKEN_OFFER},
                  {jss::nft_page, ltNFTOKEN_PAGE}}};
 
-        auto const& p = params[jss::type];
-        if (!p.isString())
+        auto const& p = params.at(jss::type.c_str());
+        if (!p.is_string())
         {
             result.first = RPC::Status{
                 rpcINVALID_PARAMS, "Invalid field 'type', not string."};
@@ -1008,7 +1009,7 @@ chooseLedgerEntryType(boost::json::object const& params)
             return result;
         }
 
-        auto const filter = p.asString();
+        auto const filter = serialize(p.as_string());
         auto iter = std::find_if(
             types.begin(), types.end(), [&filter](decltype(types.front())& t) {
                 return t.first == filter;
@@ -1135,7 +1136,7 @@ getLedgerByContext(RPC::JsonContext& context)
                     boost::json::value jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND,
                         "acquiring ledger containing requested index");
-                    jvResult[jss::acquiring] = il->getJson(0);
+                    jvResult.as_object()[jss::acquiring.c_str()] = il->getJson(0);
                     return jvResult;
                 }
 

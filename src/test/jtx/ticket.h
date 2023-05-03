@@ -25,6 +25,7 @@
 #include <test/jtx/owners.h>
 
 #include <cstdint>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
@@ -40,7 +41,7 @@ namespace jtx {
 namespace ticket {
 
 /** Create one of more tickets */
-Json::Value
+boost::json::object
 create(Account const& account, std::uint32_t count);
 
 /** Set a ticket sequence on a JTx. */

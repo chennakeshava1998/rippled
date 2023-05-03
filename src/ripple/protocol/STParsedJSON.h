@@ -50,7 +50,7 @@ public:
     std::optional<STObject> object;
 
     /** On failure, an appropriate set of error values. */
-    Json::Value error;
+    boost::json::value error;
 };
 
 /** Holds the serialized result of parsing an input JSON array.
@@ -78,7 +78,7 @@ public:
     std::optional<STArray> array;
 
     /** On failure, an appropriate set of error values. */
-    Json::Value error;
+    boost::json::value error;
 };
 
 }  // namespace ripple

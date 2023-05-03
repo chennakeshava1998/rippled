@@ -47,14 +47,14 @@ struct signer
     }
 };
 
-Json::Value
+boost::json::object
 signers(
     Account const& account,
     std::uint32_t quorum,
     std::vector<signer> const& v);
 
 /** Remove a signer list. */
-Json::Value
+boost::json::object
 signers(Account const& account, none_t);
 
 //------------------------------------------------------------------------------

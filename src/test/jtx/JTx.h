@@ -70,7 +70,7 @@ struct JTx
     boost::json::value&
     operator[](Key const& key)
     {
-        return jv[key];
+        return jv.as_object()[key];
     }
 
     /** Return a property if it exists

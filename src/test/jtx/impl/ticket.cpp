@@ -26,13 +26,13 @@ namespace jtx {
 
 namespace ticket {
 
-Json::Value
+boost::json::object
 create(Account const& account, std::uint32_t count)
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = jss::TicketCreate;
-    jv[sfTicketCount.jsonName] = count;
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::TransactionType.c_str()] = jss::TicketCreate;
+    jv[sfTicketCount.jsonName.c_str()] = count;
     return jv;
 }
 
@@ -40,8 +40,8 @@ void
 use::operator()(Env&, JTx& jt) const
 {
     jt.fill_seq = false;
-    jt[sfSequence.jsonName] = 0u;
-    jt[sfTicketSequence.jsonName] = ticketSeq_;
+    jt[sfSequence.jsonName.c_str()] = 0u;
+    jt[sfTicketSequence.jsonName.c_str()] = ticketSeq_;
 }
 
 }  // namespace ticket
