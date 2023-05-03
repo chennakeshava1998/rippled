@@ -24,6 +24,8 @@
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/STParsedJSON.h>  // STParsedJSONObject
 #include <test/jtx.h>
+#include <boost/json.hpp>
+#include <boost/json/parse.hpp>
 
 namespace ripple {
 
@@ -178,8 +180,7 @@ public:
 
         for (auto const& test : testArray)
         {
-            Json::Value req;
-            Json::Reader().parse(test.txt, req);
+            boost::json::value req(boost::json::parse(test.txt));
             if (RPC::contains_error(req))
             {
                 Throw<std::runtime_error>(

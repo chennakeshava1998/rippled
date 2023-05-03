@@ -27,28 +27,28 @@ namespace ripple {
 
 class Freeze_test : public beast::unit_test::suite
 {
-    static Json::Value
+    static boost::json::value
     getAccountLines(test::jtx::Env& env, test::jtx::Account const& account)
     {
-        Json::Value jq;
-        jq[jss::account] = account.human();
+        boost::json::object jq;
+        jq[jss::account.c_str()] = account.human();
         return env.rpc("json", "account_lines", to_string(jq))[jss::result];
     }
 
-    static Json::Value
+    static boost::json::value
     getAccountOffers(
         test::jtx::Env& env,
         test::jtx::Account const& account,
         bool current = false)
     {
-        Json::Value jq;
+        boost::json::value jq;
         jq[jss::account] = account.human();
         jq[jss::ledger_index] = current ? "current" : "validated";
         return env.rpc("json", "account_offers", to_string(jq))[jss::result];
     }
 
     static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
+    checkArraySize(boost::json::value const& val, unsigned int size)
     {
         return val.isArray() && val.size() == size;
     }
@@ -160,7 +160,7 @@ class Freeze_test : public beast::unit_test::suite
             // check G1 account lines
             //    test: shows freeze
             auto lines = getAccountLines(env, G1);
-            Json::Value bobLine;
+            boost::json::value bobLine;
             for (auto const& it : lines[jss::lines])
             {
                 if (it[jss::account] == bob.human())
@@ -178,7 +178,7 @@ class Freeze_test : public beast::unit_test::suite
         {
             //    test: shows freeze peer
             auto lines = getAccountLines(env, bob);
-            Json::Value g1Line;
+            boost::json::value g1Line;
             for (auto const& it : lines[jss::lines])
             {
                 if (it[jss::account] == G1.human())

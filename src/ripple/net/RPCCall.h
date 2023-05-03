@@ -56,23 +56,23 @@ fromNetwork(
     std::string const& strPassword,
     std::string const& strPath,
     std::string const& strMethod,
-    Json::Value const& jvParams,
+    boost::json::value const& jvParams,
     const bool bSSL,
     bool quiet,
     Logs& logs,
-    std::function<void(Json::Value const& jvInput)> callbackFuncP =
-        std::function<void(Json::Value const& jvInput)>(),
+    std::function<void(boost::json::value const& jvInput)> callbackFuncP =
+        std::function<void(boost::json::value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
 }  // namespace RPCCall
 
 /** Given a rippled command line, return the corresponding JSON.
  */
-Json::Value
+boost::json::value
 cmdLineToJSONRPC(std::vector<std::string> const& args, beast::Journal j);
 
 /** Internal invocation of RPC client.
  */
-std::pair<int, Json::Value>
+std::pair<int, boost::json::value>
 rpcClient(
     std::vector<std::string> const& args,
     Config const& config,

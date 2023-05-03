@@ -96,21 +96,21 @@ private:
     // TODO New routine for parsing ledger parameters, other routines should
     // standardize on this.
     static bool
-    jvParseLedger(Json::Value& jvRequest, std::string const& strLedger)
+    jvParseLedger(boost::json::object& jvRequest, std::string const& strLedger)
     {
         if (strLedger == "current" || strLedger == "closed" ||
             strLedger == "validated")
         {
-            jvRequest[jss::ledger_index] = strLedger;
+            jvRequest[jss::ledger_index.c_str()] = strLedger;
         }
         else if (strLedger.length() == 64)
         {
             // YYY Could confirm this is a uint256.
-            jvRequest[jss::ledger_hash] = strLedger;
+            jvRequest[jss::ledger_hash.c_str()] = strLedger;
         }
         else
         {
-            jvRequest[jss::ledger_index] =
+            jvRequest[jss::ledger_index.c_str()] =
                 beast::lexicalCast<std::uint32_t>(strLedger);
         }
 
@@ -118,7 +118,7 @@ private:
     }
 
     // Build a object { "currency" : "XYZ", "issuer" : "rXYX" }
-    static Json::Value
+    static boost::json::value
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
         static boost::regex reCurIss("\\`([[:alpha:]]{3})(?:/(.+))?\\'");
@@ -127,16 +127,16 @@ private:
 
         if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
         {
-            Json::Value jvResult(Json::objectValue);
+            boost::json::object jvResult;
             std::string strCurrency = smMatch[1];
             std::string strIssuer = smMatch[2];
 
-            jvResult[jss::currency] = strCurrency;
+            jvResult[jss::currency.c_str()] = strCurrency;
 
             if (strIssuer.length())
             {
                 // Could confirm issuer is a valid Ripple address.
-                jvResult[jss::issuer] = strIssuer;
+                jvResult[jss::issuer.c_str()] = strIssuer;
             }
 
             return jvResult;
@@ -169,77 +169,77 @@ private:
 
 private:
     using parseFuncPtr =
-        Json::Value (RPCParser::*)(Json::Value const& jvParams);
+        boost::json::value (RPCParser::*)(boost::json::array const& jvParams);
 
-    Json::Value
-    parseAsIs(Json::Value const& jvParams)
+    boost::json::value
+    parseAsIs(boost::json::array const& jvParams)
     {
-        Json::Value v(Json::objectValue);
+        boost::json::object v;
 
-        if (jvParams.isArray() && (jvParams.size() > 0))
-            v[jss::params] = jvParams;
+        if (jvParams.size() > 0)
+            v[jss::params.c_str()] = jvParams;
 
         return v;
     }
 
-    Json::Value
-    parseDownloadShard(Json::Value const& jvParams)
+    boost::json::value
+    parseDownloadShard(boost::json::array const& jvParams)
     {
-        Json::Value jvResult(Json::objectValue);
-        unsigned int sz{jvParams.size()};
+        boost::json::object jvResult;
+        unsigned int sz{static_cast<unsigned int>(jvParams.size())};
         unsigned int i{0};
 
         // If odd number of params then 'novalidate' may have been specified
         if (sz & 1)
         {
-            if (boost::iequals(jvParams[0u].asString(), "novalidate"))
+            if (boost::iequals(jvParams[0u].as_string(), "novalidate"))
                 ++i;
-            else if (!boost::iequals(jvParams[--sz].asString(), "novalidate"))
+            else if (!boost::iequals(jvParams[--sz].as_string(), "novalidate"))
                 return rpcError(rpcINVALID_PARAMS);
         }
 
         // Create the 'shards' array
-        Json::Value shards(Json::arrayValue);
+        boost::json::array shards;
         for (; i < sz; i += 2)
         {
-            Json::Value shard(Json::objectValue);
-            shard[jss::index] = jvParams[i].asUInt();
-            shard[jss::url] = jvParams[i + 1].asString();
-            shards.append(std::move(shard));
+            boost::json::object shard;
+            shard[jss::index.c_str()] = jvParams[i].as_uint64();
+            shard[jss::url.c_str()] = jvParams[i + 1].as_string();
+            shards.emplace_back(std::move(shard));
         }
-        jvResult[jss::shards] = std::move(shards);
+        jvResult[jss::shards.c_str()] = std::move(shards);
 
         return jvResult;
     }
 
-    Json::Value
-    parseInternal(Json::Value const& jvParams)
+    boost::json::value
+    parseInternal(boost::json::array const& jvParams)
     {
-        Json::Value v(Json::objectValue);
-        v[jss::internal_command] = jvParams[0u];
+        boost::json::object v;
+        v[jss::internal_command.c_str()] = jvParams[0u];
 
-        Json::Value params(Json::arrayValue);
+        boost::json::array params;
 
         for (unsigned i = 1; i < jvParams.size(); ++i)
-            params.append(jvParams[i]);
+            params.emplace_back(jvParams[i]);
 
-        v[jss::params] = params;
+        v[jss::params.c_str()] = params;
 
         return v;
     }
 
-    Json::Value
-    parseManifest(Json::Value const& jvParams)
+    boost::json::value
+    parseManifest(boost::json::array const& jvParams)
     {
         if (jvParams.size() == 1)
         {
-            Json::Value jvRequest(Json::objectValue);
+            boost::json::object jvRequest;
 
-            std::string const strPk = jvParams[0u].asString();
+            std::string const strPk = std::string{jvParams[0u].as_string()};
             if (!validPublicKey(strPk, TokenType::NodePublic))
                 return rpcError(rpcPUBLIC_MALFORMED);
 
-            jvRequest[jss::public_key] = strPk;
+            jvRequest[jss::public_key.c_str()] = strPk;
 
             return jvRequest;
         }
@@ -248,50 +248,50 @@ private:
     }
 
     // fetch_info [clear]
-    Json::Value
-    parseFetchInfo(Json::Value const& jvParams)
+    boost::json::value
+    parseFetchInfo(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
         unsigned int iParams = jvParams.size();
 
         if (iParams != 0)
-            jvRequest[jvParams[0u].asString()] = true;
+            jvRequest[jvParams[0u].as_string()] = true;
 
         return jvRequest;
     }
 
     // account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary]
     // [count] [descending]
-    Json::Value
-    parseAccountTransactions(Json::Value const& jvParams)
+    boost::json::value
+    parseAccountTransactions(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
         unsigned int iParams = jvParams.size();
 
-        auto const account = parseBase58<AccountID>(jvParams[0u].asString());
+        auto const account = parseBase58<AccountID>(std::string{jvParams[0u].as_string()});
         if (!account)
             return rpcError(rpcACT_MALFORMED);
 
-        jvRequest[jss::account] = toBase58(*account);
+        jvRequest[jss::account.c_str()] = toBase58(*account);
 
         bool bDone = false;
 
         while (!bDone && iParams >= 2)
         {
             // VFALCO Why is Json::StaticString appearing on the right side?
-            if (jvParams[iParams - 1].asString() == jss::binary)
+            if (jvParams[iParams - 1].as_string() == jss::binary.c_str())
             {
-                jvRequest[jss::binary] = true;
+                jvRequest[jss::binary.c_str()] = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString() == jss::count)
+            else if (jvParams[iParams - 1].as_string() == jss::count.c_str())
             {
-                jvRequest[jss::count] = true;
+                jvRequest[jss::count.c_str()] = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString() == jss::descending)
+            else if (jvParams[iParams - 1].as_string() == jss::descending.c_str())
             {
-                jvRequest[jss::descending] = true;
+                jvRequest[jss::descending.c_str()] = true;
                 --iParams;
             }
             else
@@ -305,13 +305,13 @@ private:
         }
         else if (2 == iParams)
         {
-            if (!jvParseLedger(jvRequest, jvParams[1u].asString()))
+            if (!jvParseLedger(jvRequest, std::string{jvParams[1u].as_string()}))
                 return jvRequest;
         }
         else
         {
-            std::int64_t uLedgerMin = jvParams[1u].asInt();
-            std::int64_t uLedgerMax = jvParams[2u].asInt();
+            std::int64_t uLedgerMin = jvParams[1u].as_int64();
+            std::int64_t uLedgerMax = jvParams[2u].as_int64();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -321,14 +321,14 @@ private:
                 return rpcError(rpcNOT_SYNCED);
             }
 
-            jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();
-            jvRequest[jss::ledger_index_max] = jvParams[2u].asInt();
+            jvRequest[jss::ledger_index_min.c_str()] = jvParams[1u].as_int64();
+            jvRequest[jss::ledger_index_max.c_str()] = jvParams[2u].as_int64();
 
             if (iParams >= 4)
-                jvRequest[jss::limit] = jvParams[3u].asInt();
+                jvRequest[jss::limit.c_str()] = jvParams[3u].as_int64();
 
             if (iParams >= 5)
-                jvRequest[jss::offset] = jvParams[4u].asInt();
+                jvRequest[jss::offset.c_str()] = jvParams[4u].as_int64();
         }
 
         return jvRequest;
@@ -336,35 +336,35 @@ private:
 
     // tx_account accountID [ledger_min [ledger_max [limit]]]] [binary] [count]
     // [forward]
-    Json::Value
-    parseTxAccount(Json::Value const& jvParams)
+    boost::json::value
+    parseTxAccount(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
         unsigned int iParams = jvParams.size();
 
-        auto const account = parseBase58<AccountID>(jvParams[0u].asString());
+        auto const account = parseBase58<AccountID>(std::string{jvParams[0u].as_string()});
         if (!account)
             return rpcError(rpcACT_MALFORMED);
 
-        jvRequest[jss::account] = toBase58(*account);
+        jvRequest[jss::account.c_str()] = toBase58(*account);
 
         bool bDone = false;
 
         while (!bDone && iParams >= 2)
         {
-            if (jvParams[iParams - 1].asString() == jss::binary)
+            if (jvParams[iParams - 1].as_string() == jss::binary.c_str())
             {
-                jvRequest[jss::binary] = true;
+                jvRequest[jss::binary.c_str()] = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString() == jss::count)
+            else if (jvParams[iParams - 1].as_string() == jss::count.c_str())
             {
-                jvRequest[jss::count] = true;
+                jvRequest[jss::count.c_str()] = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString() == jss::forward)
+            else if (jvParams[iParams - 1].as_string() == jss::forward.c_str())
             {
-                jvRequest[jss::forward] = true;
+                jvRequest[jss::forward.c_str()] = true;
                 --iParams;
             }
             else
@@ -378,13 +378,13 @@ private:
         }
         else if (2 == iParams)
         {
-            if (!jvParseLedger(jvRequest, jvParams[1u].asString()))
+            if (!jvParseLedger(jvRequest, std::string{jvParams[1u].as_string()}))
                 return jvRequest;
         }
         else
         {
-            std::int64_t uLedgerMin = jvParams[1u].asInt();
-            std::int64_t uLedgerMax = jvParams[2u].asInt();
+            std::int64_t uLedgerMin = jvParams[1u].as_int64();
+            std::int64_t uLedgerMax = jvParams[2u].as_int64();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -394,11 +394,11 @@ private:
                 return rpcError(rpcNOT_SYNCED);
             }
 
-            jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();
-            jvRequest[jss::ledger_index_max] = jvParams[2u].asInt();
+            jvRequest[jss::ledger_index_min.c_str()] = jvParams[1u].as_int64();
+            jvRequest[jss::ledger_index_max.c_str()] = jvParams[2u].as_int64();
 
             if (iParams >= 4)
-                jvRequest[jss::limit] = jvParams[3u].asInt();
+                jvRequest[jss::limit.c_str()] = jvParams[3u].as_int64();
         }
 
         return jvRequest;
@@ -408,15 +408,15 @@ private:
     // [<proof> [<marker>]]]]] limit: 0 = no limit proof: 0 or 1
     //
     // Mnemonic: taker pays --> offer --> taker gets
-    Json::Value
-    parseBookOffers(Json::Value const& jvParams)
+    boost::json::value
+    parseBookOffers(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
-        Json::Value jvTakerPays =
-            jvParseCurrencyIssuer(jvParams[0u].asString());
-        Json::Value jvTakerGets =
-            jvParseCurrencyIssuer(jvParams[1u].asString());
+        boost::json::value jvTakerPays =
+            jvParseCurrencyIssuer(std::string{jvParams[0u].as_string()});
+        boost::json::value jvTakerGets =
+            jvParseCurrencyIssuer(std::string{jvParams[1u].as_string()});
 
         if (isRpcError(jvTakerPays))
         {
@@ -424,7 +424,7 @@ private:
         }
         else
         {
-            jvRequest[jss::taker_pays] = jvTakerPays;
+            jvRequest[jss::taker_pays.c_str()] = jvTakerPays;
         }
 
         if (isRpcError(jvTakerGets))
@@ -433,49 +433,49 @@ private:
         }
         else
         {
-            jvRequest[jss::taker_gets] = jvTakerGets;
+            jvRequest[jss::taker_gets.c_str()] = jvTakerGets;
         }
 
         if (jvParams.size() >= 3)
         {
-            jvRequest[jss::issuer] = jvParams[2u].asString();
+            jvRequest[jss::issuer.c_str()] = jvParams[2u].as_string();
         }
 
         if (jvParams.size() >= 4 &&
-            !jvParseLedger(jvRequest, jvParams[3u].asString()))
+            !jvParseLedger(jvRequest, std::string{jvParams[3u].as_string()}))
             return jvRequest;
 
         if (jvParams.size() >= 5)
         {
-            int iLimit = jvParams[5u].asInt();
+            int iLimit = jvParams[5u].as_int64();
 
             if (iLimit > 0)
-                jvRequest[jss::limit] = iLimit;
+                jvRequest[jss::limit.c_str()] = iLimit;
         }
 
-        if (jvParams.size() >= 6 && jvParams[5u].asInt())
+        if (jvParams.size() >= 6 && jvParams[5u].as_int64())
         {
-            jvRequest[jss::proof] = true;
+            jvRequest[jss::proof.c_str()] = true;
         }
 
         if (jvParams.size() == 7)
-            jvRequest[jss::marker] = jvParams[6u];
+            jvRequest[jss::marker.c_str()] = jvParams[6u];
 
         return jvRequest;
     }
 
     // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
-    Json::Value
-    parseCanDelete(Json::Value const& jvParams)
+    boost::json::value
+    parseCanDelete(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
         if (!jvParams.size())
             return jvRequest;
 
-        std::string input = jvParams[0u].asString();
+        std::string input = std::string{jvParams[0u].as_string()};
         if (input.find_first_not_of("0123456789") == std::string::npos)
-            jvRequest["can_delete"] = jvParams[0u].asUInt();
+            jvRequest["can_delete"] = jvParams[0u].as_uint64();
         else
             jvRequest["can_delete"] = input;
 
@@ -483,15 +483,15 @@ private:
     }
 
     // connect <ip[:port]> [port]
-    Json::Value
-    parseConnect(Json::Value const& jvParams)
+    boost::json::value
+    parseConnect(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
-        std::string ip = jvParams[0u].asString();
+        boost::json::object jvRequest;
+        std::string ip = std::string{jvParams[0u].as_string()};
         if (jvParams.size() == 2)
         {
-            jvRequest[jss::ip] = ip;
-            jvRequest[jss::port] = jvParams[1u].asUInt();
+            jvRequest[jss::ip.c_str()] = ip;
+            jvRequest[jss::port.c_str()] = jvParams[1u].as_uint64();
             return jvRequest;
         }
 
@@ -499,58 +499,58 @@ private:
         if (std::count(ip.begin(), ip.end(), ':') == 1)
         {
             std::size_t colon = ip.find_last_of(":");
-            jvRequest[jss::ip] = std::string{ip, 0, colon};
-            jvRequest[jss::port] =
-                Json::Value{std::string{ip, colon + 1}}.asUInt();
+            jvRequest[jss::ip.c_str()] = std::string{ip, 0, colon};
+            jvRequest[jss::port.c_str()] =
+                boost::json::value{std::string{ip, colon + 1}}.as_uint64();
             return jvRequest;
         }
 
         // default case, no port
-        jvRequest[jss::ip] = ip;
+        jvRequest[jss::ip.c_str()] = ip;
         return jvRequest;
     }
 
     // deposit_authorized <source_account> <destination_account> [<ledger>]
-    Json::Value
-    parseDepositAuthorized(Json::Value const& jvParams)
+    boost::json::value
+    parseDepositAuthorized(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
-        jvRequest[jss::source_account] = jvParams[0u].asString();
-        jvRequest[jss::destination_account] = jvParams[1u].asString();
+        boost::json::object jvRequest;
+        jvRequest[jss::source_account.c_str()] = jvParams[0u].as_string();
+        jvRequest[jss::destination_account.c_str()] = jvParams[1u].as_string();
 
         if (jvParams.size() == 3)
-            jvParseLedger(jvRequest, jvParams[2u].asString());
+            jvParseLedger(jvRequest, std::string{jvParams[2u].as_string()});
 
         return jvRequest;
     }
 
     // Return an error for attemping to subscribe/unsubscribe via RPC.
-    Json::Value
-    parseEvented(Json::Value const& jvParams)
+    boost::json::value
+    parseEvented(boost::json::array const& jvParams)
     {
         return rpcError(rpcNO_EVENTS);
     }
 
     // feature [<feature>] [accept|reject]
-    Json::Value
-    parseFeature(Json::Value const& jvParams)
+    boost::json::value
+    parseFeature(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
         if (jvParams.size() > 0)
-            jvRequest[jss::feature] = jvParams[0u].asString();
+            jvRequest[jss::feature.c_str()] = jvParams[0u].as_string();
 
         if (jvParams.size() > 1)
         {
-            auto const action = jvParams[1u].asString();
+            auto const action = jvParams[1u].as_string();
 
             // This may look reversed, but it's intentional: jss::vetoed
             // determines whether an amendment is vetoed - so "reject" means
             // that jss::vetoed is true.
             if (boost::iequals(action, "reject"))
-                jvRequest[jss::vetoed] = Json::Value(true);
+                jvRequest[jss::vetoed.c_str()] = boost::json::value(true);
             else if (boost::iequals(action, "accept"))
-                jvRequest[jss::vetoed] = Json::Value(false);
+                jvRequest[jss::vetoed.c_str()] = boost::json::value(false);
             else
                 return rpcError(rpcINVALID_PARAMS);
         }
@@ -559,40 +559,39 @@ private:
     }
 
     // get_counts [<min_count>]
-    Json::Value
-    parseGetCounts(Json::Value const& jvParams)
+    boost::json::value
+    parseGetCounts(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
         if (jvParams.size())
-            jvRequest[jss::min_count] = jvParams[0u].asUInt();
+            jvRequest[jss::min_count.c_str()] = jvParams[0u].as_uint64();
 
         return jvRequest;
     }
 
     // sign_for <account> <secret> <json> offline
     // sign_for <account> <secret> <json>
-    Json::Value
-    parseSignFor(Json::Value const& jvParams)
+    boost::json::value
+    parseSignFor(boost::json::array const& jvParams)
     {
         bool const bOffline =
-            4 == jvParams.size() && jvParams[3u].asString() == "offline";
+            4 == jvParams.size() && jvParams[3u].as_string() == "offline";
 
         if (3 == jvParams.size() || bOffline)
         {
-            Json::Value txJSON;
-            Json::Reader reader;
-            if (reader.parse(jvParams[2u].asString(), txJSON))
+            boost::json::value txJSON(parse(jvParams[2u].as_string()));
+            if (!txJSON.is_null())
             {
                 // sign_for txJSON.
-                Json::Value jvRequest{Json::objectValue};
+                boost::json::object jvRequest;
 
-                jvRequest[jss::account] = jvParams[0u].asString();
-                jvRequest[jss::secret] = jvParams[1u].asString();
-                jvRequest[jss::tx_json] = txJSON;
+                jvRequest[jss::account.c_str()] = jvParams[0u].as_string();
+                jvRequest[jss::secret.c_str()] = jvParams[1u].as_string();
+                jvRequest[jss::tx_json.c_str()] = txJSON;
 
                 if (bOffline)
-                    jvRequest[jss::offline] = true;
+                    jvRequest[jss::offline.c_str()] = true;
 
                 return jvRequest;
             }
@@ -601,21 +600,20 @@ private:
     }
 
     // json <command> <json>
-    Json::Value
-    parseJson(Json::Value const& jvParams)
+    boost::json::value
+    parseJson(boost::json::array const& jvParams)
     {
-        Json::Reader reader;
-        Json::Value jvRequest;
+        boost::json::value jvRequest(boost::json::parse(jvParams[1u].as_string()));
 
         JLOG(j_.trace()) << "RPC method: " << jvParams[0u];
         JLOG(j_.trace()) << "RPC json: " << jvParams[1u];
 
-        if (reader.parse(jvParams[1u].asString(), jvRequest))
+        if (!jvRequest.is_null())
         {
-            if (!jvRequest.isObjectOrNull())
+            if (!jvRequest.is_object())
                 return rpcError(rpcINVALID_PARAMS);
 
-            jvRequest[jss::method] = jvParams[0u];
+            jvRequest.as_object()[jss::method.c_str()] = jvParams[0u];
 
             return jvRequest;
         }
@@ -624,28 +622,28 @@ private:
     }
 
     bool
-    isValidJson2(Json::Value const& jv)
+    isValidJson2(boost::json::value const& jv)
     {
-        if (jv.isArray())
+        if (jv.is_array())
         {
-            if (jv.size() == 0)
+            if (jv.as_array().size() == 0)
                 return false;
-            for (auto const& j : jv)
+            for (auto const& j : jv.as_array())
             {
                 if (!isValidJson2(j))
                     return false;
             }
             return true;
         }
-        if (jv.isObject())
+        if (jv.is_object())
         {
-            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
-                jv.isMember(jss::id) && jv.isMember(jss::method))
+            if (jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object().at(jss::jsonrpc.c_str()) == "2.0" &&
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object().at(jss::ripplerpc.c_str()) == "2.0" &&
+                jv.as_object().contains(jss::id.c_str()) && jv.as_object().contains(jss::method.c_str()))
             {
-                if (jv.isMember(jss::params) &&
-                    !(jv[jss::params].isNull() || jv[jss::params].isArray() ||
-                      jv[jss::params].isObject()))
+                if (jv.as_object().contains(jss::params.c_str()) &&
+                    !(jv.as_object().at(jss::params.c_str()).is_null() || jv.as_object().at(jss::params.c_str()).is_array() ||
+                      jv.as_object().at(jss::params.c_str()).is_object()))
                     return false;
                 return true;
             }
@@ -653,79 +651,76 @@ private:
         return false;
     }
 
-    Json::Value
-    parseJson2(Json::Value const& jvParams)
+    boost::json::value
+    parseJson2(boost::json::array const& jvParams)
     {
-        Json::Reader reader;
-        Json::Value jv;
-        bool valid_parse = reader.parse(jvParams[0u].asString(), jv);
-        if (valid_parse && isValidJson2(jv))
+        boost::json::value jvVal(parse(jvParams[0u].as_string()));
+        if (!jvVal.is_null() && isValidJson2(jvVal))
         {
-            if (jv.isObject())
+            if (jvVal.is_object())
             {
-                Json::Value jv1{Json::objectValue};
-                if (jv.isMember(jss::params))
+                boost::json::object jv = jvVal.as_object();
+                boost::json::object jv1;
+                if (jv.contains(jss::params.c_str()))
                 {
-                    auto const& params = jv[jss::params];
-                    for (auto i = params.begin(); i != params.end(); ++i)
-                        jv1[i.key().asString()] = *i;
+                    jv1 = jv[jss::params.c_str()].as_object();
                 }
-                jv1[jss::jsonrpc] = jv[jss::jsonrpc];
-                jv1[jss::ripplerpc] = jv[jss::ripplerpc];
-                jv1[jss::id] = jv[jss::id];
-                jv1[jss::method] = jv[jss::method];
+                jv1[jss::jsonrpc.c_str()] = jv[jss::jsonrpc.c_str()];
+                jv1[jss::ripplerpc.c_str()] = jv[jss::ripplerpc.c_str()];
+                jv1[jss::id.c_str()] = jv[jss::id.c_str()];
+                jv1[jss::method.c_str()] = jv[jss::method.c_str()];
                 return jv1;
             }
-            // else jv.isArray()
-            Json::Value jv1{Json::arrayValue};
+
+            // else jv.is_array()
+            boost::json::array jv = jvVal.as_array();
+            boost::json::array jv1;
             for (Json::UInt j = 0; j < jv.size(); ++j)
             {
-                if (jv[j].isMember(jss::params))
+                if (jv[j].as_object().contains(jss::params.c_str()))
                 {
-                    auto const& params = jv[j][jss::params];
-                    for (auto i = params.begin(); i != params.end(); ++i)
-                        jv1[j][i.key().asString()] = *i;
+                    jv1[j] = jv[j].as_object()[jss::params.c_str()].as_object();
                 }
-                jv1[j][jss::jsonrpc] = jv[j][jss::jsonrpc];
-                jv1[j][jss::ripplerpc] = jv[j][jss::ripplerpc];
-                jv1[j][jss::id] = jv[j][jss::id];
-                jv1[j][jss::method] = jv[j][jss::method];
+                jv1[j].as_object()[jss::jsonrpc.c_str()] = jv[j].as_object()[jss::jsonrpc.c_str()];
+                jv1[j].as_object()[jss::ripplerpc.c_str()] = jv[j].as_object()[jss::ripplerpc.c_str()];
+                jv1[j].as_object()[jss::id.c_str()] = jv[j].as_object()[jss::id.c_str()];
+                jv1[j].as_object()[jss::method.c_str()] = jv[j].as_object()[jss::method.c_str()];
             }
             return jv1;
         }
         auto jv_error = rpcError(rpcINVALID_PARAMS);
-        if (jv.isMember(jss::jsonrpc))
-            jv_error[jss::jsonrpc] = jv[jss::jsonrpc];
-        if (jv.isMember(jss::ripplerpc))
-            jv_error[jss::ripplerpc] = jv[jss::ripplerpc];
-        if (jv.isMember(jss::id))
-            jv_error[jss::id] = jv[jss::id];
+        if (jvVal.as_object().contains(jss::jsonrpc.c_str()))
+            jv_error.as_object()[jss::jsonrpc.c_str()] = jvVal.as_object()[jss::jsonrpc.c_str()];
+        if (jvVal.as_object().contains(jss::ripplerpc.c_str()))
+            jv_error.as_object()[jss::ripplerpc.c_str()] = jvVal.as_object()[jss::ripplerpc.c_str()];
+        if (jvVal.as_object().contains(jss::id.c_str()))
+            jv_error.as_object()[jss::id.c_str()] = jvVal.as_object()[jss::id.c_str()];
         return jv_error;
     }
 
     // ledger [id|index|current|closed|validated] [full|tx]
-    Json::Value
-    parseLedger(Json::Value const& jvParams)
+    boost::json::value
+    parseLedger(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
         if (!jvParams.size())
         {
             return jvRequest;
         }
 
-        jvParseLedger(jvRequest, jvParams[0u].asString());
+        jvParseLedger(jvRequest, std::string{jvParams[0u].as_string()});
 
         if (2 == jvParams.size())
         {
-            if (jvParams[1u].asString() == "full")
+            if (jvParams[1u].as_string() == "full")
             {
-                jvRequest[jss::full] = true;
+                jvRequest[jss::full.c_str()] = true;
             }
-            else if (jvParams[1u].asString() == "tx")
+            else if (jvParams[1u].as_string() == "tx")
             {
-                jvRequest[jss::transactions] = true;
-                jvRequest[jss::expand] = true;
+                jvRequest[jss::transactions.c_str()] = true;
+                jvRequest[jss::expand.c_str()] = true;
             }
         }
 
@@ -733,20 +728,20 @@ private:
     }
 
     // ledger_header <id>|<index>
-    Json::Value
-    parseLedgerId(Json::Value const& jvParams)
+    boost::json::value
+    parseLedgerId(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
-        std::string strLedger = jvParams[0u].asString();
+        std::string strLedger = std::string{jvParams[0u].as_string()};
 
         if (strLedger.length() == 64)
         {
-            jvRequest[jss::ledger_hash] = strLedger;
+            jvRequest[jss::ledger_hash.c_str()] = strLedger;
         }
         else
         {
-            jvRequest[jss::ledger_index] =
+            jvRequest[jss::ledger_index.c_str()] =
                 beast::lexicalCast<std::uint32_t>(strLedger);
         }
 
@@ -757,19 +752,19 @@ private:
     // log_level <severity>:                Set master log level to the
     // specified severity log_level <partition> <severity>:    Set specified
     // partition to specified severity
-    Json::Value
-    parseLogLevel(Json::Value const& jvParams)
+    boost::json::value
+    parseLogLevel(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
         if (jvParams.size() == 1)
         {
-            jvRequest[jss::severity] = jvParams[0u].asString();
+            jvRequest[jss::severity.c_str()] = jvParams[0u].as_string();
         }
         else if (jvParams.size() == 2)
         {
-            jvRequest[jss::partition] = jvParams[0u].asString();
-            jvRequest[jss::severity] = jvParams[1u].asString();
+            jvRequest[jss::partition.c_str()] = jvParams[0u].as_string();
+            jvRequest[jss::severity.c_str()] = jvParams[1u].as_string();
         }
 
         return jvRequest;
@@ -780,69 +775,69 @@ private:
     // account_info <account>|<account_public_key> [strict]
     // account_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
     // account_offers <account>|<account_public_key> [<ledger>] [strict]
-    Json::Value
-    parseAccountItems(Json::Value const& jvParams)
+    boost::json::value
+    parseAccountItems(boost::json::array const& jvParams)
     {
         return parseAccountRaw1(jvParams);
     }
 
-    Json::Value
-    parseAccountCurrencies(Json::Value const& jvParams)
+    boost::json::value
+    parseAccountCurrencies(boost::json::array const& jvParams)
     {
         return parseAccountRaw1(jvParams);
     }
 
     // account_lines <account> <account>|"" [<ledger>]
-    Json::Value
-    parseAccountLines(Json::Value const& jvParams)
+    boost::json::value
+    parseAccountLines(boost::json::array const& jvParams)
     {
         return parseAccountRaw2(jvParams, jss::peer);
     }
 
     // account_channels <account> <account>|"" [<ledger>]
-    Json::Value
-    parseAccountChannels(Json::Value const& jvParams)
+    boost::json::value
+    parseAccountChannels(boost::json::array const& jvParams)
     {
-        return parseAccountRaw2(jvParams, jss::destination_account);
+        return parseAccountRaw2(jvParams, jss::destination_account.c_str());
     }
 
     // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>
-    Json::Value
-    parseChannelAuthorize(Json::Value const& jvParams)
+    boost::json::value
+    parseChannelAuthorize(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
         unsigned int index = 0;
 
         if (jvParams.size() == 4)
         {
-            jvRequest[jss::passphrase] = jvParams[index];
+            jvRequest[jss::passphrase.c_str()] = jvParams[index];
             index++;
 
-            if (!keyTypeFromString(jvParams[index].asString()))
+            if (!keyTypeFromString(std::string{jvParams[index].as_string()}))
                 return rpcError(rpcBAD_KEY_TYPE);
-            jvRequest[jss::key_type] = jvParams[index];
+            jvRequest[jss::key_type.c_str()] = jvParams[index];
             index++;
         }
         else
         {
-            jvRequest[jss::secret] = jvParams[index];
+            jvRequest[jss::secret.c_str()] = jvParams[index];
             index++;
         }
 
         {
             // verify the channel id is a valid 256 bit number
             uint256 channelId;
-            if (!channelId.parseHex(jvParams[index].asString()))
+            if (!channelId.parseHex(jvParams[index].as_string()))
                 return rpcError(rpcCHANNEL_MALFORMED);
-            jvRequest[jss::channel_id] = to_string(channelId);
+            jvRequest[jss::channel_id.c_str()] = to_string(channelId);
             index++;
         }
 
-        if (!jvParams[index].isString() ||
-            !to_uint64(jvParams[index].asString()))
+        if (!jvParams[index].is_string() ||
+            !to_uint64(std::string{jvParams[index].as_string()}))
             return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[index];
+        jvRequest[jss::amount.c_str()] = jvParams[index];
 
         // If additional parameters are appended, be sure to increment index
         // here
@@ -851,43 +846,43 @@ private:
     }
 
     // channel_verify <public_key> <channel_id> <drops> <signature>
-    Json::Value
-    parseChannelVerify(Json::Value const& jvParams)
+    boost::json::value
+    parseChannelVerify(boost::json::array const& jvParams)
     {
-        std::string const strPk = jvParams[0u].asString();
+        std::string const strPk = std::string{jvParams[0u].as_string()};
 
         if (!validPublicKey(strPk))
             return rpcError(rpcPUBLIC_MALFORMED);
 
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
-        jvRequest[jss::public_key] = strPk;
+        jvRequest[jss::public_key.c_str()] = strPk;
         {
             // verify the channel id is a valid 256 bit number
             uint256 channelId;
-            if (!channelId.parseHex(jvParams[1u].asString()))
+            if (!channelId.parseHex(jvParams[1u].as_string()))
                 return rpcError(rpcCHANNEL_MALFORMED);
         }
-        jvRequest[jss::channel_id] = jvParams[1u].asString();
+        jvRequest[jss::channel_id.c_str()] = jvParams[1u].as_string();
 
-        if (!jvParams[2u].isString() || !to_uint64(jvParams[2u].asString()))
+        if (!jvParams[2u].is_string() || !to_uint64(std::string{jvParams[2u].as_string()}))
             return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[2u];
+        jvRequest[jss::amount.c_str()] = jvParams[2u];
 
-        jvRequest[jss::signature] = jvParams[3u].asString();
+        jvRequest[jss::signature.c_str()] = jvParams[3u].as_string();
 
         return jvRequest;
     }
 
-    Json::Value
-    parseAccountRaw2(Json::Value const& jvParams, char const* const acc2Field)
+    boost::json::value
+    parseAccountRaw2(boost::json::array const& jvParams, char const* const acc2Field)
     {
-        std::array<char const* const, 2> accFields{{jss::account, acc2Field}};
+        std::array<char const* const, 2> accFields{{jss::account.c_str(), acc2Field}};
         auto const nParams = jvParams.size();
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
         for (auto i = 0; i < nParams; ++i)
         {
-            std::string strParam = jvParams[i].asString();
+            std::string strParam = std::string{jvParams[i].as_string()};
 
             if (i == 1 && strParam.empty())
                 continue;
@@ -919,14 +914,14 @@ private:
     }
 
     // TODO: Get index from an alternate syntax: rXYZ:<index>
-    Json::Value
-    parseAccountRaw1(Json::Value const& jvParams)
+    boost::json::value
+    parseAccountRaw1(boost::json::array const& jvParams)
     {
-        std::string strIdent = jvParams[0u].asString();
+        std::string strIdent = std::string{jvParams[0u].as_string()};
         unsigned int iCursor = jvParams.size();
         bool bStrict = false;
 
-        if (iCursor >= 2 && jvParams[iCursor - 1] == jss::strict)
+        if (iCursor >= 2 && jvParams[iCursor - 1] == jss::strict.c_str())
         {
             bStrict = true;
             --iCursor;
@@ -937,65 +932,64 @@ private:
             return rpcError(rpcACT_MALFORMED);
 
         // Get info on account.
-        Json::Value jvRequest(Json::objectValue);
+        boost::json::object jvRequest;
 
-        jvRequest[jss::account] = strIdent;
+        jvRequest[jss::account.c_str()] = strIdent;
 
         if (bStrict)
-            jvRequest[jss::strict] = 1;
+            jvRequest[jss::strict.c_str()] = 1;
 
-        if (iCursor == 2 && !jvParseLedger(jvRequest, jvParams[1u].asString()))
+        if (iCursor == 2 && !jvParseLedger(jvRequest, std::string{jvParams[1u].as_string()}))
             return rpcError(rpcLGR_IDX_MALFORMED);
 
         return jvRequest;
     }
 
-    Json::Value
-    parseNodeToShard(Json::Value const& jvParams)
+    boost::json::value
+    parseNodeToShard(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest;
-        jvRequest[jss::action] = jvParams[0u].asString();
+        boost::json::object jvRequest;
+        jvRequest[jss::action.c_str()] = jvParams[0u].as_string();
 
         return jvRequest;
     }
 
     // peer_reservations_add <public_key> [<name>]
-    Json::Value
-    parsePeerReservationsAdd(Json::Value const& jvParams)
+    boost::json::value
+    parsePeerReservationsAdd(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest;
-        jvRequest[jss::public_key] = jvParams[0u].asString();
+        boost::json::object jvRequest;
+        jvRequest[jss::public_key.c_str()] = jvParams[0u].as_string();
         if (jvParams.size() > 1)
         {
-            jvRequest[jss::description] = jvParams[1u].asString();
+            jvRequest[jss::description.c_str()] = jvParams[1u].as_string();
         }
         return jvRequest;
     }
 
     // peer_reservations_del <public_key>
-    Json::Value
-    parsePeerReservationsDel(Json::Value const& jvParams)
+    boost::json::value
+    parsePeerReservationsDel(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest;
-        jvRequest[jss::public_key] = jvParams[0u].asString();
+        boost::json::object jvRequest;
+        jvRequest[jss::public_key.c_str()] = jvParams[0u].as_string();
         return jvRequest;
     }
 
     // ripple_path_find <json> [<ledger>]
-    Json::Value
-    parseRipplePathFind(Json::Value const& jvParams)
+    boost::json::value
+    parseRipplePathFind(boost::json::array const& jvParams)
     {
-        Json::Reader reader;
-        Json::Value jvRequest{Json::objectValue};
         bool bLedger = 2 == jvParams.size();
 
         JLOG(j_.trace()) << "RPC json: " << jvParams[0u];
+        boost::json::value jvRequest(parse(jvParams[0u].as_string()));
 
-        if (reader.parse(jvParams[0u].asString(), jvRequest))
+        if (!jvRequest.is_null())
         {
             if (bLedger)
             {
-                jvParseLedger(jvRequest, jvParams[1u].asString());
+                jvParseLedger(jvRequest.as_object(), std::string{jvParams[1u].as_string()});
             }
 
             return jvRequest;
@@ -1009,36 +1003,35 @@ private:
     // sign <private_key> <json> offline
     // submit <private_key> <json>
     // submit <tx_blob>
-    Json::Value
-    parseSignSubmit(Json::Value const& jvParams)
+    boost::json::value
+    parseSignSubmit(boost::json::array const& jvParams)
     {
-        Json::Value txJSON;
-        Json::Reader reader;
+        boost::json::value txJSON(parse(jvParams[1u].as_string()));
         bool const bOffline =
-            3 == jvParams.size() && jvParams[2u].asString() == "offline";
+            3 == jvParams.size() && jvParams[2u].as_string() == "offline";
 
         if (1 == jvParams.size())
         {
             // Submitting tx_blob
 
-            Json::Value jvRequest{Json::objectValue};
+            boost::json::object jvRequest;
 
-            jvRequest[jss::tx_blob] = jvParams[0u].asString();
+            jvRequest[jss::tx_blob.c_str()] = jvParams[0u].as_string();
 
             return jvRequest;
         }
         else if (
             (2 == jvParams.size() || bOffline) &&
-            reader.parse(jvParams[1u].asString(), txJSON))
+            !txJSON.is_null())
         {
             // Signing or submitting tx_json.
-            Json::Value jvRequest{Json::objectValue};
+            boost::json::object jvRequest;
 
-            jvRequest[jss::secret] = jvParams[0u].asString();
-            jvRequest[jss::tx_json] = txJSON;
+            jvRequest[jss::secret.c_str()] = jvParams[0u].as_string();
+            jvRequest[jss::tx_json.c_str()] = txJSON;
 
             if (bOffline)
-                jvRequest[jss::offline] = true;
+                jvRequest[jss::offline.c_str()] = true;
 
             return jvRequest;
         }
@@ -1049,17 +1042,16 @@ private:
     // submit any multisigned transaction to the network
     //
     // submit_multisigned <json>
-    Json::Value
-    parseSubmitMultiSigned(Json::Value const& jvParams)
+    boost::json::value
+    parseSubmitMultiSigned(boost::json::array const& jvParams)
     {
         if (1 == jvParams.size())
         {
-            Json::Value txJSON;
-            Json::Reader reader;
-            if (reader.parse(jvParams[0u].asString(), txJSON))
+            boost::json::value txJSON(parse(jvParams[0u].as_string()));
+            if (!txJSON.is_null())
             {
-                Json::Value jvRequest{Json::objectValue};
-                jvRequest[jss::tx_json] = txJSON;
+                boost::json::object jvRequest;
+                jvRequest[jss::tx_json.c_str()] = txJSON;
                 return jvRequest;
             }
         }
@@ -1068,61 +1060,61 @@ private:
     }
 
     // transaction_entry <tx_hash> <ledger_hash/ledger_index>
-    Json::Value
-    parseTransactionEntry(Json::Value const& jvParams)
+    boost::json::value
+    parseTransactionEntry(boost::json::array const& jvParams)
     {
         // Parameter count should have already been verified.
         assert(jvParams.size() == 2);
 
-        std::string const txHash = jvParams[0u].asString();
+        std::string const txHash = std::string{jvParams[0u].as_string()};
         if (txHash.length() != 64)
             return rpcError(rpcINVALID_PARAMS);
 
-        Json::Value jvRequest{Json::objectValue};
-        jvRequest[jss::tx_hash] = txHash;
+        boost::json::object jvRequest;
+        jvRequest[jss::tx_hash.c_str()] = txHash;
 
-        jvParseLedger(jvRequest, jvParams[1u].asString());
+        jvParseLedger(jvRequest, std::string{jvParams[1u].as_string()});
 
         // jvParseLedger inserts a "ledger_index" of 0 if it doesn't
         // find a match.
-        if (jvRequest.isMember(jss::ledger_index) &&
-            jvRequest[jss::ledger_index] == 0)
+        if (jvRequest.contains(jss::ledger_index.c_str()) &&
+            jvRequest[jss::ledger_index.c_str()] == 0)
             return rpcError(rpcINVALID_PARAMS);
 
         return jvRequest;
     }
 
     // tx <transaction_id>
-    Json::Value
-    parseTx(Json::Value const& jvParams)
+    boost::json::value
+    parseTx(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest{Json::objectValue};
+        boost::json::object jvRequest;
 
         if (jvParams.size() == 2 || jvParams.size() == 4)
         {
-            if (jvParams[1u].asString() == jss::binary)
-                jvRequest[jss::binary] = true;
+            if (jvParams[1u].as_string() == jss::binary.c_str())
+                jvRequest[jss::binary.c_str()] = true;
         }
 
         if (jvParams.size() >= 3)
         {
             const auto offset = jvParams.size() == 3 ? 0 : 1;
 
-            jvRequest[jss::min_ledger] = jvParams[1u + offset].asString();
-            jvRequest[jss::max_ledger] = jvParams[2u + offset].asString();
+            jvRequest[jss::min_ledger.c_str()] = jvParams[1u + offset].as_string();
+            jvRequest[jss::max_ledger.c_str()] = jvParams[2u + offset].as_string();
         }
 
-        jvRequest[jss::transaction] = jvParams[0u].asString();
+        jvRequest[jss::transaction.c_str()] = jvParams[0u].as_string();
         return jvRequest;
     }
 
     // tx_history <index>
-    Json::Value
-    parseTxHistory(Json::Value const& jvParams)
+    boost::json::value
+    parseTxHistory(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest{Json::objectValue};
+        boost::json::object jvRequest;
 
-        jvRequest[jss::start] = jvParams[0u].asUInt();
+        jvRequest[jss::start.c_str()] = jvParams[0u].as_uint64();
 
         return jvRequest;
     }
@@ -1133,13 +1125,13 @@ private:
     // line.  This information might be saved in the command shell history file
     // (e.g. .bash_history) and it may be leaked via the process status command
     // (i.e. ps).
-    Json::Value
-    parseValidationCreate(Json::Value const& jvParams)
+    boost::json::value
+    parseValidationCreate(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest{Json::objectValue};
+        boost::json::object jvRequest;
 
         if (jvParams.size())
-            jvRequest[jss::secret] = jvParams[0u].asString();
+            jvRequest[jss::secret.c_str()] = jvParams[0u].as_string();
 
         return jvRequest;
     }
@@ -1147,13 +1139,13 @@ private:
     // wallet_propose [<passphrase>]
     // <passphrase> is only for testing. Master seeds should only be generated
     // randomly.
-    Json::Value
-    parseWalletPropose(Json::Value const& jvParams)
+    boost::json::value
+    parseWalletPropose(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest{Json::objectValue};
+        boost::json::object jvRequest;
 
         if (jvParams.size())
-            jvRequest[jss::passphrase] = jvParams[0u].asString();
+            jvRequest[jss::passphrase.c_str()] = jvParams[0u].as_string();
 
         return jvRequest;
     }
@@ -1162,51 +1154,51 @@ private:
     // gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ <hotwallet>
     // ]]
 
-    Json::Value
-    parseGatewayBalances(Json::Value const& jvParams)
+    boost::json::value
+    parseGatewayBalances(boost::json::array const& jvParams)
     {
         unsigned int index = 0;
         const unsigned int size = jvParams.size();
 
-        Json::Value jvRequest{Json::objectValue};
+        boost::json::object jvRequest;
 
-        std::string param = jvParams[index++].asString();
+        std::string param = std::string{jvParams[index++].as_string()};
         if (param.empty())
             return RPC::make_param_error("Invalid first parameter");
 
         if (param[0] != 'r')
         {
             if (param.size() == 64)
-                jvRequest[jss::ledger_hash] = param;
+                jvRequest[jss::ledger_hash.c_str()] = param;
             else
-                jvRequest[jss::ledger_index] = param;
+                jvRequest[jss::ledger_index.c_str()] = param;
 
             if (size <= index)
                 return RPC::make_param_error("Invalid hotwallet");
 
-            param = jvParams[index++].asString();
+            param = jvParams[index++].as_string();
         }
 
-        jvRequest[jss::account] = param;
+        jvRequest[jss::account.c_str()] = param;
 
         if (index < size)
         {
-            Json::Value& hotWallets =
-                (jvRequest["hotwallet"] = Json::arrayValue);
+            boost::json::array& hotWallets =
+                jvRequest["hotwallet"].emplace_array();
             while (index < size)
-                hotWallets.append(jvParams[index++].asString());
+                hotWallets.emplace_back(jvParams[index++].as_string());
         }
 
         return jvRequest;
     }
 
     // server_info [counters]
-    Json::Value
-    parseServerInfo(Json::Value const& jvParams)
+    boost::json::value
+    parseServerInfo(boost::json::array const& jvParams)
     {
-        Json::Value jvRequest(Json::objectValue);
-        if (jvParams.size() == 1 && jvParams[0u].asString() == "counters")
-            jvRequest[jss::counters] = true;
+        boost::json::object jvRequest;
+        if (jvParams.size() == 1 && jvParams[0u].as_string() == "counters")
+            jvRequest[jss::counters.c_str()] = true;
         return jvRequest;
     }
 
@@ -1221,10 +1213,10 @@ public:
 
     // Convert a rpc method and params to a request.
     // <-- { method: xyz, params: [... ] } or { error: ..., ... }
-    Json::Value
+    boost::json::value
     parseCommand(
         std::string strMethod,
-        Json::Value jvParams,
+        boost::json::array jvParams,
         bool allowAnyCommand)
     {
         if (auto stream = j_.trace())
@@ -1366,14 +1358,14 @@ public:
 std::string
 JSONRPCRequest(
     std::string const& strMethod,
-    Json::Value const& params,
-    Json::Value const& id)
+    boost::json::value const& params,
+    boost::json::value const& id)
 {
-    Json::Value request;
-    request[jss::method] = strMethod;
-    request[jss::params] = params;
-    request[jss::id] = id;
-    return to_string(request) + "\n";
+    boost::json::object request;
+    request[jss::method.c_str()] = strMethod;
+    request[jss::params.c_str()] = params;
+    request[jss::id.c_str()] = id;
+    return serialize(request) + "\n";
 }
 
 namespace {
@@ -1391,14 +1383,14 @@ struct RPCCallImp
     // VFALCO NOTE Is this a to-do comment or a doc comment?
     // Place the async result somewhere useful.
     static void
-    callRPCHandler(Json::Value* jvOutput, Json::Value const& jvInput)
+    callRPCHandler(boost::json::value* jvOutput, boost::json::value const& jvInput)
     {
         (*jvOutput) = jvInput;
     }
 
     static bool
     onResponse(
-        std::function<void(Json::Value const& jvInput)> callbackFuncP,
+        std::function<void(boost::json::value const& jvInput)> callbackFuncP,
         const boost::system::error_code& ecResult,
         int iStatus,
         std::string const& strData,
@@ -1418,16 +1410,15 @@ struct RPCCallImp
             if (strData.find("Unable to parse request") == 0 ||
                 strData.find(jss::invalid_API_version.c_str()) == 0)
                 Throw<RequestNotParseable>(strData);
-            Json::Reader reader;
-            Json::Value jvReply;
-            if (!reader.parse(strData, jvReply))
+            boost::json::value jvReply(boost::json::parse(strData));
+            if (jvReply.is_null())
                 Throw<std::runtime_error>("couldn't parse reply from server");
 
-            if (!jvReply)
+            if (!jvReply.as_object().contains(jss::result.c_str()) || jvReply.as_object().contains(jss::error.c_str()) || jvReply.as_object().contains(jss::id.c_str()))
                 Throw<std::runtime_error>(
                     "expected reply to have result, error and id properties");
 
-            Json::Value jvResult(Json::objectValue);
+            boost::json::object jvResult;
 
             jvResult["result"] = jvReply;
 
@@ -1441,7 +1432,7 @@ struct RPCCallImp
     static void
     onRequest(
         std::string const& strMethod,
-        Json::Value const& jvParams,
+        boost::json::value const& jvParams,
         std::unordered_map<std::string, std::string> const& headers,
         std::string const& strPath,
         boost::asio::streambuf& sb,
@@ -1454,7 +1445,7 @@ struct RPCCallImp
         osRequest << createHTTPPost(
             strHost,
             strPath,
-            JSONRPCRequest(strMethod, jvParams, Json::Value(1)),
+            JSONRPCRequest(strMethod, jvParams, boost::json::value(1)),
             headers);
     }
 };
@@ -1462,76 +1453,75 @@ struct RPCCallImp
 //------------------------------------------------------------------------------
 
 // Used internally by rpcClient.
-static Json::Value
+static boost::json::value
 rpcCmdLineToJson(
     std::vector<std::string> const& args,
-    Json::Value& retParams,
+    boost::json::value& retParams,
     beast::Journal j)
 {
-    Json::Value jvRequest(Json::objectValue);
+    boost::json::value jvRequest;
 
     RPCParser rpParser(j);
-    Json::Value jvRpcParams(Json::arrayValue);
+    boost::json::array jvRpcParams;
 
     for (int i = 1; i != args.size(); i++)
-        jvRpcParams.append(args[i]);
+        jvRpcParams.emplace_back(args[i]);
 
-    retParams = Json::Value(Json::objectValue);
+    retParams.emplace_object();
 
-    retParams[jss::method] = args[0];
-    retParams[jss::params] = jvRpcParams;
+    retParams.as_object()[jss::method.c_str()] = args[0];
+    retParams.as_object()[jss::params.c_str()] = jvRpcParams;
 
     jvRequest = rpParser.parseCommand(args[0], jvRpcParams, true);
 
-    auto insert_api_version = [](Json::Value& jr) {
-        if (jr.isObject() && !jr.isMember(jss::error) &&
-            !jr.isMember(jss::api_version))
+    auto insert_api_version = [](boost::json::value& jr) {
+        if (jr.is_object() && !jr.as_object().contains(jss::error.c_str()) &&
+            !jr.as_object().contains(jss::api_version.c_str()))
         {
-            jr[jss::api_version] = RPC::apiMaximumSupportedVersion;
+            jr.as_object()[jss::api_version.c_str()] = RPC::apiMaximumSupportedVersion;
         }
     };
 
-    if (jvRequest.isObject())
+    if (jvRequest.is_object())
         insert_api_version(jvRequest);
-    else if (jvRequest.isArray())
-        std::for_each(jvRequest.begin(), jvRequest.end(), insert_api_version);
+    else if (jvRequest.is_array())
+        std::for_each(jvRequest.as_array().begin(), jvRequest.as_array().end(), insert_api_version);
 
     JLOG(j.trace()) << "RPC Request: " << jvRequest << std::endl;
     return jvRequest;
 }
 
-Json::Value
+boost::json::value
 cmdLineToJSONRPC(std::vector<std::string> const& args, beast::Journal j)
 {
-    Json::Value jv = Json::Value(Json::objectValue);
-    auto const paramsObj = rpcCmdLineToJson(args, jv, j);
+    boost::json::value retParams;
+    auto const paramsObj = rpcCmdLineToJson(args, retParams, j).as_object();
 
-    // Re-use jv to return our formatted result.
-    jv.clear();
+    boost::json::object jv;
 
     // Allow parser to rewrite method.
-    jv[jss::method] = paramsObj.isMember(jss::method)
-        ? paramsObj[jss::method].asString()
+    jv[jss::method.c_str()] = paramsObj.contains(jss::method.c_str())
+        ? std::string{paramsObj.at(jss::method.c_str()).as_string()}
         : args[0];
 
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = Json::setArray(jv, jss::params);
-        paramsArray.append(paramsObj);
+        auto& paramsArray = jv[jss::params.c_str()].emplace_array();
+        paramsArray.emplace_back(paramsObj);
     }
-    if (paramsObj.isMember(jss::jsonrpc))
-        jv[jss::jsonrpc] = paramsObj[jss::jsonrpc];
-    if (paramsObj.isMember(jss::ripplerpc))
-        jv[jss::ripplerpc] = paramsObj[jss::ripplerpc];
-    if (paramsObj.isMember(jss::id))
-        jv[jss::id] = paramsObj[jss::id];
+    if (paramsObj.contains(jss::jsonrpc.c_str()))
+        jv[jss::jsonrpc.c_str()] = paramsObj.at(jss::jsonrpc.c_str());
+    if (paramsObj.contains(jss::ripplerpc.c_str()))
+        jv[jss::ripplerpc.c_str()] = paramsObj.at(jss::ripplerpc.c_str());
+    if (paramsObj.contains(jss::id.c_str()))
+        jv[jss::id.c_str()] = paramsObj.at(jss::id.c_str());
     return jv;
 }
 
 //------------------------------------------------------------------------------
 
-std::pair<int, Json::Value>
+std::pair<int, boost::json::value>
 rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
@@ -1545,18 +1535,19 @@ rpcClient(
         return {rpcBAD_SYNTAX, {}};  // rpcBAD_SYNTAX = print usage
 
     int nRet = rpcSUCCESS;
-    Json::Value jvOutput;
-    Json::Value jvRequest(Json::objectValue);
+    boost::json::value jvOutput;
+    boost::json::value jvRequest;
 
     try
     {
-        Json::Value jvRpc = Json::Value(Json::objectValue);
+        boost::json::value jvRpc;
         jvRequest = rpcCmdLineToJson(args, jvRpc, logs.journal("RPCParser"));
 
-        if (jvRequest.isMember(jss::error))
+
+        if (jvRequest.is_object() && jvRequest.as_object().contains(jss::error.c_str()))
         {
-            jvOutput = jvRequest;
-            jvOutput["rpc"] = jvRpc;
+            jvOutput = jvRequest.as_object();
+            jvOutput.as_object()["rpc"] = jvRpc;
         }
         else
         {
@@ -1579,20 +1570,20 @@ rpcClient(
                 setup.client.port = config.rpc_ip->port();
             }
 
-            Json::Value jvParams(Json::arrayValue);
+            boost::json::array jvParams;
 
             if (!setup.client.admin_user.empty())
-                jvRequest["admin_user"] = setup.client.admin_user;
+                jvRequest.as_object()["admin_user"] = setup.client.admin_user;
 
             if (!setup.client.admin_password.empty())
-                jvRequest["admin_password"] = setup.client.admin_password;
+                jvRequest.as_object()["admin_password"] = setup.client.admin_password;
 
-            if (jvRequest.isObject())
-                jvParams.append(jvRequest);
-            else if (jvRequest.isArray())
+            if (jvRequest.is_object())
+                jvParams.emplace_back(jvRequest);
+            else if (jvRequest.is_array())
             {
-                for (Json::UInt i = 0; i < jvRequest.size(); ++i)
-                    jvParams.append(jvRequest[i]);
+                for (Json::UInt i = 0; i < jvRequest.as_array().size(); ++i)
+                    jvParams.emplace_back(jvRequest.as_array()[i]);
             }
 
             {
@@ -1604,10 +1595,10 @@ rpcClient(
                     setup.client.user,
                     setup.client.password,
                     "",
-                    jvRequest.isMember(
-                        jss::method)  // Allow parser to rewrite method.
-                        ? jvRequest[jss::method].asString()
-                        : jvRequest.isArray() ? "batch" : args[0],
+                    jvRequest.as_object().contains(
+                        jss::method.c_str())  // Allow parser to rewrite method.
+                        ? std::string{jvRequest.as_object()[jss::method.c_str()].as_string()}
+                        : jvRequest.is_array() ? "batch" : args[0],
                     jvParams,                  // Parsed, execute.
                     setup.client.secure != 0,  // Use SSL
                     config.quiet(),
@@ -1620,10 +1611,10 @@ rpcClient(
                 isService.run();  // This blocks until there are no more
                                   // outstanding async calls.
             }
-            if (jvOutput.isMember("result"))
+            if (jvOutput.as_object().contains("result"))
             {
                 // Had a successful JSON-RPC 2.0 call.
-                jvOutput = jvOutput["result"];
+                jvOutput = jvOutput.as_object()["result"];
 
                 // jvOutput may report a server side error.
                 // It should report "status".
@@ -1631,30 +1622,30 @@ rpcClient(
             else
             {
                 // Transport error.
-                Json::Value jvRpcError = jvOutput;
+                boost::json::value jvRpcError = jvOutput;
 
                 jvOutput = rpcError(rpcJSON_RPC);
-                jvOutput["result"] = jvRpcError;
+                jvOutput.as_object()["result"] = jvRpcError;
             }
 
             // If had an error, supply invocation in result.
-            if (jvOutput.isMember(jss::error))
+            if (jvOutput.as_object().contains(jss::error.c_str()))
             {
-                jvOutput["rpc"] =
+                jvOutput.as_object()["rpc"] =
                     jvRpc;  // How the command was seen as method + params.
-                jvOutput["request_sent"] =
+                jvOutput.as_object()["request_sent"] =
                     jvRequest;  // How the command was translated.
             }
         }
 
-        if (jvOutput.isMember(jss::error))
+        if (jvOutput.as_object().contains(jss::error.c_str()))
         {
-            jvOutput[jss::status] = "error";
-            if (jvOutput.isMember(jss::error_code))
-                nRet = std::stoi(jvOutput[jss::error_code].asString());
-            else if (jvOutput[jss::error].isMember(jss::error_code))
+            jvOutput.as_object()[jss::status.c_str()] = "error";
+            if (jvOutput.as_object().contains(jss::error_code.c_str()))
+                nRet = std::stoi(std::string{jvOutput.as_object()[jss::error_code.c_str()].as_string()});
+            else if (jvOutput.as_object()[jss::error.c_str()].as_object().contains(jss::error_code.c_str()))
                 nRet =
-                    std::stoi(jvOutput[jss::error][jss::error_code].asString());
+                    std::stoi(std::string{jvOutput.as_object()[jss::error.c_str()].as_object()[jss::error_code.c_str()].as_string()}); // Keshava: can I use std::string_view instead?
             else
                 nRet = rpcBAD_SYNTAX;
         }
@@ -1665,13 +1656,13 @@ rpcClient(
     catch (RequestNotParseable& e)
     {
         jvOutput = rpcError(rpcINVALID_PARAMS);
-        jvOutput["error_what"] = e.what();
+        jvOutput.as_object()["error_what"] = e.what();
         nRet = rpcINVALID_PARAMS;
     }
     catch (std::exception& e)
     {
         jvOutput = rpcError(rpcINTERNAL);
-        jvOutput["error_what"] = e.what();
+        jvOutput.as_object()["error_what"] = e.what();
         nRet = rpcINTERNAL;
     }
 
@@ -1690,7 +1681,7 @@ fromCommandLine(
 {
     auto const result = rpcClient(vCmd, config, logs);
 
-    std::cout << result.second.toStyledString();
+    std::cout << serialize(result.second);
 
     return result.first;
 }
@@ -1706,11 +1697,11 @@ fromNetwork(
     std::string const& strPassword,
     std::string const& strPath,
     std::string const& strMethod,
-    Json::Value const& jvParams,
+    boost::json::value const& jvParams,
     const bool bSSL,
     const bool quiet,
     Logs& logs,
-    std::function<void(Json::Value const& jvInput)> callbackFuncP,
+    std::function<void(boost::json::value const& jvInput)> callbackFuncP,
     std::unordered_map<std::string, std::string> headers)
 {
     auto j = logs.journal("HTTPClient");
