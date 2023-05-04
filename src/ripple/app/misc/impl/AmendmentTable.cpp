@@ -238,7 +238,7 @@ private:
     // Injects amendment json into v.  Must be called with mutex_ locked.
     void
     injectJson(
-        Json::Value& v,
+        boost::json::object& v,
         uint256 const& amendment,
         AmendmentState const& state,
         std::lock_guard<std::mutex> const& lock) const;
@@ -280,9 +280,9 @@ public:
     std::optional<NetClock::time_point>
     firstUnsupportedExpected() const override;
 
-    Json::Value
+    boost::json::value
     getJson() const override;
-    Json::Value
+    boost::json::value
     getJson(uint256 const&) const override;
 
     bool
@@ -742,23 +742,23 @@ AmendmentTableImpl::doValidatedLedger(
 
 void
 AmendmentTableImpl::injectJson(
-    Json::Value& v,
+    boost::json::object& v,
     const uint256& id,
     const AmendmentState& fs,
     std::lock_guard<std::mutex> const&) const
 {
     if (!fs.name.empty())
-        v[jss::name] = fs.name;
+        v[jss::name.c_str()] = fs.name;
 
-    v[jss::supported] = fs.supported;
+    v[jss::supported.c_str()] = fs.supported;
     if (!fs.enabled)
     {
         if (fs.vote == AmendmentVote::obsolete)
-            v[jss::vetoed] = "Obsolete";
+            v[jss::vetoed.c_str()] = "Obsolete";
         else
-            v[jss::vetoed] = fs.vote == AmendmentVote::down;
+            v[jss::vetoed.c_str()] = fs.vote == AmendmentVote::down;
     }
-    v[jss::enabled] = fs.enabled;
+    v[jss::enabled.c_str()] = fs.enabled;
 
     if (!fs.enabled && lastVote_)
     {
@@ -766,24 +766,24 @@ AmendmentTableImpl::injectJson(
         auto const votesNeeded = lastVote_->threshold();
         auto const votesFor = lastVote_->votes(id);
 
-        v[jss::count] = votesFor;
-        v[jss::validations] = votesTotal;
+        v[jss::count.c_str()] = votesFor;
+        v[jss::validations.c_str()] = votesTotal;
 
         if (votesNeeded)
-            v[jss::threshold] = votesNeeded;
+            v[jss::threshold.c_str()] = votesNeeded;
     }
 }
 
-Json::Value
+boost::json::value
 AmendmentTableImpl::getJson() const
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
     {
         std::lock_guard lock(mutex_);
         for (auto const& e : amendmentMap_)
         {
             injectJson(
-                ret[to_string(e.first)] = Json::objectValue,
+                ret[to_string(e.first).c_str()].emplace_object(),
                 e.first,
                 e.second,
                 lock);
@@ -792,11 +792,11 @@ AmendmentTableImpl::getJson() const
     return ret;
 }
 
-Json::Value
+boost::json::value
 AmendmentTableImpl::getJson(uint256 const& amendmentID) const
 {
-    Json::Value ret = Json::objectValue;
-    Json::Value& jAmendment = (ret[to_string(amendmentID)] = Json::objectValue);
+    boost::json::object ret;
+    boost::json::object& jAmendment = ret[to_string(amendmentID)].emplace_object();
 
     {
         std::lock_guard lock(mutex_);

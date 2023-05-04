@@ -164,21 +164,21 @@ Transaction::load(
 }
 
 // options 1 to include the date of the transaction
-Json::Value
+boost::json::value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
-    Json::Value ret(mTransaction->getJson(JsonOptions::none, binary));
+    boost::json::object ret(mTransaction->getJson(JsonOptions::none, binary).as_object());
 
     if (mInLedger)
     {
-        ret[jss::inLedger] = mInLedger;  // Deprecated.
-        ret[jss::ledger_index] = mInLedger;
+        ret[jss::inLedger.c_str()] = mInLedger;  // Deprecated.
+        ret[jss::ledger_index.c_str()] = mInLedger;
 
         if (options == JsonOptions::include_date)
         {
             auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mInLedger);
             if (ct)
-                ret[jss::date] = ct->time_since_epoch().count();
+                ret[jss::date.c_str()] = ct->time_since_epoch().count();
         }
     }
 

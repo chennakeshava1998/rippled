@@ -374,10 +374,9 @@ ValidatorSite::parseJsonResponse(
     std::size_t siteIdx,
     std::lock_guard<std::mutex> const& sites_lock)
 {
-    Json::Value const body = [&res, siteIdx, this]() {
-        Json::Reader r;
-        Json::Value body;
-        if (!r.parse(res.data(), body))
+    boost::json::value const body = [&res, siteIdx, this]() {
+        boost::json::value body(res.data());
+        if (!body.is_null())
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
                             << sites_[siteIdx].activeResource->uri;
@@ -388,15 +387,15 @@ ValidatorSite::parseJsonResponse(
 
     auto const [valid, version, blobs] = [&body]() {
         // Check the easy fields first
-        bool valid = body.isObject() && body.isMember(jss::manifest) &&
-            body[jss::manifest].isString() && body.isMember(jss::version) &&
-            body[jss::version].isInt();
+        bool valid = body.is_object() && body.as_object().contains(jss::manifest.c_str()) &&
+            body.as_object().at(jss::manifest.c_str()).is_string() && body.as_object().contains(jss::version.c_str()) &&
+            body.as_object().at(jss::version.c_str()).is_int64();
         // Check the version-specific blob & signature fields
         std::uint32_t version;
         std::vector<ValidatorBlobInfo> blobs;
         if (valid)
         {
-            version = body[jss::version].asUInt();
+            version = body.at(jss::version.c_str()).as_uint64();
             blobs = ValidatorList::parseBlobs(version, body);
             valid = !blobs.empty();
         }
@@ -410,8 +409,8 @@ ValidatorSite::parseJsonResponse(
         throw std::runtime_error{"missing fields"};
     }
 
-    auto const manifest = body[jss::manifest].asString();
-    assert(version == body[jss::version].asUInt());
+    auto const manifest = std::string{body.as_object().at(jss::manifest.c_str()).as_string()};
+    assert(version == body[jss::version.c_str()].asUInt());
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
     auto const applyResult = app_.validators().applyListsAndBroadcast(
@@ -476,12 +475,12 @@ ValidatorSite::parseJsonResponse(
         }
     }
 
-    if (body.isMember(jss::refresh_interval) &&
-        body[jss::refresh_interval].isNumeric())
+    if (body.as_object().contains(jss::refresh_interval.c_str()) &&
+        body.as_object().at(jss::refresh_interval.c_str()).is_number())
     {
         using namespace std::chrono_literals;
         std::chrono::minutes const refresh = std::clamp(
-            std::chrono::minutes{body[jss::refresh_interval].asUInt()},
+            std::chrono::minutes{body.as_object().at(jss::refresh_interval.c_str()).as_uint64()},
             1min,
             std::chrono::minutes{24h});
         sites_[siteIdx].refreshInterval = refresh;
@@ -663,37 +662,36 @@ ValidatorSite::onTextFetch(
     cv_.notify_all();
 }
 
-Json::Value
+boost::json::value
 ValidatorSite::getJson() const
 {
     using namespace std::chrono;
-    using Int = Json::Value::Int;
 
-    Json::Value jrr(Json::objectValue);
-    Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
+    boost::json::object jrr;
+    boost::json::array& jSites = (jrr[jss::validator_sites.c_str()].emplace_array());
     {
         std::lock_guard lock{sites_mutex_};
         for (Site const& site : sites_)
         {
-            Json::Value& v = jSites.append(Json::objectValue);
+            boost::json::object& v = jSites.emplace_back(boost::json::object()).as_object();
             std::stringstream uri;
             uri << site.loadedResource->uri;
             if (site.loadedResource != site.startingResource)
                 uri << " (redirects to " << site.startingResource->uri + ")";
-            v[jss::uri] = uri.str();
-            v[jss::next_refresh_time] = to_string(site.nextRefresh);
+            v[jss::uri.c_str()] = uri.str();
+            v[jss::next_refresh_time.c_str()] = to_string(site.nextRefresh);
             if (site.lastRefreshStatus)
             {
-                v[jss::last_refresh_time] =
+                v[jss::last_refresh_time.c_str()] =
                     to_string(site.lastRefreshStatus->refreshed);
-                v[jss::last_refresh_status] =
+                v[jss::last_refresh_status.c_str()] =
                     to_string(site.lastRefreshStatus->disposition);
                 if (!site.lastRefreshStatus->message.empty())
-                    v[jss::last_refresh_message] =
+                    v[jss::last_refresh_message.c_str()] =
                         site.lastRefreshStatus->message;
             }
-            v[jss::refresh_interval_min] =
-                static_cast<Int>(site.refreshInterval.count());
+            v[jss::refresh_interval_min.c_str()] =
+                static_cast<int>(site.refreshInterval.count());
         }
     }
     return jrr;

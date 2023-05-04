@@ -260,20 +260,19 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
 
         tokenStr = base64_decode(tokenStr);
 
-        Json::Reader r;
-        Json::Value token;
+        boost::json::value token(boost::json::parse(tokenStr));
 
-        if (r.parse(tokenStr, token))
+        if (!token.is_null())
         {
-            auto const m = token.get("manifest", Json::Value{});
-            auto const k = token.get("validation_secret_key", Json::Value{});
+            boost::json::value const m = token.as_object()["manifest"];
+            boost::json::value const k = token.as_object()["validation_secret_key"];
 
-            if (m.isString() && k.isString())
+            if (m.is_string() && k.is_string())
             {
-                auto const key = strUnHex(k.asString());
+                auto const key = strUnHex(std::string{k.as_string()});
 
                 if (key && key->size() == 32)
-                    return ValidatorToken{m.asString(), makeSlice(*key)};
+                    return ValidatorToken{std::string{m.as_string()}, makeSlice(*key)};
             }
         }
 

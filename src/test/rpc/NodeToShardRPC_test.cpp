@@ -34,13 +34,13 @@ class NodeToShardRPC_test : public beast::unit_test::suite
     importCompleted(
         NodeStore::DatabaseShard* shardStore,
         std::uint8_t const numberOfShards,
-        Json::Value const& result)
+        boost::json::object & result)
     {
         auto const info = shardStore->getShardInfo();
 
         // Assume completed if the import isn't running
         auto const completed =
-            result[jss::error_message] == "Database import not running";
+            result[jss::error_message.c_str()] == "Database import not running";
 
         if (completed)
         {
@@ -88,38 +88,38 @@ public:
         {
             // Try the node_to_shard status RPC command. Should fail.
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "status";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "status";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
-            BEAST_EXPECT(result[jss::error_code] == rpcNOT_ENABLED);
+            BEAST_EXPECT(result[jss::error_code.c_str()] == rpcNOT_ENABLED);
         }
 
         {
             // Try to start a shard store import via the RPC
             // interface. Should fail.
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "start";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "start";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
-            BEAST_EXPECT(result[jss::error_code] == rpcNOT_ENABLED);
+            BEAST_EXPECT(result[jss::error_code.c_str()] == rpcNOT_ENABLED);
         }
 
         {
             // Try the node_to_shard status RPC command. Should fail.
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "status";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "status";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
-            BEAST_EXPECT(result[jss::error_code] == rpcNOT_ENABLED);
+            BEAST_EXPECT(result[jss::error_code.c_str()] == rpcNOT_ENABLED);
         }
     }
 
@@ -164,14 +164,14 @@ public:
             // Initiate a shard store import via the RPC
             // interface.
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "start";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "start";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
             BEAST_EXPECT(
-                result[jss::message] == "Database import initiated...");
+                result[jss::message.c_str()] == "Database import initiated...");
         }
 
         while (!shardStore->getDatabaseImportSequence())
@@ -184,14 +184,14 @@ public:
             // Verify that the import is in progress with
             // the node_to_shard status RPC command
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "status";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "status";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
             BEAST_EXPECT(
-                result[jss::status] == "success" ||
+                result[jss::status.c_str()] == "success" ||
                 importCompleted(shardStore, numberOfShards, result));
 
             std::chrono::seconds const maxWait{180};
@@ -208,28 +208,28 @@ public:
 
                     if (!completeShards.empty())
                     {
-                        auto const result = env.rpc(
+                        auto result = env.rpc(
                             "json",
                             "node_to_shard",
-                            to_string(jvParams))[jss::result];
+                            serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
                         if (!importCompleted(
                                 shardStore, numberOfShards, result))
                         {
-                            BEAST_EXPECT(result[jss::firstShardIndex] == 1);
-                            BEAST_EXPECT(result[jss::lastShardIndex] == 10);
+                            BEAST_EXPECT(result[jss::firstShardIndex.c_str()] == 1);
+                            BEAST_EXPECT(result[jss::lastShardIndex.c_str()] == 10);
                         }
                     }
 
                     if (boost::icl::contains(completeShards, 1))
                     {
-                        auto const result = env.rpc(
+                        auto result = env.rpc(
                             "json",
                             "node_to_shard",
-                            to_string(jvParams))[jss::result];
+                            serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
                         BEAST_EXPECT(
-                            result[jss::currentShardIndex] >= 1 ||
+                            result[jss::currentShardIndex.c_str()].as_int64() >= 1 ||
                             importCompleted(
                                 shardStore, numberOfShards, result));
 
@@ -309,28 +309,29 @@ public:
             // Initiate a shard store import via the RPC
             // interface.
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "start";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "start";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
             BEAST_EXPECT(
-                result[jss::message] == "Database import initiated...");
+                result[jss::message.c_str()] == "Database import initiated...");
         }
 
         {
             // Verify that the import is in progress with
             // the node_to_shard status RPC command
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "status";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "status";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            // Keshava: removing const qualifier to quicly prototype the solution
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
             BEAST_EXPECT(
-                result[jss::status] == "success" ||
+                result[jss::status.c_str()] == "success" ||
                 importCompleted(shardStore, numberOfShards, result));
 
             std::chrono::seconds const maxWait{30};
@@ -351,14 +352,14 @@ public:
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::action] = "stop";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "stop";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
             BEAST_EXPECT(
-                result[jss::message] == "Database import halt initiated..." ||
+                result[jss::message.c_str()] == "Database import halt initiated..." ||
                 importCompleted(shardStore, numberOfShards, result));
         }
 
@@ -370,20 +371,20 @@ public:
             // Wait until we can verify that the import has
             // stopped
 
-            Json::Value jvParams;
-            jvParams[jss::action] = "status";
+            boost::json::object jvParams;
+            jvParams[jss::action.c_str()] = "status";
 
-            auto const result = env.rpc(
-                "json", "node_to_shard", to_string(jvParams))[jss::result];
+            auto result = env.rpc(
+                "json", "node_to_shard", serialize(jvParams)).as_object()[jss::result.c_str()].as_object();
 
             // When the import has stopped, polling the
             // status returns an error
-            if (result.isMember(jss::error))
+            if (result.contains(jss::error.c_str()))
             {
-                if (BEAST_EXPECT(result.isMember(jss::error_message)))
+                if (BEAST_EXPECT(result.contains(jss::error_message.c_str())))
                 {
                     BEAST_EXPECT(
-                        result[jss::error_message] ==
+                        result[jss::error_message.c_str()] ==
                         "Database import not running");
                 }
 

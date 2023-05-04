@@ -80,11 +80,11 @@ public:
     virtual std::optional<NetClock::time_point>
     firstUnsupportedExpected() const = 0;
 
-    virtual Json::Value
+    virtual boost::json::value
     getJson() const = 0;
 
     /** Returns a Json::objectValue. */
-    virtual Json::Value
+    virtual boost::json::value
     getJson(uint256 const& amendment) const = 0;
 
     /** Called when a new fully-validated ledger is accepted. */

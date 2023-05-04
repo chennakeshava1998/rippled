@@ -280,7 +280,7 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    std::enable_if_t<is_usable_unit_v<TaggedFee>, Json::Value>
+    std::enable_if_t<is_usable_unit_v<TaggedFee>, boost::json::value>
     jsonClipped() const
     {
         if constexpr (std::is_integral_v<value_type>)

@@ -255,7 +255,7 @@ ValidatorList::getCacheFileName(
 }
 
 // static
-Json::Value
+boost::json::value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
@@ -265,47 +265,47 @@ ValidatorList::buildFileData(
 }
 
 // static
-Json::Value
+boost::json::value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
     std::optional<std::uint32_t> forceVersion,
     beast::Journal j)
 {
-    Json::Value value(Json::objectValue);
+    boost::json::object value;
 
     assert(pubCollection.rawVersion == 2 || pubCollection.remaining.empty());
     auto const effectiveVersion =
         forceVersion ? *forceVersion : pubCollection.rawVersion;
 
-    value[jss::manifest] = pubCollection.rawManifest;
-    value[jss::version] = effectiveVersion;
-    value[jss::public_key] = pubKey;
+    value[jss::manifest.c_str()] = pubCollection.rawManifest;
+    value[jss::version.c_str()] = effectiveVersion;
+    value[jss::public_key.c_str()] = pubKey;
 
     switch (effectiveVersion)
     {
         case 1: {
             auto const& current = pubCollection.current;
-            value[jss::blob] = current.rawBlob;
-            value[jss::signature] = current.rawSignature;
+            value[jss::blob.c_str()] = current.rawBlob;
+            value[jss::signature.c_str()] = current.rawSignature;
             // This is only possible if "downgrading" a v2 UNL to v1, for
             // example for the /vl/ endpoint.
             if (current.rawManifest &&
                 *current.rawManifest != pubCollection.rawManifest)
-                value[jss::manifest] = *current.rawManifest;
+                value[jss::manifest.c_str()] = *current.rawManifest;
             break;
         }
         case 2: {
-            Json::Value blobs(Json::arrayValue);
+            boost::json::array blobs;
 
             auto add = [&blobs, &outerManifest = pubCollection.rawManifest](
                            PublisherList const& pubList) {
-                auto& blob = blobs.append(Json::objectValue);
-                blob[jss::blob] = pubList.rawBlob;
-                blob[jss::signature] = pubList.rawSignature;
+                boost::json::object& blob = blobs.emplace_back(boost::json::object()).as_object();
+                blob[jss::blob.c_str()] = pubList.rawBlob;
+                blob[jss::signature.c_str()] = pubList.rawSignature;
                 if (pubList.rawManifest &&
                     *pubList.rawManifest != outerManifest)
-                    blob[jss::manifest] = *pubList.rawManifest;
+                    blob[jss::manifest.c_str()] = *pubList.rawManifest;
             };
 
             add(pubCollection.current);
@@ -315,7 +315,7 @@ ValidatorList::buildFileData(
                 add(pending);
             }
 
-            value[jss::blobs_v2] = std::move(blobs);
+            value[jss::blobs_v2.c_str()] = std::move(blobs);
             break;
         }
         default:
@@ -339,15 +339,15 @@ ValidatorList::cacheValidatorFile(
 
     boost::system::error_code ec;
 
-    Json::Value value =
-        buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
+    boost::json::object value =
+        buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_).as_object();
     // rippled should be the only process writing to this file, so
     // if it ever needs to be read, it is not expected to change externally, so
     // delay the refresh as long as possible: 24 hours. (See also
     // `ValidatorSite::missingSite()`)
-    value[jss::refresh_interval] = 24 * 60;
+    value[jss::refresh_interval.c_str()] = 24 * 60;
 
-    writeFileContents(ec, filename, value.toStyledString());
+    writeFileContents(ec, filename, serialize(value));
 
     if (ec)
     {
@@ -359,21 +359,21 @@ ValidatorList::cacheValidatorFile(
 
 // static
 std::vector<ValidatorBlobInfo>
-ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
+ValidatorList::parseBlobs(std::uint32_t version, boost::json::object const& body)
 {
     std::vector<ValidatorBlobInfo> result;
     switch (version)
     {
         case 1: {
-            if (!body.isMember(jss::blob) || !body[jss::blob].isString() ||
-                !body.isMember(jss::signature) ||
-                !body[jss::signature].isString() ||
+            if (!body.contains(jss::blob.c_str()) || !body.at(jss::blob.c_str()).is_string() ||
+                !body.contains(jss::signature.c_str()) ||
+                !body.at(jss::signature.c_str()).is_string() ||
                 // If the v2 field is present, the VL is malformed
-                body.isMember(jss::blobs_v2))
+                body.contains(jss::blobs_v2.c_str()))
                 return {};
             ValidatorBlobInfo& info = result.emplace_back();
-            info.blob = body[jss::blob].asString();
-            info.signature = body[jss::signature].asString();
+            info.blob = body.at(jss::blob.c_str()).as_string();
+            info.signature = body.at(jss::signature.c_str()).as_string();
             assert(result.size() == 1);
             return result;
         }
@@ -383,30 +383,30 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
             // validated elsewhere.
         case 2:
         default: {
-            if (!body.isMember(jss::blobs_v2) ||
-                !body[jss::blobs_v2].isArray() ||
-                body[jss::blobs_v2].size() > maxSupportedBlobs ||
+            if (!body.contains(jss::blobs_v2.c_str()) ||
+                !body.at(jss::blobs_v2.c_str()).is_array() ||
+                body.at(jss::blobs_v2.c_str()).as_object().size() > maxSupportedBlobs ||
                 // If any of the v1 fields are present, the VL is malformed
-                body.isMember(jss::blob) || body.isMember(jss::signature))
+                body.contains(jss::blob.c_str()) || body.contains(jss::signature.c_str()))
                 return {};
-            auto const& blobs = body[jss::blobs_v2];
-            result.reserve(blobs.size());
-            for (auto const& blobInfo : blobs)
+            auto const& blobs = body.at(jss::blobs_v2.c_str());
+            result.reserve(blobs.as_array().size());
+            for (auto const& blobInfo : blobs.as_array())
             {
-                if (!blobInfo.isObject() ||
-                    !blobInfo.isMember(jss::signature) ||
-                    !blobInfo[jss::signature].isString() ||
-                    !blobInfo.isMember(jss::blob) ||
-                    !blobInfo[jss::blob].isString())
+                if (!blobInfo.is_object() ||
+                    !blobInfo.as_object().contains(jss::signature.c_str()) ||
+                    !blobInfo.as_object().at(jss::signature.c_str()).is_string() ||
+                    !blobInfo.as_object().contains(jss::blob.c_str()) ||
+                    !blobInfo.as_object().at(jss::blob.c_str()).is_string())
                     return {};
                 ValidatorBlobInfo& info = result.emplace_back();
-                info.blob = blobInfo[jss::blob].asString();
-                info.signature = blobInfo[jss::signature].asString();
-                if (blobInfo.isMember(jss::manifest))
+                info.blob = blobInfo.as_object().at(jss::blob.c_str()).as_string();
+                info.signature = blobInfo.as_object().at(jss::signature.c_str()).as_string();
+                if (blobInfo.as_object().contains(jss::manifest.c_str()))
                 {
-                    if (!blobInfo[jss::manifest].isString())
+                    if (!blobInfo.as_object().at(jss::manifest.c_str()).is_string())
                         return {};
-                    info.manifest = blobInfo[jss::manifest].asString();
+                    info.manifest = blobInfo.as_object().at(jss::manifest.c_str()).as_string();
                 }
             }
             assert(result.size() == blobs.size());
@@ -1069,7 +1069,7 @@ ValidatorList::applyList(
 {
     using namespace std::string_literals;
 
-    Json::Value list;
+    boost::json::value list;
     PublicKey pubKey;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
     auto const result = verify(lock, list, pubKey, manifest, blob, signature);
@@ -1096,7 +1096,7 @@ ValidatorList::applyList(
 
     // Update publisher's list
     auto& pubCollection = publisherLists_[pubKey];
-    auto const sequence = list[jss::sequence].asUInt();
+    auto const sequence = list.as_object()[jss::sequence.c_str()].as_uint64();
     auto const accepted =
         (result == ListDisposition::accepted ||
          result == ListDisposition::expired);
@@ -1109,7 +1109,7 @@ ValidatorList::applyList(
     if (!pubCollection.maxSequence || sequence > *pubCollection.maxSequence)
         pubCollection.maxSequence = sequence;
 
-    Json::Value const& newList = list[jss::validators];
+    boost::json::value const& newList = list.as_object()[jss::validators.c_str()];
     std::vector<PublicKey> oldList;
     if (accepted && pubCollection.remaining.count(sequence) != 0)
     {
@@ -1134,9 +1134,9 @@ ValidatorList::applyList(
                                    : pubCollection.remaining[sequence];
         publisher.sequence = sequence;
         publisher.validFrom = TimeKeeper::time_point{TimeKeeper::duration{
-            list.isMember(jss::effective) ? list[jss::effective].asUInt() : 0}};
+            list.as_object().contains(jss::effective.c_str()) ? list.as_object()[jss::effective.c_str()].as_uint64() : 0}};
         publisher.validUntil = TimeKeeper::time_point{
-            TimeKeeper::duration{list[jss::expiration].asUInt()}};
+            TimeKeeper::duration{list.as_object()[jss::expiration.c_str()].as_uint64()}};
         publisher.siteUri = std::move(siteUri);
         publisher.rawBlob = blob;
         publisher.rawSignature = signature;
@@ -1151,20 +1151,20 @@ ValidatorList::applyList(
         oldList = std::move(publisherList);
         // Build the new validator list from "newList"
         publisherList.clear();
-        publisherList.reserve(newList.size());
-        for (auto const& val : newList)
+        publisherList.reserve(newList.as_array().size());
+        for (auto const& val : newList.as_array())
         {
-            if (val.isObject() && val.isMember(jss::validation_public_key) &&
-                val[jss::validation_public_key].isString())
+            if (val.is_object() && val.as_object().contains(jss::validation_public_key.c_str()) &&
+                val.as_object().at(jss::validation_public_key.c_str()).is_string())
             {
                 std::optional<Blob> const ret =
-                    strUnHex(val[jss::validation_public_key].asString());
+                    strUnHex(std::string{val.as_object().at(jss::validation_public_key.c_str()).as_string()});
 
                 if (!ret || !publicKeyType(makeSlice(*ret)))
                 {
                     JLOG(j_.error())
                         << "Invalid node identity: "
-                        << val[jss::validation_public_key].asString();
+                        << val.as_object().at(jss::validation_public_key.c_str()).as_string();
                 }
                 else
                 {
@@ -1172,9 +1172,9 @@ ValidatorList::applyList(
                         PublicKey(Slice{ret->data(), ret->size()}));
                 }
 
-                if (val.isMember(jss::manifest) &&
-                    val[jss::manifest].isString())
-                    manifests.push_back(val[jss::manifest].asString());
+                if (val.as_object().contains(jss::manifest.c_str()) &&
+                    val.as_object().at(jss::manifest.c_str()).is_string())
+                    manifests.push_back(std::string{val.as_object().at(jss::manifest.c_str()).as_string()});
             }
         }
 
@@ -1258,7 +1258,7 @@ ValidatorList::loadLists()
 ListDisposition
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
-    Json::Value& list,
+    boost::json::value& listJson,
     PublicKey& pubKey,
     std::string const& manifest,
     std::string const& blob,
@@ -1293,20 +1293,21 @@ ValidatorList::verify(
             makeSlice(*sig)))
         return ListDisposition::invalid;
 
-    Json::Reader r;
-    if (!r.parse(data, list))
+    listJson = boost::json::parse(data).as_object();
+    boost::json::object list = listJson.as_object();
+    if (!list.empty())
         return ListDisposition::invalid;
 
-    if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
-        list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
-        (!list.isMember(jss::effective) || list[jss::effective].isInt()) &&
-        list.isMember(jss::validators) && list[jss::validators].isArray())
+    if (list.contains(jss::sequence.c_str()) && list[jss::sequence.c_str()].is_int64() &&
+        list.contains(jss::expiration.c_str()) && list[jss::expiration.c_str()].is_int64() &&
+        (!list.contains(jss::effective.c_str()) || list[jss::effective.c_str()].is_int64()) &&
+        list.contains(jss::validators.c_str()) && list[jss::validators.c_str()].is_array())
     {
-        auto const sequence = list[jss::sequence].asUInt();
+        auto const sequence = list[jss::sequence.c_str()].as_uint64();
         auto const validFrom = TimeKeeper::time_point{TimeKeeper::duration{
-            list.isMember(jss::effective) ? list[jss::effective].asUInt() : 0}};
+            list.contains(jss::effective.c_str()) ? list[jss::effective.c_str()].as_uint64() : 0}};
         auto const validUntil = TimeKeeper::time_point{
-            TimeKeeper::duration{list[jss::expiration].asUInt()}};
+            TimeKeeper::duration{list[jss::expiration.c_str()].as_uint64()}};
         auto const now = timeKeeper_.now();
         auto const& listCollection = publisherLists_[pubKey];
         if (validUntil <= validFrom)
@@ -1503,81 +1504,80 @@ ValidatorList::expires() const
     return expires(read_lock);
 }
 
-Json::Value
+boost::json::value
 ValidatorList::getJson() const
 {
-    Json::Value res(Json::objectValue);
+    boost::json::object res;
 
     std::shared_lock read_lock{mutex_};
 
-    res[jss::validation_quorum] = static_cast<Json::UInt>(quorum_);
+    res[jss::validation_quorum.c_str()] = static_cast<uint>(quorum_);
 
     {
-        auto& x = (res[jss::validator_list] = Json::objectValue);
+        boost::json::object& x = (res[jss::validator_list.c_str()].emplace_object());
 
-        x[jss::count] = static_cast<Json::UInt>(count(read_lock));
+        x[jss::count.c_str()] = static_cast<Json::UInt>(count(read_lock));
 
         if (auto when = expires(read_lock))
         {
             if (*when == TimeKeeper::time_point::max())
             {
-                x[jss::expiration] = "never";
-                x[jss::status] = "active";
+                x[jss::expiration.c_str()] = "never";
+                x[jss::status.c_str()] = "active";
             }
             else
             {
-                x[jss::expiration] = to_string(*when);
+                x[jss::expiration.c_str()] = to_string(*when);
 
                 if (*when > timeKeeper_.now())
-                    x[jss::status] = "active";
+                    x[jss::status.c_str()] = "active";
                 else
-                    x[jss::status] = "expired";
+                    x[jss::status.c_str()] = "expired";
             }
         }
         else
         {
-            x[jss::status] = "unknown";
-            x[jss::expiration] = "unknown";
+            x[jss::status.c_str()] = "unknown";
+            x[jss::expiration.c_str()] = "unknown";
         }
     }
 
     // Local static keys
     PublicKey local;
-    Json::Value& jLocalStaticKeys =
-        (res[jss::local_static_keys] = Json::arrayValue);
+    boost::json::array& jLocalStaticKeys =res[jss::local_static_keys.c_str()].emplace_array();
     if (auto it = publisherLists_.find(local); it != publisherLists_.end())
     {
         for (auto const& key : it->second.current.list)
-            jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
+            jLocalStaticKeys.emplace_back(toBase58(TokenType::NodePublic, key));
     }
 
     // Publisher lists
-    Json::Value& jPublisherLists =
-        (res[jss::publisher_lists] = Json::arrayValue);
+    boost::json::array& jPublisherLists =
+        (res[jss::publisher_lists.c_str()].emplace_array());
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
         if (local == publicKey)
             continue;
-        Json::Value& curr = jPublisherLists.append(Json::objectValue);
-        curr[jss::pubkey_publisher] = strHex(publicKey);
-        curr[jss::available] =
+        boost::json::object& curr = jPublisherLists.emplace_back(boost::json::object()).as_object();
+        curr[jss::pubkey_publisher.c_str()] = strHex(publicKey);
+        curr[jss::available.c_str()] =
             pubCollection.status == PublisherStatus::available;
 
         auto appendList = [](PublisherList const& publisherList,
-                             Json::Value& target) {
-            target[jss::uri] = publisherList.siteUri;
+                             boost::json::object& target) {
+            target[jss::uri.c_str()] = publisherList.siteUri;
             if (publisherList.validUntil != TimeKeeper::time_point{})
             {
-                target[jss::seq] =
+                target[jss::seq.c_str()] =
                     static_cast<Json::UInt>(publisherList.sequence);
-                target[jss::expiration] = to_string(publisherList.validUntil);
+                target[jss::expiration.c_str()] = to_string(publisherList.validUntil);
             }
             if (publisherList.validFrom != TimeKeeper::time_point{})
-                target[jss::effective] = to_string(publisherList.validFrom);
-            Json::Value& keys = (target[jss::list] = Json::arrayValue);
+                target[jss::effective.c_str()] = to_string(publisherList.validFrom);
+            boost::json::array& keys = (target[jss::list.c_str()].emplace_array());
             for (auto const& key : publisherList.list)
             {
-                keys.append(toBase58(TokenType::NodePublic, key));
+                keys.emplace_back(toBase58(TokenType::NodePublic, key));
             }
         };
         {
@@ -1585,35 +1585,36 @@ ValidatorList::getJson() const
             appendList(current, curr);
             if (current.validUntil != TimeKeeper::time_point{})
             {
-                curr[jss::version] = pubCollection.rawVersion;
+                curr[jss::version.c_str()] = pubCollection.rawVersion;
             }
         }
 
-        Json::Value remaining(Json::arrayValue);
+        boost::json::array remaining;
         for (auto const& [sequence, future] : pubCollection.remaining)
         {
             using namespace std::chrono_literals;
 
             (void)sequence;
-            Json::Value& r = remaining.append(Json::objectValue);
+            boost::json::object& r = remaining.emplace_back(boost::json::object()).as_object();
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
             assert(future.validFrom > timeKeeper_.now() + 600s);
         }
         if (remaining.size())
-            curr[jss::remaining] = std::move(remaining);
+            curr[jss::remaining.c_str()] = std::move(remaining);
     }
 
     // Trusted validator keys
-    Json::Value& jValidatorKeys =
-        (res[jss::trusted_validator_keys] = Json::arrayValue);
+    boost::json::array& jValidatorKeys =
+        (res[jss::trusted_validator_keys.c_str()].emplace_array());
     for (auto const& k : trustedMasterKeys_)
     {
-        jValidatorKeys.append(toBase58(TokenType::NodePublic, k));
+        jValidatorKeys.emplace_back(toBase58(TokenType::NodePublic, k));
     }
 
     // signing keys
-    Json::Value& jSigningKeys = (res[jss::signing_keys] = Json::objectValue);
+    res[jss::signing_keys.c_str()].emplace_object();
+    boost::json::object& jSigningKeys = res[jss::signing_keys.c_str()].as_object();
     validatorManifests_.for_each_manifest([&jSigningKeys,
                                            this](Manifest const& manifest) {
         auto it = keyListings_.find(manifest.masterKey);
@@ -1627,10 +1628,10 @@ ValidatorList::getJson() const
     // Negative UNL
     if (!negativeUNL_.empty())
     {
-        Json::Value& jNegativeUNL = (res[jss::NegativeUNL] = Json::arrayValue);
+        boost::json::array& jNegativeUNL = (res[jss::NegativeUNL.c_str()].emplace_array());
         for (auto const& k : negativeUNL_)
         {
-            jNegativeUNL.append(toBase58(TokenType::NodePublic, k));
+            jNegativeUNL.emplace_back(toBase58(TokenType::NodePublic, k));
         }
     }
 
@@ -1674,7 +1675,7 @@ ValidatorList::for_each_available(
     }
 }
 
-std::optional<Json::Value>
+std::optional<boost::json::value>
 ValidatorList::getAvailable(
     boost::beast::string_view const& pubKey,
     std::optional<std::uint32_t> forceVersion /* = {} */)
@@ -1698,7 +1699,7 @@ ValidatorList::getAvailable(
         iter->second.status != PublisherStatus::available)
         return {};
 
-    Json::Value value =
+    boost::json::value value =
         buildFileData(std::string{pubKey}, iter->second, forceVersion, j_);
 
     return value;
