@@ -106,7 +106,7 @@ public:
     }
 
     //! JSON representation of this ledger.
-    Json::Value
+    boost::json::value
     getJson() const
     {
         return ripple::getJson({*ledger_, {}});

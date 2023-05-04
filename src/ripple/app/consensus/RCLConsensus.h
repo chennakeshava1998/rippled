@@ -324,7 +324,7 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            boost::json::value&& consensusJson);
 
         /** Process the accepted ledger that was a result of simulation/force
             accept.
@@ -338,7 +338,7 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            boost::json::value&& consensusJson);
 
         /** Notify peers of a consensus state change
 
@@ -363,7 +363,7 @@ class RCLConsensus
             NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            boost::json::value&& consensusJson);
 
         /** Build the new last closed ledger.
 
@@ -472,7 +472,7 @@ public:
     }
 
     //! @see Consensus::getJson
-    Json::Value
+    boost::json::value
     getJson(bool full) const;
 
     /** Adjust the set of trusted validators and kick-off the next round of

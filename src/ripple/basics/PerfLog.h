@@ -143,7 +143,7 @@ public:
      *
      * @return Counters Json object
      */
-    virtual Json::Value
+    virtual boost::json::value
     countersJson() const = 0;
 
     /**
@@ -151,7 +151,7 @@ public:
      *
      * @return Current executing jobs and RPC calls and durations
      */
-    virtual Json::Value
+    virtual boost::json::value
     currentJson() const = 0;
 
     /**

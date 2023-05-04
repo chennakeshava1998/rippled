@@ -32,19 +32,20 @@
 namespace ripple {
 
 void
-appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
+appendOfferJson(std::shared_ptr<SLE const> const& offer, boost::json::array& offers)
 {
     STAmount dirRate =
         amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
-    Json::Value& obj(offers.append(Json::objectValue));
-    offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
-    offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
-    obj[jss::seq] = offer->getFieldU32(sfSequence);
-    obj[jss::flags] = offer->getFieldU32(sfFlags);
-    obj[jss::quality] = dirRate.getText();
+    
+    boost::json::object& obj(offers.emplace_back(boost::json::object()).as_object());
+    offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays.c_str()]);
+    offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets.c_str()]);
+    obj[jss::seq.c_str()] = offer->getFieldU32(sfSequence);
+    obj[jss::flags.c_str()] = offer->getFieldU32(sfFlags);
+    obj[jss::quality.c_str()] = dirRate.getText();
     if (offer->isFieldPresent(sfExpiration))
-        obj[jss::expiration] = offer->getFieldU32(sfExpiration);
-};
+        obj[jss::expiration.c_str()] = offer->getFieldU32(sfExpiration);
+}
 
 // {
 //   account: <account>|<account_public_key>
@@ -53,31 +54,29 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value
+boost::json::value
 doAccountOffers(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+    if (!params.contains(jss::account.c_str()))
+        return RPC::missing_field_error(jss::account.c_str());
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    boost::json::object result = RPC::lookupLedger(ledger, context).as_object();
     if (!ledger)
         return result;
 
-    std::string strIdent(params[jss::account].asString());
+    std::string strIdent(std::string{params.at(jss::account.c_str()).as_string()});
     AccountID accountID;
 
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto jv = RPC::accountFromString(accountID, strIdent);
+    if (!jv.is_null())
     {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = (*it);
-
-        return result;
+        return jv.as_object();
     }
 
     // Get info on account.
-    result[jss::account] = toBase58(accountID);
+    result[jss::account.c_str()] = toBase58(accountID);
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -89,19 +88,19 @@ doAccountOffers(RPC::JsonContext& context)
     if (limit == 0)
         return rpcError(rpcINVALID_PARAMS);
 
-    Json::Value& jsonOffers(result[jss::offers] = Json::arrayValue);
+    boost::json::array& jsonOffers(result[jss::offers.c_str()].emplace_array());
     std::vector<std::shared_ptr<SLE const>> offers;
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
-    if (params.isMember(jss::marker))
+    if (params.contains(jss::marker.c_str()))
     {
-        if (!params[jss::marker].isString())
+        if (!params.at(jss::marker.c_str()).is_string())
             return RPC::expected_field_error(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
         // former will be read as hex, and the latter using boost lexical cast.
-        std::stringstream marker(params[jss::marker].asString());
+        std::stringstream marker(std::string{params.at(jss::marker.c_str()).as_string()});
         std::string value;
         if (!std::getline(marker, value, ','))
             return rpcError(rpcINVALID_PARAMS);
@@ -171,8 +170,8 @@ doAccountOffers(RPC::JsonContext& context)
     // no need to return a marker.
     if (count == limit + 1 && marker)
     {
-        result[jss::limit] = limit;
-        result[jss::marker] =
+        result[jss::limit.c_str()] = limit;
+        result[jss::marker.c_str()] =
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 

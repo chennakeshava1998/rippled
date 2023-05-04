@@ -116,9 +116,9 @@ class PerfLogImp : public PerfLog
         Counters(
             std::vector<char const*> const& labels,
             JobTypes const& jobTypes);
-        Json::Value
+        boost::json::value
         countersJson() const;
-        Json::Value
+        boost::json::value
         currentJson() const;
     };
 
@@ -183,13 +183,13 @@ public:
     void
     jobFinish(JobType const type, microseconds dur, int instance) override;
 
-    Json::Value
+    boost::json::value
     countersJson() const override
     {
         return counters_.countersJson();
     }
 
-    Json::Value
+    boost::json::value
     currentJson() const override
     {
         return counters_.currentJson();

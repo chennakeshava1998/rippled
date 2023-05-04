@@ -144,7 +144,7 @@ public:
     // Owner functions
     //
 
-    virtual Json::Value
+    virtual boost::json::value
     getOwnerInfo(
         std::shared_ptr<ReadView const> lpLedger,
         AccountID const& account) = 0;
@@ -161,8 +161,8 @@ public:
         AccountID const& uTakerID,
         bool const bProof,
         unsigned int iLimit,
-        Json::Value const& jvMarker,
-        Json::Value& jvResult) = 0;
+        boost::json::value const& jvMarker,
+        boost::json::value& jvResult) = 0;
 
     //--------------------------------------------------------------------------
 
@@ -219,13 +219,13 @@ public:
     virtual void
     consensusViewChange() = 0;
 
-    virtual Json::Value
+    virtual boost::json::value
     getConsensusInfo() = 0;
-    virtual Json::Value
+    virtual boost::json::value
     getServerInfo(bool human, bool admin, bool counters) = 0;
     virtual void
     clearLedgerFetch() = 0;
-    virtual Json::Value
+    virtual boost::json::value
     getLedgerFetchInfo() = 0;
 
     /** Accepts the current transaction tree, return the new ledger's sequence
@@ -262,16 +262,16 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
     virtual void
-    forwardValidation(Json::Value const& jvObj) = 0;
+    forwardValidation(boost::json::value const& jvObj) = 0;
     virtual void
-    forwardManifest(Json::Value const& jvObj) = 0;
+    forwardManifest(boost::json::value const& jvObj) = 0;
     virtual void
-    forwardProposedTransaction(Json::Value const& jvObj) = 0;
+    forwardProposedTransaction(boost::json::value const& jvObj) = 0;
     virtual void
-    forwardProposedAccountTransaction(Json::Value const& jvObj) = 0;
+    forwardProposedAccountTransaction(boost::json::value const& jvObj) = 0;
 
     virtual void
-    stateAccounting(Json::Value& obj) = 0;
+    stateAccounting(boost::json::object& obj) = 0;
 };
 
 //------------------------------------------------------------------------------

@@ -39,19 +39,20 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     met->add(s);
     mRawMeta = std::move(s.modData());
 
-    mJson = Json::objectValue;
-    mJson[jss::transaction] = mTxn->getJson(JsonOptions::none);
+    mJson.clear();
+    mJson[jss::transaction.c_str()] = mTxn->getJson(JsonOptions::none);
 
-    mJson[jss::meta] = mMeta.getJson(JsonOptions::none);
-    mJson[jss::raw_meta] = strHex(mRawMeta);
+    mJson[jss::meta.c_str()] = mMeta.getJson(JsonOptions::none);
+    mJson[jss::raw_meta.c_str()] = strHex(mRawMeta);
 
-    mJson[jss::result] = transHuman(mMeta.getResultTER());
+    mJson[jss::result.c_str()] = transHuman(mMeta.getResultTER());
 
     if (!mAffected.empty())
     {
-        Json::Value& affected = (mJson[jss::affected] = Json::arrayValue);
+        mJson[jss::affected.c_str()].emplace_array();
+        boost::json::array& affected = mJson[jss::affected.c_str()].as_array();
         for (auto const& account : mAffected)
-            affected.append(toBase58(account));
+            affected.emplace_back(toBase58(account));
     }
 
     if (mTxn->getTxnType() == ttOFFER_CREATE)
@@ -68,7 +69,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
                 amount,
                 fhIGNORE_FREEZE,
                 beast::Journal{beast::Journal::getNullSink()});
-            mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
+            mJson[jss::transaction.c_str()].as_object()[jss::owner_funds.c_str()] = ownerFunds.getText();
         }
     }
 }

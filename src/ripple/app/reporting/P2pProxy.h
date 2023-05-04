@@ -33,7 +33,7 @@ namespace ripple {
 /// Forward a JSON request to a p2p node and return the response
 /// @param context context of the request
 /// @return response from p2p node
-Json::Value
+boost::json::value
 forwardToP2p(RPC::JsonContext& context);
 
 /// Whether a request should be forwarded, based on request parameters

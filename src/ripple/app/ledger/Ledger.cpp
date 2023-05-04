@@ -876,10 +876,10 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
         return true;
     }
 
-    Json::Value j = getJson({*this, {}});
+    boost::json::object j = getJson({*this, {}}).as_object();
 
-    j[jss::accountTreeHash] = to_string(info_.accountHash);
-    j[jss::transTreeHash] = to_string(info_.txHash);
+    j[jss::accountTreeHash.c_str()] = to_string(info_.accountHash);
+    j[jss::transTreeHash.c_str()] = to_string(info_.txHash);
 
     JLOG(ledgerJ.fatal()) << "ledger is not sensible" << j;
 

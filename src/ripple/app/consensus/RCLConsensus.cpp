@@ -398,7 +398,7 @@ RCLConsensus::Adaptor::onForceAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    boost::json::value&& consensusJson)
 {
     doAccept(
         result,
@@ -416,7 +416,7 @@ RCLConsensus::Adaptor::onAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    boost::json::value&& consensusJson)
 {
     app_.getJobQueue().addJob(
         jtACCEPT,
@@ -445,7 +445,7 @@ RCLConsensus::Adaptor::doAccept(
     NetClock::duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    boost::json::value&& consensusJson)
 {
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
@@ -889,10 +889,10 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
     mode_ = after;
 }
 
-Json::Value
+boost::json::value
 RCLConsensus::getJson(bool full) const
 {
-    Json::Value ret;
+    boost::json::object ret;
     {
         std::lock_guard _{mutex_};
         ret = consensus_.getJson(full);

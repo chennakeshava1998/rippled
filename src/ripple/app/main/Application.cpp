@@ -78,6 +78,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/json.hpp>
 
 #include <date/date.h>
 
@@ -1431,10 +1432,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     for (auto cmd : config_->section(SECTION_RPC_STARTUP).lines())
     {
-        Json::Reader jrReader;
-        Json::Value jvCommand;
+        boost::json::value jvCommand(boost::json::parse(cmd));
 
-        if (!jrReader.parse(cmd, jvCommand))
+        if (!jvCommand.is_null())
         {
             JLOG(m_journal.fatal()) << "Couldn't parse entry in ["
                                     << SECTION_RPC_STARTUP << "]: '" << cmd;
@@ -1459,9 +1459,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              {},
              {},
              RPC::apiMaximumSupportedVersion},
-            jvCommand};
+            jvCommand.as_object()};
 
-        Json::Value jvResult;
+        boost::json::value jvResult;
         RPC::doCommand(context, jvResult);
 
         if (!config_->quiet())
@@ -1748,7 +1748,7 @@ ApplicationImp::getLastFullLedger()
         if (auto stream = j.error())
         {
             stream << "Failed on ledger";
-            Json::Value p;
+            boost::json::value p;
             addJson(p, {*ledger, nullptr, LedgerFill::full});
             stream << p;
         }
@@ -1775,23 +1775,25 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             return nullptr;
         }
 
-        Json::Reader reader;
-        Json::Value jLedger;
+        std::stringstream readBuffer;
+        readBuffer << ledgerFile.rdbuf();
 
-        if (!reader.parse(ledgerFile, jLedger))
+        boost::json::value jLedger(boost::json::parse(readBuffer.str()));
+
+        if (!jLedger.is_null())
         {
             JLOG(m_journal.fatal()) << "Unable to parse ledger JSON";
             return nullptr;
         }
 
-        std::reference_wrapper<Json::Value> ledger(jLedger);
+        std::reference_wrapper<boost::json::value> ledger(jLedger);
 
         // accept a wrapped ledger
-        if (ledger.get().isMember("result"))
-            ledger = ledger.get()["result"];
+        if (ledger.get().as_object().contains("result"))
+            ledger = ledger.get().as_object()["result"];
 
-        if (ledger.get().isMember("ledger"))
-            ledger = ledger.get()["ledger"];
+        if (ledger.get().as_object().contains("ledger"))
+            ledger = ledger.get().as_object()["ledger"];
 
         std::uint32_t seq = 1;
         auto closeTime = timeKeeper().closeTime();
@@ -1800,40 +1802,40 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         bool closeTimeEstimated = false;
         std::uint64_t totalDrops = 0;
 
-        if (ledger.get().isMember("accountState"))
+        if (ledger.get().as_object().contains("accountState"))
         {
-            if (ledger.get().isMember(jss::ledger_index))
+            if (ledger.get().as_object().contains(jss::ledger_index.c_str()))
             {
-                seq = ledger.get()[jss::ledger_index].asUInt();
+                seq = ledger.get().as_object()[jss::ledger_index.c_str()].as_uint64();
             }
 
-            if (ledger.get().isMember("close_time"))
+            if (ledger.get().as_object().contains("close_time"))
             {
                 using tp = NetClock::time_point;
                 using d = tp::duration;
-                closeTime = tp{d{ledger.get()["close_time"].asUInt()}};
+                closeTime = tp{d{ledger.get().as_object()["close_time"].as_uint64()}};
             }
-            if (ledger.get().isMember("close_time_resolution"))
+            if (ledger.get().as_object().contains("close_time_resolution"))
             {
                 using namespace std::chrono;
                 closeTimeResolution =
-                    seconds{ledger.get()["close_time_resolution"].asUInt()};
+                    seconds{ledger.get().as_object()["close_time_resolution"].as_uint64()};
             }
-            if (ledger.get().isMember("close_time_estimated"))
+            if (ledger.get().as_object().contains("close_time_estimated"))
             {
                 closeTimeEstimated =
-                    ledger.get()["close_time_estimated"].asBool();
+                    ledger.get().as_object()["close_time_estimated"].as_bool();
             }
-            if (ledger.get().isMember("total_coins"))
+            if (ledger.get().as_object().contains("total_coins"))
             {
                 totalDrops = beast::lexicalCastThrow<std::uint64_t>(
-                    ledger.get()["total_coins"].asString());
+                    std::string{ledger.get().as_object()["total_coins"].as_string()});
             }
 
-            ledger = ledger.get()["accountState"];
+            ledger = ledger.get().as_object()["accountState"];
         }
 
-        if (!ledger.get().isArrayOrNull())
+        if (!ledger.get().is_array())
         {
             JLOG(m_journal.fatal()) << "State nodes must be an array";
             return nullptr;
@@ -1843,11 +1845,11 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             std::make_shared<Ledger>(seq, closeTime, *config_, nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
-        for (Json::UInt index = 0; index < ledger.get().size(); ++index)
+        for (Json::UInt index = 0; index < ledger.get().as_array().size(); ++index)
         {
-            Json::Value& entry = ledger.get()[index];
+            boost::json::value& entry = ledger.get().as_array()[index];
 
-            if (!entry.isObjectOrNull())
+            if (!(entry.is_object() || entry.is_null()))
             {
                 JLOG(m_journal.fatal()) << "Invalid entry in ledger";
                 return nullptr;
@@ -1855,15 +1857,15 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             uint256 uIndex;
 
-            if (!uIndex.parseHex(entry[jss::index].asString()))
+            if (!uIndex.parseHex(entry.as_object()[jss::index.c_str()].as_string()))
             {
                 JLOG(m_journal.fatal()) << "Invalid entry in ledger";
                 return nullptr;
             }
 
-            entry.removeMember(jss::index);
+            entry.as_object().erase(jss::index.c_str());
 
-            STParsedJSONObject stp("sle", ledger.get()[index]);
+            STParsedJSONObject stp("sle", ledger.get().as_array()[index]);
 
             if (!stp.object || uIndex.isZero())
             {

@@ -74,10 +74,10 @@ PerfLogImp::Counters::Counters(
     }
 }
 
-Json::Value
+boost::json::value
 PerfLogImp::Counters::countersJson() const
 {
-    Json::Value rpcobj(Json::objectValue);
+    boost::json::object rpcobj;
     // totalRpc represents all rpc methods. All that started, finished, etc.
     Rpc totalRpc;
     for (auto const& proc : rpc_)
@@ -93,30 +93,30 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        Json::Value p(Json::objectValue);
-        p[jss::started] = std::to_string(value.started);
+        boost::json::object p;
+        p[jss::started.c_str()] = std::to_string(value.started);
         totalRpc.started += value.started;
-        p[jss::finished] = std::to_string(value.finished);
+        p[jss::finished.c_str()] = std::to_string(value.finished);
         totalRpc.finished += value.finished;
-        p[jss::errored] = std::to_string(value.errored);
+        p[jss::errored.c_str()] = std::to_string(value.errored);
         totalRpc.errored += value.errored;
-        p[jss::duration_us] = std::to_string(value.duration.count());
+        p[jss::duration_us.c_str()] = std::to_string(value.duration.count());
         totalRpc.duration += value.duration;
-        rpcobj[proc.first] = p;
+        rpcobj[proc.first.c_str()] = p;
     }
 
     if (totalRpc.started)
     {
-        Json::Value totalRpcJson(Json::objectValue);
-        totalRpcJson[jss::started] = std::to_string(totalRpc.started);
-        totalRpcJson[jss::finished] = std::to_string(totalRpc.finished);
-        totalRpcJson[jss::errored] = std::to_string(totalRpc.errored);
-        totalRpcJson[jss::duration_us] =
+        boost::json::object totalRpcJson;
+        totalRpcJson[jss::started.c_str()] = std::to_string(totalRpc.started);
+        totalRpcJson[jss::finished.c_str()] = std::to_string(totalRpc.finished);
+        totalRpcJson[jss::errored.c_str()] = std::to_string(totalRpc.errored);
+        totalRpcJson[jss::duration_us.c_str()] =
             std::to_string(totalRpc.duration.count());
-        rpcobj[jss::total] = totalRpcJson;
+        rpcobj[jss::total.c_str()] = totalRpcJson;
     }
 
-    Json::Value jqobj(Json::objectValue);
+    boost::json::object jqobj;
     // totalJq represents all jobs. All enqueued, started, finished, etc.
     Jq totalJq;
     for (auto const& proc : jq_)
@@ -132,49 +132,49 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        Json::Value j(Json::objectValue);
-        j[jss::queued] = std::to_string(value.queued);
+        boost::json::object j;
+        j[jss::queued.c_str()] = std::to_string(value.queued);
         totalJq.queued += value.queued;
-        j[jss::started] = std::to_string(value.started);
+        j[jss::started.c_str()] = std::to_string(value.started);
         totalJq.started += value.started;
-        j[jss::finished] = std::to_string(value.finished);
+        j[jss::finished.c_str()] = std::to_string(value.finished);
         totalJq.finished += value.finished;
-        j[jss::queued_duration_us] =
+        j[jss::queued_duration_us.c_str()] =
             std::to_string(value.queuedDuration.count());
         totalJq.queuedDuration += value.queuedDuration;
-        j[jss::running_duration_us] =
+        j[jss::running_duration_us.c_str()] =
             std::to_string(value.runningDuration.count());
         totalJq.runningDuration += value.runningDuration;
-        jqobj[JobTypes::name(proc.first)] = j;
+        jqobj[JobTypes::name(proc.first).c_str()] = j;
     }
 
     if (totalJq.queued)
     {
-        Json::Value totalJqJson(Json::objectValue);
-        totalJqJson[jss::queued] = std::to_string(totalJq.queued);
-        totalJqJson[jss::started] = std::to_string(totalJq.started);
-        totalJqJson[jss::finished] = std::to_string(totalJq.finished);
-        totalJqJson[jss::queued_duration_us] =
+        boost::json::object totalJqJson;
+        totalJqJson[jss::queued.c_str()] = std::to_string(totalJq.queued);
+        totalJqJson[jss::started.c_str()] = std::to_string(totalJq.started);
+        totalJqJson[jss::finished.c_str()] = std::to_string(totalJq.finished);
+        totalJqJson[jss::queued_duration_us.c_str()] =
             std::to_string(totalJq.queuedDuration.count());
-        totalJqJson[jss::running_duration_us] =
+        totalJqJson[jss::running_duration_us.c_str()] =
             std::to_string(totalJq.runningDuration.count());
-        jqobj[jss::total] = totalJqJson;
+        jqobj[jss::total.c_str()] = totalJqJson;
     }
 
-    Json::Value counters(Json::objectValue);
+    boost::json::object counters;
     // Be kind to reporting tools and let them expect rpc and jq objects
     // even if empty.
-    counters[jss::rpc] = rpcobj;
-    counters[jss::job_queue] = jqobj;
+    counters[jss::rpc.c_str()] = rpcobj;
+    counters[jss::job_queue.c_str()] = jqobj;
     return counters;
 }
 
-Json::Value
+boost::json::value
 PerfLogImp::Counters::currentJson() const
 {
     auto const present = steady_clock::now();
 
-    Json::Value jobsArray(Json::arrayValue);
+    boost::json::array jobsArray;
     auto const jobs = [this] {
         std::lock_guard lock(jobsMutex_);
         return jobs_;
@@ -184,15 +184,15 @@ PerfLogImp::Counters::currentJson() const
     {
         if (j.first == jtINVALID)
             continue;
-        Json::Value jobj(Json::objectValue);
-        jobj[jss::job] = JobTypes::name(j.first);
-        jobj[jss::duration_us] = std::to_string(
+        boost::json::object jobj;
+        jobj[jss::job.c_str()] = JobTypes::name(j.first);
+        jobj[jss::duration_us.c_str()] = std::to_string(
             std::chrono::duration_cast<microseconds>(present - j.second)
                 .count());
-        jobsArray.append(jobj);
+        jobsArray.emplace_back(jobj);
     }
 
-    Json::Value methodsArray(Json::arrayValue);
+    boost::json::array methodsArray;
     std::vector<MethodStart> methods;
     {
         std::lock_guard lock(methodsMutex_);
@@ -202,17 +202,17 @@ PerfLogImp::Counters::currentJson() const
     }
     for (auto m : methods)
     {
-        Json::Value methodobj(Json::objectValue);
-        methodobj[jss::method] = m.first;
-        methodobj[jss::duration_us] = std::to_string(
+        boost::json::object methodobj;
+        methodobj[jss::method.c_str()] = m.first;
+        methodobj[jss::duration_us.c_str()] = std::to_string(
             std::chrono::duration_cast<microseconds>(present - m.second)
                 .count());
-        methodsArray.append(methodobj);
+        methodsArray.emplace_back(methodobj);
     }
 
-    Json::Value current(Json::objectValue);
-    current[jss::jobs] = jobsArray;
-    current[jss::methods] = methodsArray;
+    boost::json::object current;
+    current[jss::jobs.c_str()] = jobsArray;
+    current[jss::methods.c_str()] = methodsArray;
     return current;
 }
 
@@ -289,24 +289,24 @@ PerfLogImp::report()
         return;
     lastLog_ = present;
 
-    Json::Value report(Json::objectValue);
-    report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
+    boost::json::object report;
+    report[jss::time.c_str()] = to_string(std::chrono::floor<microseconds>(present));
     {
         std::lock_guard lock{counters_.jobsMutex_};
-        report[jss::workers] =
+        report[jss::workers.c_str()] =
             static_cast<unsigned int>(counters_.jobs_.size());
     }
-    report[jss::hostid] = hostname_;
-    report[jss::counters] = counters_.countersJson();
-    report[jss::nodestore] = Json::objectValue;
+    report[jss::hostid.c_str()] = hostname_;
+    report[jss::counters.c_str()] = counters_.countersJson();
+    report[jss::nodestore.c_str()].emplace_object();
     if (app_.getShardStore())
-        app_.getShardStore()->getCountsJson(report[jss::nodestore]);
+        app_.getShardStore()->getCountsJson(report[jss::nodestore.c_str()].as_object());
     else
-        app_.getNodeStore().getCountsJson(report[jss::nodestore]);
-    report[jss::current_activities] = counters_.currentJson();
+        app_.getNodeStore().getCountsJson(report[jss::nodestore.c_str()].as_object());
+    report[jss::current_activities.c_str()] = counters_.currentJson();
     app_.getOPs().stateAccounting(report);
 
-    logFile_ << Json::Compact{std::move(report)} << std::endl;
+    logFile_ << serialize(std::move(report)) << std::endl;
 }
 
 PerfLogImp::PerfLogImp(

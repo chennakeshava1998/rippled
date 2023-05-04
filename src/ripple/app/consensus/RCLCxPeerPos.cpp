@@ -51,7 +51,7 @@ RCLCxPeerPos::checkSign() const
         publicKey(), proposal_.signingHash(), signature(), false);
 }
 
-Json::Value
+boost::json::value
 RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();

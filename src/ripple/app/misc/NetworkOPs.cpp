@@ -169,7 +169,7 @@ class NetworkOPsImp final : public NetworkOPs
          * @obj Json object to which to add state accounting data.
          */
         void
-        json(Json::Value& obj) const;
+        json(boost::json::value& obj) const;
 
         struct CounterData
         {
@@ -330,7 +330,7 @@ public:
     // Owner functions.
     //
 
-    Json::Value
+    boost::json::value
     getOwnerInfo(
         std::shared_ptr<ReadView const> lpLedger,
         AccountID const& account) override;
@@ -346,8 +346,8 @@ public:
         AccountID const& uTakerID,
         const bool bProof,
         unsigned int iLimit,
-        Json::Value const& jvMarker,
-        Json::Value& jvResult) override;
+        boost::json::value const& jvMarker,
+        boost::json::value& jvResult) override;
 
     // Ledger proposal/close functions.
     bool
@@ -417,13 +417,13 @@ public:
     void
     consensusViewChange() override;
 
-    Json::Value
+    boost::json::value
     getConsensusInfo() override;
-    Json::Value
+    boost::json::value
     getServerInfo(bool human, bool admin, bool counters) override;
     void
     clearLedgerFetch() override;
-    Json::Value
+    boost::json::value
     getLedgerFetchInfo() override;
     std::uint32_t
     acceptLedger(
@@ -452,13 +452,13 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) override;
 
     void
-    forwardValidation(Json::Value const& jvObj) override;
+    forwardValidation(boost::json::value const& jvObj) override;
     void
-    forwardManifest(Json::Value const& jvObj) override;
+    forwardManifest(boost::json::value const& jvObj) override;
     void
-    forwardProposedTransaction(Json::Value const& jvObj) override;
+    forwardProposedTransaction(boost::json::value const& jvObj) override;
     void
-    forwardProposedAccountTransaction(Json::Value const& jvObj) override;
+    forwardProposedAccountTransaction(boost::json::value const& jvObj) override;
 
     //--------------------------------------------------------------------------
     //
@@ -499,7 +499,7 @@ public:
         bool historyOnly) override;
 
     bool
-    subLedger(InfoSub::ref ispListener, Json::Value& jvResult) override;
+    subLedger(InfoSub::ref ispListener, boost::json::value& jvResult) override;
     bool
     unsubLedger(std::uint64_t uListener) override;
 
@@ -509,7 +509,7 @@ public:
     unsubBookChanges(std::uint64_t uListener) override;
 
     bool
-    subServer(InfoSub::ref ispListener, Json::Value& jvResult, bool admin)
+    subServer(InfoSub::ref ispListener, boost::json::value& jvResult, bool admin)
         override;
     bool
     unsubServer(std::uint64_t uListener) override;
@@ -546,7 +546,7 @@ public:
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
-    pubPeerStatus(std::function<Json::Value(void)> const&) override;
+    pubPeerStatus(std::function<boost::json::value(void)> const&) override;
 
     bool
     subConsensus(InfoSub::ref ispListener) override;
@@ -597,7 +597,7 @@ public:
     }
 
     void
-    stateAccounting(Json::Value& obj) override;
+    stateAccounting(boost::json::value& obj) override;
 
 private:
     void
@@ -615,7 +615,7 @@ private:
     void
     processClusterTimer();
 
-    Json::Value
+    boost::json::value
     transJson(
         const STTx& transaction,
         TER result,
@@ -1515,12 +1515,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 // Owner functions
 //
 
-Json::Value
+boost::json::value
 NetworkOPsImp::getOwnerInfo(
     std::shared_ptr<ReadView const> lpLedger,
     AccountID const& account)
 {
-    Json::Value jvObjects(Json::objectValue);
+    boost::json::object jvObjects;
     auto root = keylet::ownerDir(account);
     auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
@@ -1537,22 +1537,22 @@ NetworkOPsImp::getOwnerInfo(
                 switch (sleCur->getType())
                 {
                     case ltOFFER:
-                        if (!jvObjects.isMember(jss::offers))
-                            jvObjects[jss::offers] =
-                                Json::Value(Json::arrayValue);
+                        if (!jvObjects.contains(jss::offers.c_str()))
+                            jvObjects[jss::offers.c_str()] =
+                                boost::json::value(Json::arrayValue);
 
-                        jvObjects[jss::offers].append(
+                        jvObjects[jss::offers.c_str()].as_array().emplace_back(
                             sleCur->getJson(JsonOptions::none));
                         break;
 
                     case ltRIPPLE_STATE:
-                        if (!jvObjects.isMember(jss::ripple_lines))
+                        if (!jvObjects.contains(jss::ripple_lines.c_str()))
                         {
-                            jvObjects[jss::ripple_lines] =
-                                Json::Value(Json::arrayValue);
+                            jvObjects[jss::ripple_lines.c_str()] =
+                                boost::json::value(Json::arrayValue);
                         }
 
-                        jvObjects[jss::ripple_lines].append(
+                        jvObjects[jss::ripple_lines.c_str()].as_array().emplace_back(
                             sleCur->getJson(JsonOptions::none));
                         break;
 
@@ -1953,20 +1953,20 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
 
     if (!mStreamMaps[sManifests].empty())
     {
-        Json::Value jvObj(Json::objectValue);
+        boost::json::object jvObj;
 
-        jvObj[jss::type] = "manifestReceived";
-        jvObj[jss::master_key] = toBase58(TokenType::NodePublic, mo.masterKey);
+        jvObj[jss::type.c_str()] = "manifestReceived";
+        jvObj[jss::master_key.c_str()] = toBase58(TokenType::NodePublic, mo.masterKey);
         if (!mo.signingKey.empty())
-            jvObj[jss::signing_key] =
+            jvObj[jss::signing_key.c_str()] =
                 toBase58(TokenType::NodePublic, mo.signingKey);
-        jvObj[jss::seq] = Json::UInt(mo.sequence);
+        jvObj[jss::seq.c_str()] = Json::UInt(mo.sequence);
         if (auto sig = mo.getSignature())
-            jvObj[jss::signature] = strHex(*sig);
-        jvObj[jss::master_signature] = strHex(mo.getMasterSignature());
+            jvObj[jss::signature.c_str()] = strHex(*sig);
+        jvObj[jss::master_signature.c_str()] = strHex(mo.getMasterSignature());
         if (!mo.domain.empty())
-            jvObj[jss::domain] = mo.domain;
-        jvObj[jss::manifest] = strHex(mo.serialized);
+            jvObj[jss::domain.c_str()] = mo.domain;
+        jvObj[jss::manifest.c_str()] = strHex(mo.serialized);
 
         for (auto i = mStreamMaps[sManifests].begin();
              i != mStreamMaps[sManifests].end();)
@@ -2035,18 +2035,18 @@ NetworkOPsImp::pubServer()
 
     if (!mStreamMaps[sServer].empty())
     {
-        Json::Value jvObj(Json::objectValue);
+        boost::json::object jvObj;
 
         ServerFeeSummary f{
             app_.openLedger().current()->fees().base,
             app_.getTxQ().getMetrics(*app_.openLedger().current()),
             app_.getFeeTrack()};
 
-        jvObj[jss::type] = "serverStatus";
-        jvObj[jss::server_status] = strOperatingMode();
-        jvObj[jss::load_base] = f.loadBaseServer;
-        jvObj[jss::load_factor_server] = f.loadFactorServer;
-        jvObj[jss::base_fee] = f.baseFee.jsonClipped();
+        jvObj[jss::type.c_str()] = "serverStatus";
+        jvObj[jss::server_status.c_str()] = strOperatingMode();
+        jvObj[jss::load_base.c_str()] = f.loadBaseServer;
+        jvObj[jss::load_factor_server.c_str()] = f.loadFactorServer;
+        jvObj[jss::base_fee.c_str()] = f.baseFee.jsonClipped();
 
         if (f.em)
         {
@@ -2058,16 +2058,16 @@ NetworkOPsImp::pubServer()
                     f.em->referenceFeeLevel)
                     .second);
 
-            jvObj[jss::load_factor] = trunc32(loadFactor);
-            jvObj[jss::load_factor_fee_escalation] =
+            jvObj[jss::load_factor.c_str()] = trunc32(loadFactor);
+            jvObj[jss::load_factor_fee_escalation.c_str()] =
                 f.em->openLedgerFeeLevel.jsonClipped();
-            jvObj[jss::load_factor_fee_queue] =
+            jvObj[jss::load_factor_fee_queue.c_str()] =
                 f.em->minProcessingFeeLevel.jsonClipped();
-            jvObj[jss::load_factor_fee_reference] =
+            jvObj[jss::load_factor_fee_reference.c_str()] =
                 f.em->referenceFeeLevel.jsonClipped();
         }
         else
-            jvObj[jss::load_factor] = f.loadFactorServer;
+            jvObj[jss::load_factor.c_str()] = f.loadFactorServer;
 
         mLastFeeSummary = f;
 
@@ -2100,8 +2100,8 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
     auto& streamMap = mStreamMaps[sConsensusPhase];
     if (!streamMap.empty())
     {
-        Json::Value jvObj(Json::objectValue);
-        jvObj[jss::type] = "consensusPhase";
+        boost::json::object jvObj;
+        jvObj[jss::type.c_str()] = "consensusPhase";
         jvObj[jss::consensus] = to_string(phase);
 
         for (auto i = streamMap.begin(); i != streamMap.end();)
@@ -2127,73 +2127,73 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
     if (!mStreamMaps[sValidations].empty())
     {
-        Json::Value jvObj(Json::objectValue);
+        boost::json::object jvObj;
 
         auto const signerPublic = val->getSignerPublic();
 
-        jvObj[jss::type] = "validationReceived";
-        jvObj[jss::validation_public_key] =
+        jvObj[jss::type.c_str()] = "validationReceived";
+        jvObj[jss::validation_public_key.c_str()] =
             toBase58(TokenType::NodePublic, signerPublic);
-        jvObj[jss::ledger_hash] = to_string(val->getLedgerHash());
-        jvObj[jss::signature] = strHex(val->getSignature());
-        jvObj[jss::full] = val->isFull();
-        jvObj[jss::flags] = val->getFlags();
-        jvObj[jss::signing_time] = *(*val)[~sfSigningTime];
-        jvObj[jss::data] = strHex(val->getSerializer().slice());
+        jvObj[jss::ledger_hash.c_str()] = to_string(val->getLedgerHash());
+        jvObj[jss::signature.c_str()] = strHex(val->getSignature());
+        jvObj[jss::full.c_str()] = val->isFull();
+        jvObj[jss::flags.c_str()] = val->getFlags();
+        jvObj[jss::signing_time.c_str()] = *(*val)[~sfSigningTime];
+        jvObj[jss::data.c_str()] = strHex(val->getSerializer().slice());
 
         if (auto version = (*val)[~sfServerVersion])
-            jvObj[jss::server_version] = std::to_string(*version);
+            jvObj[jss::server_version.c_str()] = std::to_string(*version);
 
         if (auto cookie = (*val)[~sfCookie])
-            jvObj[jss::cookie] = std::to_string(*cookie);
+            jvObj[jss::cookie.c_str()] = std::to_string(*cookie);
 
         if (auto hash = (*val)[~sfValidatedHash])
-            jvObj[jss::validated_hash] = strHex(*hash);
+            jvObj[jss::validated_hash.c_str()] = strHex(*hash);
 
         auto const masterKey =
             app_.validatorManifests().getMasterKey(signerPublic);
 
         if (masterKey != signerPublic)
-            jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
+            jvObj[jss::master_key.c_str()] = toBase58(TokenType::NodePublic, masterKey);
 
         if (auto const seq = (*val)[~sfLedgerSequence])
             jvObj[jss::ledger_index] = to_string(*seq);
 
         if (val->isFieldPresent(sfAmendments))
         {
-            jvObj[jss::amendments] = Json::Value(Json::arrayValue);
+            jvObj[jss::amendments.c_str()] = boost::json::value(Json::arrayValue);
             for (auto const& amendment : val->getFieldV256(sfAmendments))
-                jvObj[jss::amendments].append(to_string(amendment));
+                jvObj[jss::amendments.c_str()].emplace_back(to_string(amendment));
         }
 
         if (auto const closeTime = (*val)[~sfCloseTime])
-            jvObj[jss::close_time] = *closeTime;
+            jvObj[jss::close_time.c_str()] = *closeTime;
 
         if (auto const loadFee = (*val)[~sfLoadFee])
-            jvObj[jss::load_fee] = *loadFee;
+            jvObj[jss::load_fee.c_str()] = *loadFee;
 
         if (auto const baseFee = val->at(~sfBaseFee))
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
+            jvObj[jss::base_fee.c_str()] = static_cast<double>(*baseFee);
 
         if (auto const reserveBase = val->at(~sfReserveBase))
-            jvObj[jss::reserve_base] = *reserveBase;
+            jvObj[jss::reserve_base.c_str()] = *reserveBase;
 
         if (auto const reserveInc = val->at(~sfReserveIncrement))
-            jvObj[jss::reserve_inc] = *reserveInc;
+            jvObj[jss::reserve_inc.c_str()] = *reserveInc;
 
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops);
             baseFeeXRP && baseFeeXRP->native())
-            jvObj[jss::base_fee] = baseFeeXRP->xrp().jsonClipped();
+            jvObj[jss::base_fee.c_str()] = baseFeeXRP->xrp().jsonClipped();
 
         if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseDrops);
             reserveBaseXRP && reserveBaseXRP->native())
-            jvObj[jss::reserve_base] = reserveBaseXRP->xrp().jsonClipped();
+            jvObj[jss::reserve_base.c_str()] = reserveBaseXRP->xrp().jsonClipped();
 
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
-            jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
+            jvObj[jss::reserve_inc.c_str()] = reserveIncXRP->xrp().jsonClipped();
 
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
@@ -2212,15 +2212,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 }
 
 void
-NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
+NetworkOPsImp::pubPeerStatus(std::function<boost::json::value(void)> const& func)
 {
     std::lock_guard sl(mSubLock);
 
     if (!mStreamMaps[sPeerStatus].empty())
     {
-        Json::Value jvObj(func());
+        boost::json::object jvObj(func().as_object());
 
-        jvObj[jss::type] = "peerStatusChange";
+        jvObj[jss::type.c_str()] = "peerStatusChange";
 
         for (auto i = mStreamMaps[sPeerStatus].begin();
              i != mStreamMaps[sPeerStatus].end();)
@@ -2286,49 +2286,49 @@ NetworkOPsImp::recvValidation(
     return app_.config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
 }
 
-Json::Value
+boost::json::value
 NetworkOPsImp::getConsensusInfo()
 {
     return mConsensus.getJson(true);
 }
 
-Json::Value
+boost::json::value
 NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 {
-    Json::Value info = Json::objectValue;
+    boost::json::object info;
 
     // System-level warnings
     {
-        Json::Value warnings{Json::arrayValue};
+        boost::json::array warnings;
         if (isAmendmentBlocked())
         {
-            Json::Value& w = warnings.append(Json::objectValue);
-            w[jss::id] = warnRPC_AMENDMENT_BLOCKED;
-            w[jss::message] =
+            boost::json::object& w = warnings.emplace_back(boost::json::object()).as_object();
+            w[jss::id.c_str()] = warnRPC_AMENDMENT_BLOCKED;
+            w[jss::message.c_str()] =
                 "This server is amendment blocked, and must be updated to be "
                 "able to stay in sync with the network.";
         }
         if (isUNLBlocked())
         {
-            Json::Value& w = warnings.append(Json::objectValue);
-            w[jss::id] = warnRPC_EXPIRED_VALIDATOR_LIST;
-            w[jss::message] =
+            boost::json::value& w = warnings.emplace_back(boost::json::object());
+            w[jss::id.c_str()] = warnRPC_EXPIRED_VALIDATOR_LIST;
+            w[jss::message.c_str()] =
                 "This server has an expired validator list. validators.txt "
                 "may be incorrectly configured or some [validator_list_sites] "
                 "may be unreachable.";
         }
         if (admin && isAmendmentWarned())
         {
-            Json::Value& w = warnings.append(Json::objectValue);
-            w[jss::id] = warnRPC_UNSUPPORTED_MAJORITY;
-            w[jss::message] =
+            boost::json::value& w = warnings.emplace_back(boost::json::object()).as_object();
+            w[jss::id.c_str()] = warnRPC_UNSUPPORTED_MAJORITY;
+            w[jss::message.c_str()] =
                 "One or more unsupported amendments have reached majority. "
                 "Upgrade to the latest version before they are activated "
                 "to avoid being amendment blocked.";
             if (auto const expected =
                     app_.getAmendmentTable().firstUnsupportedExpected())
             {
-                auto& d = w[jss::details] = Json::objectValue;
+                auto& d = w[jss::details].emplace_object();
                 d[jss::expected_date] = expected->time_since_epoch().count();
                 d[jss::expected_date_UTC] = to_string(*expected);
             }
@@ -2392,7 +2392,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
         else
         {
-            auto& x = (info[jss::validator_list] = Json::objectValue);
+            auto& x = (info[jss::validator_list] = boost::json::object());
 
             x[jss::count] = static_cast<Json::UInt>(app_.validators().count());
 
@@ -2438,9 +2438,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (counters)
     {
-        info[jss::counters] = app_.getPerfLog().countersJson();
+        info[jss::counters.c_str()] = app_.getPerfLog().countersJson();
 
-        Json::Value nodestore(Json::objectValue);
+        boost::json::object nodestore;
         if (app_.getShardStore())
             app_.getShardStore()->getCountsJson(nodestore);
         else
@@ -2449,47 +2449,47 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::current_activities] = app_.getPerfLog().currentJson();
     }
 
-    info[jss::pubkey_node] =
+    info[jss::pubkey_node.c_str()] =
         toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
 
-    info[jss::complete_ledgers] = app_.getLedgerMaster().getCompleteLedgers();
+    info[jss::complete_ledgers.c_str()] = app_.getLedgerMaster().getCompleteLedgers();
 
     if (amendmentBlocked_)
-        info[jss::amendment_blocked] = true;
+        info[jss::amendment_blocked.c_str()] = true;
 
     auto const fp = m_ledgerMaster.getFetchPackCacheSize();
 
     if (fp != 0)
-        info[jss::fetch_pack] = Json::UInt(fp);
+        info[jss::fetch_pack.c_str()] = Json::UInt(fp);
 
     if (!app_.config().reporting())
-        info[jss::peers] = Json::UInt(app_.overlay().size());
+        info[jss::peers.c_str()] = Json::UInt(app_.overlay().size());
 
-    Json::Value lastClose = Json::objectValue;
-    lastClose[jss::proposers] = Json::UInt(mConsensus.prevProposers());
+    boost::json::object lastClose;
+    lastClose[jss::proposers.c_str()] = Json::UInt(mConsensus.prevProposers());
 
     if (human)
     {
-        lastClose[jss::converge_time_s] =
+        lastClose[jss::converge_time_s.c_str()] =
             std::chrono::duration<double>{mConsensus.prevRoundTime()}.count();
     }
     else
     {
-        lastClose[jss::converge_time] =
+        lastClose[jss::converge_time.c_str()] =
             Json::Int(mConsensus.prevRoundTime().count());
     }
 
-    info[jss::last_close] = lastClose;
+    info[jss::last_close.c_str()] = lastClose;
 
     //  info[jss::consensus] = mConsensus.getJson();
 
     if (admin)
-        info[jss::load] = m_job_queue.getJson();
+        info[jss::load.c_str()] = m_job_queue.getJson();
 
     if (!app_.config().reporting())
     {
         if (auto const netid = app_.overlay().networkID())
-            info[jss::network_id] = static_cast<Json::UInt>(*netid);
+            info[jss::network_id.c_str()] = static_cast<Json::UInt>(*netid);
 
         auto const escalationMetrics =
             app_.getTxQ().getMetrics(*app_.openLedger().current());
@@ -2512,29 +2512,29 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
         if (!human)
         {
-            info[jss::load_base] = loadBaseServer;
-            info[jss::load_factor] = trunc32(loadFactor);
-            info[jss::load_factor_server] = loadFactorServer;
+            info[jss::load_base.c_str()] = loadBaseServer;
+            info[jss::load_factor.c_str()] = trunc32(loadFactor);
+            info[jss::load_factor_server.c_str()] = loadFactorServer;
 
-            /* Json::Value doesn't support uint64, so clamp to max
+            /* boost::json::value doesn't support uint64, so clamp to max
                 uint32 value. This is mostly theoretical, since there
                 probably isn't enough extant XRP to drive the factor
                 that high.
             */
-            info[jss::load_factor_fee_escalation] =
+            info[jss::load_factor_fee_escalation.c_str()] =
                 escalationMetrics.openLedgerFeeLevel.jsonClipped();
-            info[jss::load_factor_fee_queue] =
+            info[jss::load_factor_fee_queue.c_str()] =
                 escalationMetrics.minProcessingFeeLevel.jsonClipped();
-            info[jss::load_factor_fee_reference] =
+            info[jss::load_factor_fee_reference.c_str()] =
                 escalationMetrics.referenceFeeLevel.jsonClipped();
         }
         else
         {
-            info[jss::load_factor] =
+            info[jss::load_factor.c_str()] =
                 static_cast<double>(loadFactor) / loadBaseServer;
 
             if (loadFactorServer != loadFactor)
-                info[jss::load_factor_server] =
+                info[jss::load_factor_server.c_str()] =
                     static_cast<double>(loadFactorServer) / loadBaseServer;
 
             if (admin)
@@ -2555,12 +2555,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (escalationMetrics.openLedgerFeeLevel !=
                     escalationMetrics.referenceFeeLevel &&
                 (admin || loadFactorFeeEscalation != loadFactor))
-                info[jss::load_factor_fee_escalation] =
+                info[jss::load_factor_fee_escalation.c_str()] =
                     escalationMetrics.openLedgerFeeLevel.decimalFromReference(
                         escalationMetrics.referenceFeeLevel);
             if (escalationMetrics.minProcessingFeeLevel !=
                 escalationMetrics.referenceFeeLevel)
-                info[jss::load_factor_fee_queue] =
+                info[jss::load_factor_fee_queue.c_str()] =
                     escalationMetrics.minProcessingFeeLevel
                         .decimalFromReference(
                             escalationMetrics.referenceFeeLevel);
@@ -2578,17 +2578,17 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (lpClosed)
     {
         XRPAmount const baseFee = lpClosed->fees().base;
-        Json::Value l(Json::objectValue);
-        l[jss::seq] = Json::UInt(lpClosed->info().seq);
-        l[jss::hash] = to_string(lpClosed->info().hash);
+        boost::json::object l;
+        l[jss::seq.c_str()] = Json::UInt(lpClosed->info().seq);
+        l[jss::hash.c_str()] = to_string(lpClosed->info().hash);
 
         if (!human)
         {
-            l[jss::base_fee] = baseFee.jsonClipped();
-            l[jss::reserve_base] =
+            l[jss::base_fee.c_str()] = baseFee.jsonClipped();
+            l[jss::reserve_base.c_str()] =
                 lpClosed->fees().accountReserve(0).jsonClipped();
-            l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
-            l[jss::close_time] = Json::Value::UInt(
+            l[jss::reserve_inc.c_str()] = lpClosed->fees().increment.jsonClipped();
+            l[jss::close_time.c_str()] = static_cast<uint>(
                 lpClosed->info().closeTime.time_since_epoch().count());
         }
         else
@@ -2670,7 +2670,7 @@ NetworkOPsImp::clearLedgerFetch()
     app_.getInboundLedgers().clearFailures();
 }
 
-Json::Value
+boost::json::value
 NetworkOPsImp::getLedgerFetchInfo()
 {
     return app_.getInboundLedgers().getInfo();
@@ -2682,7 +2682,7 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
-    Json::Value jvObj = transJson(*transaction, result, false, ledger);
+    boost::json::value jvObj = transJson(*transaction, result, false, ledger);
 
     {
         std::lock_guard sl(mSubLock);
@@ -2708,7 +2708,7 @@ NetworkOPsImp::pubProposedTransaction(
 }
 
 void
-NetworkOPsImp::forwardProposedTransaction(Json::Value const& jvObj)
+NetworkOPsImp::forwardProposedTransaction(boost::json::value const& jvObj)
 {
     // reporting does not forward validated transactions
     // validated transactions will be published to the proper streams when the
@@ -2739,7 +2739,7 @@ NetworkOPsImp::forwardProposedTransaction(Json::Value const& jvObj)
 }
 
 void
-NetworkOPsImp::forwardValidation(Json::Value const& jvObj)
+NetworkOPsImp::forwardValidation(boost::json::value const& jvObj)
 {
     std::lock_guard sl(mSubLock);
 
@@ -2759,7 +2759,7 @@ NetworkOPsImp::forwardValidation(Json::Value const& jvObj)
 }
 
 void
-NetworkOPsImp::forwardManifest(Json::Value const& jvObj)
+NetworkOPsImp::forwardManifest(boost::json::value const& jvObj)
 {
     std::lock_guard sl(mSubLock);
 
@@ -2779,7 +2779,7 @@ NetworkOPsImp::forwardManifest(Json::Value const& jvObj)
 }
 
 static void
-getAccounts(Json::Value const& jvObj, std::vector<AccountID>& accounts)
+getAccounts(boost::json::value const& jvObj, std::vector<AccountID>& accounts)
 {
     for (auto& jv : jvObj)
     {
@@ -2797,7 +2797,7 @@ getAccounts(Json::Value const& jvObj, std::vector<AccountID>& accounts)
 }
 
 void
-NetworkOPsImp::forwardProposedAccountTransaction(Json::Value const& jvObj)
+NetworkOPsImp::forwardProposedAccountTransaction(boost::json::object const& jvObj)
 {
     hash_set<InfoSub::pointer> notify;
     int iProposed = 0;
@@ -2811,11 +2811,11 @@ NetworkOPsImp::forwardProposedAccountTransaction(Json::Value const& jvObj)
 
     // parse the JSON outside of the lock
     std::vector<AccountID> accounts;
-    if (jvObj.isMember(jss::transaction))
+    if (jvObj.contains(jss::transaction.c_str()))
     {
         try
         {
-            getAccounts(jvObj[jss::transaction], accounts);
+            getAccounts(jvObj[jss::transaction.c_str()], accounts);
         }
         catch (...)
         {
@@ -2890,20 +2890,20 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         if (!mStreamMaps[sLedger].empty())
         {
-            Json::Value jvObj(Json::objectValue);
+            boost::json::object jvObj;
 
-            jvObj[jss::type] = "ledgerClosed";
+            jvObj[jss::type.c_str()] = "ledgerClosed";
             jvObj[jss::ledger_index] = lpAccepted->info().seq;
-            jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
-            jvObj[jss::ledger_time] = Json::Value::UInt(
+            jvObj[jss::ledger_hash.c_str()] = to_string(lpAccepted->info().hash);
+            jvObj[jss::ledger_time] = boost::json::value::UInt(
                 lpAccepted->info().closeTime.time_since_epoch().count());
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
-            jvObj[jss::reserve_base] =
+            jvObj[jss::reserve_base.c_str()] =
                 lpAccepted->fees().accountReserve(0).jsonClipped();
-            jvObj[jss::reserve_inc] =
+            jvObj[jss::reserve_inc.c_str()] =
                 lpAccepted->fees().increment.jsonClipped();
 
             jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
@@ -2930,7 +2930,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         if (!mStreamMaps[sBookChanges].empty())
         {
-            Json::Value jvObj = ripple::RPC::computeBookChanges(lpAccepted);
+            boost::json::value jvObj = ripple::RPC::computeBookChanges(lpAccepted);
 
             auto it = mStreamMaps[sBookChanges].begin();
             while (it != mStreamMaps[sBookChanges].end())
@@ -3018,27 +3018,27 @@ NetworkOPsImp::getLocalTxCount()
 
 // This routine should only be used to publish accepted or validated
 // transactions.
-Json::Value
+boost::json::value
 NetworkOPsImp::transJson(
     const STTx& transaction,
     TER result,
     bool validated,
     std::shared_ptr<ReadView const> const& ledger)
 {
-    Json::Value jvObj(Json::objectValue);
+    boost::json::object jvObj;
     std::string sToken;
     std::string sHuman;
 
     transResultInfo(result, sToken, sHuman);
 
-    jvObj[jss::type] = "transaction";
-    jvObj[jss::transaction] = transaction.getJson(JsonOptions::none);
+    jvObj[jss::type.c_str()] = "transaction";
+    jvObj[jss::transaction.c_str()] = transaction.getJson(JsonOptions::none);
 
     if (validated)
     {
         jvObj[jss::ledger_index] = ledger->info().seq;
-        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
-        jvObj[jss::transaction][jss::date] =
+        jvObj[jss::ledger_hash.c_str()] = to_string(ledger->info().hash);
+        jvObj[jss::transaction.c_str()][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
 
@@ -3069,7 +3069,7 @@ NetworkOPsImp::transJson(
                 amount,
                 fhIGNORE_FREEZE,
                 app_.journal("View"));
-            jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
+            jvObj[jss::transaction.c_str()][jss::owner_funds] = ownerFunds.getText();
         }
     }
 
@@ -3083,7 +3083,7 @@ NetworkOPsImp::pubValidatedTransaction(
 {
     auto const& stTxn = transaction.getTxn();
 
-    Json::Value jvObj =
+    boost::json::value jvObj =
         transJson(*stTxn, transaction.getResult(), true, ledger);
 
     {
@@ -3229,7 +3229,7 @@ NetworkOPsImp::pubAccountTransaction(
     {
         auto const& stTxn = transaction.getTxn();
 
-        Json::Value jvObj =
+        boost::json::value jvObj =
             transJson(*stTxn, transaction.getResult(), true, ledger);
 
         {
@@ -3242,7 +3242,7 @@ NetworkOPsImp::pubAccountTransaction(
         for (InfoSub::ref isrListener : notify)
             isrListener->send(jvObj, true);
 
-        assert(!jvObj.isMember(jss::account_history_tx_stream));
+        assert(!jvObj.contains(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3303,12 +3303,12 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     if (!notify.empty() || !accountHistoryNotify.empty())
     {
-        Json::Value jvObj = transJson(*tx, result, false, ledger);
+        boost::json::value jvObj = transJson(*tx, result, false, ledger);
 
         for (InfoSub::ref isrListener : notify)
             isrListener->send(jvObj, true);
 
-        assert(!jvObj.isMember(jss::account_history_tx_stream));
+        assert(!jvObj.contains(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3504,7 +3504,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 return false;
             };
 
-            auto send = [&](Json::Value const& jvObj,
+            auto send = [&](boost::json::value const& jvObj,
                             bool unsubscribe) -> bool {
                 if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
                 {
@@ -3672,7 +3672,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             send(rpcError(rpcINTERNAL), true);
                             return;
                         }
-                        Json::Value jvTx = transJson(
+                        boost::json::value jvTx = transJson(
                             *stTxn, meta->getResultTER(), true, curTxLedger);
                         jvTx[jss::meta] = meta->getJson(JsonOptions::none);
                         jvTx[jss::account_history_tx_index] = txHistoryIndex--;
@@ -3897,20 +3897,20 @@ NetworkOPsImp::acceptLedger(
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
+NetworkOPsImp::subLedger(InfoSub::ref isrListener, boost::json::value& jvResult)
 {
     if (auto lpClosed = m_ledgerMaster.getValidatedLedger())
     {
         jvResult[jss::ledger_index] = lpClosed->info().seq;
-        jvResult[jss::ledger_hash] = to_string(lpClosed->info().hash);
-        jvResult[jss::ledger_time] = Json::Value::UInt(
+        jvResult[jss::ledger_hash.c_str()] = to_string(lpClosed->info().hash);
+        jvResult[jss::ledger_time] = boost::json::value::UInt(
             lpClosed->info().closeTime.time_since_epoch().count());
         if (!lpClosed->rules().enabled(featureXRPFees))
             jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
-        jvResult[jss::reserve_base] =
+        jvResult[jss::reserve_base.c_str()] =
             lpClosed->fees().accountReserve(0).jsonClipped();
-        jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+        jvResult[jss::reserve_inc.c_str()] = lpClosed->fees().increment.jsonClipped();
     }
 
     if ((mMode >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
@@ -3973,7 +3973,7 @@ NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subServer(
     InfoSub::ref isrListener,
-    Json::Value& jvResult,
+    boost::json::value& jvResult,
     bool admin)
 {
     uint256 uRandom;
@@ -3986,11 +3986,11 @@ NetworkOPsImp::subServer(
 
     auto const& feeTrack = app_.getFeeTrack();
     jvResult[jss::random] = to_string(uRandom);
-    jvResult[jss::server_status] = strOperatingMode(admin);
-    jvResult[jss::load_base] = feeTrack.getLoadBase();
-    jvResult[jss::load_factor] = feeTrack.getLoadFactor();
+    jvResult[jss::server_status.c_str()] = strOperatingMode(admin);
+    jvResult[jss::load_base.c_str()] = feeTrack.getLoadBase();
+    jvResult[jss::load_factor.c_str()] = feeTrack.getLoadFactor();
     jvResult[jss::hostid] = getHostId(admin);
-    jvResult[jss::pubkey_node] =
+    jvResult[jss::pubkey_node.c_str()] =
         toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
 
     std::lock_guard sl(mSubLock);
@@ -4054,7 +4054,7 @@ NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 }
 
 void
-NetworkOPsImp::stateAccounting(Json::Value& obj)
+NetworkOPsImp::stateAccounting(boost::json::value& obj)
 {
     accounting_.json(obj);
 }
@@ -4158,11 +4158,11 @@ NetworkOPsImp::getBookPage(
     AccountID const& uTakerID,
     bool const bProof,
     unsigned int iLimit,
-    Json::Value const& jvMarker,
-    Json::Value& jvResult)
+    boost::json::value const& jvMarker,
+    boost::json::value& jvResult)
 {  // CAUTION: This is the old get book page logic
-    Json::Value& jvOffers =
-        (jvResult[jss::offers] = Json::Value(Json::arrayValue));
+    boost::json::value& jvOffers =
+        (jvResult[jss::offers.c_str()] = boost::json::value(Json::arrayValue));
 
     std::unordered_map<AccountID, STAmount> umBalance;
     const uint256 uBookBase = getBookBase(book);
@@ -4281,7 +4281,7 @@ NetworkOPsImp::getBookPage(
                     }
                 }
 
-                Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
+                boost::json::value jvOffer = sleOffer->getJson(JsonOptions::none);
 
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4326,7 +4326,7 @@ NetworkOPsImp::getBookPage(
                 umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
 
                 // Include all offers funded and unfunded
-                Json::Value& jvOf = jvOffers.append(jvOffer);
+                boost::json::value& jvOf = jvOffers.emplace_back(jvOffer);
                 jvOf[jss::quality] = saDirRate.getText();
 
                 if (firstOwnerOffer)
@@ -4349,8 +4349,8 @@ NetworkOPsImp::getBookPage(
         }
     }
 
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
-    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = boost::json::value(Json::arrayValue);
+    //  jvResult[jss::nodes]   = boost::json::value(Json::arrayValue);
 }
 
 #else
@@ -4365,10 +4365,10 @@ NetworkOPsImp::getBookPage(
     AccountID const& uTakerID,
     bool const bProof,
     unsigned int iLimit,
-    Json::Value const& jvMarker,
-    Json::Value& jvResult)
+    boost::json::value const& jvMarker,
+    boost::json::value& jvResult)
 {
-    auto& jvOffers = (jvResult[jss::offers] = Json::Value(Json::arrayValue));
+    auto& jvOffers = (jvResult[jss::offers.c_str()] = boost::json::value(Json::arrayValue));
 
     std::map<AccountID, STAmount> umBalance;
 
@@ -4431,7 +4431,7 @@ NetworkOPsImp::getBookPage(
                 }
             }
 
-            Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
+            boost::json::value jvOffer = sleOffer->getJson(JsonOptions::none);
 
             STAmount saTakerGetsFunded;
             STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4479,14 +4479,14 @@ NetworkOPsImp::getBookPage(
             if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
             {
                 // Only provide funded offers and offers of the taker.
-                Json::Value& jvOf = jvOffers.append(jvOffer);
+                boost::json::value& jvOf = jvOffers.emplace_back(jvOffer);
                 jvOf[jss::quality] = saDirRate.getText();
             }
         }
     }
 
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
-    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = boost::json::value(Json::arrayValue);
+    //  jvResult[jss::nodes]   = boost::json::value(Json::arrayValue);
 }
 
 #endif
@@ -4551,20 +4551,20 @@ NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 }
 
 void
-NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
+NetworkOPsImp::StateAccounting::json(boost::json::object& obj) const
 {
     auto [counters, mode, start, initialSync] = getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
 
-    obj[jss::state_accounting] = Json::objectValue;
+    obj[jss::state_accounting.c_str()] = boost::json::object();
     for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        obj[jss::state_accounting][states_[i]] = Json::objectValue;
-        auto& state = obj[jss::state_accounting][states_[i]];
+        obj[jss::state_accounting.c_str()].as_object()[states_[i]] = boost::json::object();
+        auto& state = obj[jss::state_accounting.c_str()].as_object()[states_[i]];
         state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }

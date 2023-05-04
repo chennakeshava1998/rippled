@@ -253,24 +253,24 @@ ETLSource::onHandshake(boost::beast::error_code ec)
     }
     else
     {
-        Json::Value jv;
+        boost::json::object jv;
         jv["command"] = "subscribe";
 
-        jv["streams"] = Json::arrayValue;
-        Json::Value ledgerStream("ledger");
-        jv["streams"].append(ledgerStream);
-        Json::Value txnStream("transactions_proposed");
-        jv["streams"].append(txnStream);
-        Json::Value validationStream("validations");
-        jv["streams"].append(validationStream);
-        Json::Value manifestStream("manifests");
-        jv["streams"].append(manifestStream);
+        jv["streams"].emplace_array();
+        boost::json::string ledgerStream("ledger");
+        jv["streams"].as_array().emplace_back(ledgerStream);
+        boost::json::string txnStream("transactions_proposed");
+        jv["streams"].as_array().emplace_back(txnStream);
+        boost::json::string validationStream("validations");
+        jv["streams"].as_array().emplace_back(validationStream);
+        boost::json::string manifestStream("manifests");
+        jv["streams"].as_array().emplace_back(manifestStream);
         Json::FastWriter fastWriter;
 
         JLOG(journal_.trace()) << "Sending subscribe stream message";
         // Send the message
         ws_->async_write(
-            boost::asio::buffer(fastWriter.write(jv)),
+            boost::asio::buffer(serialize(jv)),
             [this](auto ec, size_t size) { onWrite(ec, size); });
     }
 }
@@ -324,10 +324,9 @@ ETLSource::handleMessage()
     connected_ = true;
     try
     {
-        Json::Value response;
+        boost::json::object response(boost::json::parse(static_cast<char const*>(readBuffer_.data().data())).as_object());
         Json::Reader reader;
-        if (!reader.parse(
-                static_cast<char const*>(readBuffer_.data().data()), response))
+        if (!response.empty())
         {
             JLOG(journal_.error())
                 << __func__ << " : "
@@ -337,61 +336,61 @@ ETLSource::handleMessage()
         }
 
         uint32_t ledgerIndex = 0;
-        if (response.isMember("result"))
+        if (response.contains("result"))
         {
-            if (response["result"].isMember(jss::ledger_index))
+            if (response["result"].as_object().contains(jss::ledger_index.c_str()))
             {
-                ledgerIndex = response["result"][jss::ledger_index].asUInt();
+                ledgerIndex = response["result"].as_object()[jss::ledger_index.c_str()].as_uint64();
             }
-            if (response[jss::result].isMember(jss::validated_ledgers))
+            if (response[jss::result.c_str()].as_object().contains(jss::validated_ledgers.c_str()))
             {
                 setValidatedRange(
-                    response[jss::result][jss::validated_ledgers].asString());
+                    std::string{response[jss::result.c_str()].as_object()[jss::validated_ledgers.c_str()].as_string()});
             }
             JLOG(journal_.debug())
                 << __func__ << " : "
                 << "Received a message on ledger "
                 << " subscription stream. Message : "
-                << response.toStyledString() << " - " << toString();
+                << serialize(response) << " - " << toString();
         }
         else
         {
             if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
             {
-                if (response.isMember(jss::transaction))
+                if (response.contains(jss::transaction.c_str()))
                 {
                     etl_.getApplication().getOPs().forwardProposedTransaction(
                         response);
                 }
                 else if (
-                    response.isMember("type") &&
+                    response.contains("type") &&
                     response["type"] == "validationReceived")
                 {
                     etl_.getApplication().getOPs().forwardValidation(response);
                 }
                 else if (
-                    response.isMember("type") &&
+                    response.contains("type") &&
                     response["type"] == "manifestReceived")
                 {
                     etl_.getApplication().getOPs().forwardManifest(response);
                 }
             }
 
-            if (response.isMember("type") && response["type"] == "ledgerClosed")
+            if (response.contains("type") && response["type"] == "ledgerClosed")
             {
                 JLOG(journal_.debug())
                     << __func__ << " : "
                     << "Received a message on ledger "
                     << " subscription stream. Message : "
-                    << response.toStyledString() << " - " << toString();
-                if (response.isMember(jss::ledger_index))
+                    << serialize(response) << " - " << toString();
+                if (response.contains(jss::ledger_index.c_str()))
                 {
-                    ledgerIndex = response[jss::ledger_index].asUInt();
+                    ledgerIndex = response[jss::ledger_index.c_str()].as_uint64();
                 }
-                if (response.isMember(jss::validated_ledgers))
+                if (response.contains(jss::validated_ledgers.c_str()))
                 {
                     setValidatedRange(
-                        response[jss::validated_ledgers].asString());
+                        std::string{response[jss::validated_ledgers.c_str()].as_string()});
                 }
             }
         }
@@ -751,10 +750,10 @@ ETLLoadBalancer::getP2pForwardingStub() const
     return nullptr;
 }
 
-Json::Value
+boost::json::value
 ETLLoadBalancer::forwardToP2p(RPC::JsonContext& context) const
 {
-    Json::Value res;
+    boost::json::value res;
     if (sources_.size() == 0)
         return res;
     srand((unsigned)time(0));
@@ -775,7 +774,7 @@ ETLLoadBalancer::forwardToP2p(RPC::JsonContext& context) const
             continue;
         }
         res = src->forwardToP2p(context);
-        if (!res.isMember("forwarded") || res["forwarded"] != true)
+        if (!res.as_object().contains("forwarded") || res.as_object()["forwarded"] != true)
         {
             increment();
             continue;
@@ -783,7 +782,7 @@ ETLLoadBalancer::forwardToP2p(RPC::JsonContext& context) const
         return res;
     }
     RPC::Status err = {rpcFAILED_TO_FORWARD};
-    err.inject(res);
+    err.inject(res.as_object());
     return res;
 }
 
@@ -808,13 +807,13 @@ ETLSource::getP2pForwardingStub() const
     }
 }
 
-Json::Value
+boost::json::value
 ETLSource::forwardToP2p(RPC::JsonContext& context) const
 {
     JLOG(journal_.debug()) << "Attempting to forward request to tx. "
-                           << "request = " << context.params.toStyledString();
+                           << "request = " << serialize(context.params);
 
-    Json::Value response;
+    boost::json::value response;
     if (!connected_)
     {
         JLOG(journal_.error())
@@ -826,7 +825,7 @@ ETLSource::forwardToP2p(RPC::JsonContext& context) const
     namespace websocket = beast::websocket;  // from <boost/beast/websocket.hpp>
     namespace net = boost::asio;             // from <boost/asio.hpp>
     using tcp = boost::asio::ip::tcp;        // from <boost/asio/ip/tcp.hpp>
-    Json::Value& request = context.params;
+    boost::json::object& request = context.params;
     try
     {
         // The io_context is required for all I/O
@@ -869,21 +868,20 @@ ETLSource::forwardToP2p(RPC::JsonContext& context) const
 
         JLOG(journal_.debug()) << "Sending request";
         // Send the message
-        ws->write(net::buffer(fastWriter.write(request)));
+        ws->write(net::buffer(serialize(request)));
 
         beast::flat_buffer buffer;
         ws->read(buffer);
 
-        Json::Reader reader;
-        if (!reader.parse(
-                static_cast<char const*>(buffer.data().data()), response))
+        response = boost::json::parse(static_cast<char const*>(buffer.data().data()));
+        if (!response.is_null())
         {
             JLOG(journal_.error()) << "Error parsing response";
-            response[jss::error] = "Error parsing response from tx";
+            response.as_object()[jss::error.c_str()] = "Error parsing response from tx";
         }
         JLOG(journal_.debug()) << "Successfully forward request";
 
-        response["forwarded"] = true;
+        response.as_object()["forwarded"] = true;
         return response;
     }
     catch (std::exception const& e)

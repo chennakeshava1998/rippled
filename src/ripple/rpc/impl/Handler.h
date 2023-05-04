@@ -49,7 +49,7 @@ struct Handler
     using Method = std::function<Status(JsonContext&, JsonValue&)>;
 
     const char* name_;
-    Method<Json::Value> valueMethod_;
+    Method<boost::json::value> valueMethod_;
     Role role_;
     RPC::Condition condition_;
 };
@@ -59,13 +59,13 @@ getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
 /** Return a Json::objectValue with a single entry. */
 template <class Value>
-Json::Value
+boost::json::value
 makeObjectValue(
     Value const& value,
     Json::StaticString const& field = jss::message)
 {
-    Json::Value result(Json::objectValue);
-    result[field] = value;
+    boost::json::object result;
+    result[field.c_str()] = value;
     return result;
 }
 

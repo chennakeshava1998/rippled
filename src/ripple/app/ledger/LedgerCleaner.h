@@ -56,7 +56,7 @@ public:
         @param parameters A Json object with configurable parameters.
     */
     virtual void
-    clean(Json::Value const& parameters) = 0;
+    clean(boost::json::value const& parameters) = 0;
 };
 
 std::unique_ptr<LedgerCleaner>

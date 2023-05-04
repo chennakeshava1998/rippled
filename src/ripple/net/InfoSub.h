@@ -40,10 +40,10 @@ public:
 
     virtual ~InfoSubRequest() = default;
 
-    virtual Json::Value
+    virtual boost::json::value
     doClose() = 0;
-    virtual Json::Value
-    doStatus(Json::Value const&) = 0;
+    virtual boost::json::value
+    doStatus(boost::json::value const&) = 0;
 };
 
 /** Manages a client's subscription to data feeds.
@@ -124,7 +124,7 @@ public:
 
         // VFALCO TODO Document the bool return value
         virtual bool
-        subLedger(ref ispListener, Json::Value& jvResult) = 0;
+        subLedger(ref ispListener, boost::json::value& jvResult) = 0;
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
@@ -141,7 +141,7 @@ public:
         pubManifest(Manifest const&) = 0;
 
         virtual bool
-        subServer(ref ispListener, Json::Value& jvResult, bool admin) = 0;
+        subServer(ref ispListener, boost::json::value& jvResult, bool admin) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
 
@@ -170,7 +170,7 @@ public:
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
         virtual void
-        pubPeerStatus(std::function<Json::Value(void)> const&) = 0;
+        pubPeerStatus(std::function<boost::json::value(void)> const&) = 0;
 
         virtual bool
         subConsensus(ref ispListener) = 0;
@@ -199,7 +199,7 @@ public:
     getConsumer();
 
     virtual void
-    send(Json::Value const& jvObj, bool broadcast) = 0;
+    send(boost::json::value const& jvObj, bool broadcast) = 0;
 
     std::uint64_t
     getSeq();

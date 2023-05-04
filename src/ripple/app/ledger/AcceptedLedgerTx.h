@@ -88,7 +88,7 @@ public:
     std::string
     getEscMeta() const;
 
-    Json::Value const&
+    boost::json::object const&
     getJson() const
     {
         return mJson;
@@ -99,7 +99,7 @@ private:
     TxMeta mMeta;
     boost::container::flat_set<AccountID> mAffected;
     Blob mRawMeta;
-    Json::Value mJson;
+    boost::json::object mJson;
 };
 
 }  // namespace ripple

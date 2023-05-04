@@ -196,7 +196,7 @@ FastWriter::write(const Value& root)
     writeValue(root);
     return std::move(document_);
 }
-
+// Keshava: this function might have a different behavior compared to boost::json::serialize
 void
 FastWriter::writeValue(const Value& value)
 {

@@ -205,7 +205,7 @@ public:
         return dropsAs<Dest>().value_or(defaultValue.drops());
     }
 
-    Json::Value
+    boost::json::value
     jsonClipped() const
     {
         static_assert(
@@ -219,7 +219,7 @@ public:
             return min;
         if (drops_ > max)
             return max;
-        return static_cast<Json::Int>(drops_);
+        return static_cast<int>(drops_);
     }
 
     /** Returns the underlying value. Code SHOULD NOT call this

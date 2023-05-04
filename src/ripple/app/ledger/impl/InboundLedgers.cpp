@@ -293,10 +293,10 @@ public:
         fetchRate_.add(1, m_clock.now());
     }
 
-    Json::Value
+    boost::json::object
     getInfo() override
     {
-        Json::Value ret(Json::objectValue);
+        boost::json::object ret;
 
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
 
@@ -312,9 +312,9 @@ public:
             for (auto const& it : mRecentFailures)
             {
                 if (it.second > 1)
-                    ret[std::to_string(it.second)][jss::failed] = true;
+                    ret[std::to_string(it.second)].as_object()[jss::failed.c_str()] = true;
                 else
-                    ret[to_string(it.first)][jss::failed] = true;
+                    ret[to_string(it.first)].as_object()[jss::failed.c_str()] = true;
             }
         }
 

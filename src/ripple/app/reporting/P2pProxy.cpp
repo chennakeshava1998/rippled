@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::value
 forwardToP2p(RPC::JsonContext& context)
 {
     return context.app.getReportingETL().getETLLoadBalancer().forwardToP2p(
@@ -47,10 +47,10 @@ shouldForwardToP2p(RPC::JsonContext& context)
     if (!context.app.config().reporting())
         return false;
 
-    Json::Value& params = context.params;
-    std::string strCommand = params.isMember(jss::command)
-        ? params[jss::command].asString()
-        : params[jss::method].asString();
+    boost::json::object& params = context.params;
+    std::string strCommand = std::string{params.contains(jss::command.c_str())
+        ? params[jss::command.c_str()].as_string()
+        : params[jss::method.c_str()].as_string()};
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << params;
@@ -69,12 +69,12 @@ shouldForwardToP2p(RPC::JsonContext& context)
         return true;
     }
 
-    if (params.isMember(jss::ledger_index))
+    if (params.contains(jss::ledger_index.c_str()))
     {
-        auto indexValue = params[jss::ledger_index];
-        if (indexValue.isString())
+        auto indexValue = params[jss::ledger_index.c_str()];
+        if (indexValue.is_string())
         {
-            auto index = indexValue.asString();
+            auto index = indexValue.as_string();
             return index == "current" || index == "closed";
         }
     }

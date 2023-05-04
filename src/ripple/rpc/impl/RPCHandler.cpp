@@ -143,20 +143,20 @@ fillHandler(JsonContext& context, Handler const*& result)
         }
     }
 
-    if (!context.params.isMember(jss::command) &&
-        !context.params.isMember(jss::method))
+    if (!context.params.contains(jss::command.c_str()) &&
+        !context.params.contains(jss::method.c_str()))
         return rpcCOMMAND_MISSING;
-    if (context.params.isMember(jss::command) &&
-        context.params.isMember(jss::method))
+    if (context.params.contains(jss::command.c_str()) &&
+        context.params.contains(jss::method.c_str()))
     {
-        if (context.params[jss::command].asString() !=
-            context.params[jss::method].asString())
+        if (context.params[jss::command.c_str()].as_string() !=
+            context.params[jss::method.c_str()].as_string())
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command)
-        ? context.params[jss::command].asString()
-        : context.params[jss::method].asString();
+    std::string strCommand = std::string{context.params.contains(jss::command.c_str())
+        ? context.params[jss::command.c_str()].as_string()
+        : context.params[jss::method.c_str()].as_string()};
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
@@ -219,7 +219,7 @@ callMethod(
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;
 
-        inject_error(rpcINTERNAL, result);
+        inject_error(rpcINTERNAL, result.as_object());
         return rpcINTERNAL;
     }
 }
@@ -227,14 +227,14 @@ callMethod(
 }  // namespace
 
 void
-injectReportingWarning(RPC::JsonContext& context, Json::Value& result)
+injectReportingWarning(RPC::JsonContext& context, boost::json::value& result)
 {
     if (context.app.config().reporting())
     {
-        Json::Value warnings{Json::arrayValue};
-        Json::Value& w = warnings.append(Json::objectValue);
-        w[jss::id] = warnRPC_REPORTING;
-        w[jss::message] =
+        boost::json::array warnings;
+        boost::json::object& w = warnings.emplace_back(boost::json::object()).as_object();
+        w[jss::id.c_str()] = warnRPC_REPORTING;
+        w[jss::message.c_str()] =
             "This is a reporting server. "
             " The default behavior of a reporting server is to only"
             " return validated data. If you are looking for not yet"
@@ -242,12 +242,12 @@ injectReportingWarning(RPC::JsonContext& context, Json::Value& result)
             " in your request, which will cause this server to forward"
             " the request to a p2p node. If the forward is successful"
             " the response will include \"forwarded\" : \"true\"";
-        result[jss::warnings] = std::move(warnings);
+        result.as_object()[jss::warnings.c_str()] = std::move(warnings);
     }
 }
 
 Status
-doCommand(RPC::JsonContext& context, Json::Value& result)
+doCommand(RPC::JsonContext& context, boost::json::value& result)
 {
     if (shouldForwardToP2p(context))
     {
@@ -259,7 +259,7 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
-        inject_error(error, result);
+        inject_error(error, result.as_object());
         return error;
     }
 

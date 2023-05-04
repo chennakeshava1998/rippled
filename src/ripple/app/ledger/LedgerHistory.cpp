@@ -320,7 +320,7 @@ LedgerHistory::handleMismatch(
     LedgerHash const& valid,
     std::optional<uint256> const& builtConsensusHash,
     std::optional<uint256> const& validatedConsensusHash,
-    Json::Value const& consensus)
+    boost::json::value const& consensus)
 {
     assert(built != valid);
     ++mismatch_counter_;
@@ -426,7 +426,7 @@ void
 LedgerHistory::builtLedger(
     std::shared_ptr<Ledger const> const& ledger,
     uint256 const& consensusHash,
-    Json::Value consensus)
+    boost::json::value consensus)
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->info().hash;

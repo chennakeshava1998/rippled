@@ -1822,7 +1822,7 @@ TxQ::getTxs() const
     return result;
 }
 
-Json::Value
+boost::json::value
 TxQ::doRPC(Application& app) const
 {
     auto const view = app.openLedger().current();
@@ -1834,21 +1834,22 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
+    ret[jss::levels.c_str()].emplace_object();
 
-    auto& levels = ret[jss::levels] = Json::objectValue;
+    auto& levels = ret[jss::levels.c_str()].as_object();
 
-    ret[jss::ledger_current_index] = view->info().seq;
-    ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);
-    ret[jss::current_ledger_size] = std::to_string(metrics.txInLedger);
-    ret[jss::current_queue_size] = std::to_string(metrics.txCount);
+    ret[jss::ledger_current_index.c_str()] = view->info().seq;
+    ret[jss::expected_ledger_size.c_str()] = std::to_string(metrics.txPerLedger);
+    ret[jss::current_ledger_size.c_str()] = std::to_string(metrics.txInLedger);
+    ret[jss::current_queue_size.c_str()] = std::to_string(metrics.txCount);
     if (metrics.txQMaxSize)
-        ret[jss::max_queue_size] = std::to_string(*metrics.txQMaxSize);
+        ret[jss::max_queue_size.c_str()] = std::to_string(*metrics.txQMaxSize);
 
-    levels[jss::reference_level] = to_string(metrics.referenceFeeLevel);
-    levels[jss::minimum_level] = to_string(metrics.minProcessingFeeLevel);
-    levels[jss::median_level] = to_string(metrics.medFeeLevel);
-    levels[jss::open_ledger_level] = to_string(metrics.openLedgerFeeLevel);
+    levels[jss::reference_level.c_str()] = to_string(metrics.referenceFeeLevel);
+    levels[jss::minimum_level.c_str()] = to_string(metrics.minProcessingFeeLevel);
+    levels[jss::median_level.c_str()] = to_string(metrics.medFeeLevel);
+    levels[jss::open_ledger_level.c_str()] = to_string(metrics.openLedgerFeeLevel);
 
     auto const baseFee = view->fees().base;
     // If the base fee is 0 drops, but escalation has kicked in, treat the
@@ -1859,18 +1860,19 @@ TxQ::doRPC(Application& app) const
             return XRPAmount{1};
         return baseFee;
     }();
-    auto& drops = ret[jss::drops] = Json::Value();
+    ret[jss::drops.c_str()].emplace_object();
+    auto& drops = ret[jss::drops.c_str()].as_object();
 
-    drops[jss::base_fee] = to_string(baseFee);
-    drops[jss::median_fee] = to_string(toDrops(metrics.medFeeLevel, baseFee));
-    drops[jss::minimum_fee] = to_string(toDrops(
+    drops[jss::base_fee.c_str()] = to_string(baseFee);
+    drops[jss::median_fee.c_str()] = to_string(toDrops(metrics.medFeeLevel, baseFee));
+    drops[jss::minimum_fee.c_str()] = to_string(toDrops(
         metrics.minProcessingFeeLevel,
         metrics.txCount >= metrics.txQMaxSize ? effectiveBaseFee : baseFee));
     auto openFee = toDrops(metrics.openLedgerFeeLevel, effectiveBaseFee);
     if (effectiveBaseFee &&
         toFeeLevel(openFee, effectiveBaseFee) < metrics.openLedgerFeeLevel)
         openFee += 1;
-    drops[jss::open_ledger_fee] = to_string(openFee);
+    drops[jss::open_ledger_fee.c_str()] = to_string(openFee);
 
     return ret;
 }

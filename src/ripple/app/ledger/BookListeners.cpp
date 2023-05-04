@@ -39,7 +39,7 @@ BookListeners::removeSubscriber(std::uint64_t seq)
 
 void
 BookListeners::publish(
-    Json::Value const& jvObj,
+    boost::json::value const& jvObj,
     hash_set<std::uint64_t>& havePublished)
 {
     std::lock_guard sl(mLock);

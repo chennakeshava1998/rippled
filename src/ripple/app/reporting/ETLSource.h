@@ -226,10 +226,10 @@ public:
             ", grpc port : " + grpcPort_ + " }";
     }
 
-    Json::Value
+    boost::json::object
     toJson() const
     {
-        Json::Value result(Json::objectValue);
+        boost::json::object result;
         result["connected"] = connected_.load();
         result["validated_ledgers_range"] = getValidatedRange();
         result["ip"] = ip_;
@@ -302,7 +302,7 @@ public:
     /// Forward a JSON RPC request to a p2p node
     /// @param context context of RPC request
     /// @return response received from ETL source
-    Json::Value
+    boost::json::value
     forwardToP2p(RPC::JsonContext& context) const;
 };
 
@@ -393,13 +393,13 @@ public:
         return true;
     }
 
-    Json::Value
+    boost::json::array
     toJson() const
     {
-        Json::Value ret(Json::arrayValue);
+        boost::json::array ret;
         for (auto& src : sources_)
         {
-            ret.append(src->toJson());
+            ret.emplace_back(src->toJson());
         }
         return ret;
     }
@@ -412,7 +412,7 @@ public:
     /// Forward a JSON RPC request to a randomly selected p2p node
     /// @param context context of the request
     /// @return response received from p2p node
-    Json::Value
+    boost::json::value
     forwardToP2p(RPC::JsonContext& context) const;
 
 private:

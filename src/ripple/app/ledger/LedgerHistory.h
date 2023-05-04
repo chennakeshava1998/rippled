@@ -84,7 +84,7 @@ public:
     builtLedger(
         std::shared_ptr<Ledger const> const&,
         uint256 const& consensusHash,
-        Json::Value);
+        boost::json::value);
 
     /** Report that we have validated a particular ledger */
     void
@@ -120,7 +120,7 @@ private:
         LedgerHash const& valid,
         std::optional<uint256> const& builtConsensusHash,
         std::optional<uint256> const& validatedConsensusHash,
-        Json::Value const& consensus);
+        boost::json::value const& consensus);
 
     Application& app_;
     beast::insight::Collector::ptr collector_;
@@ -143,7 +143,7 @@ private:
         // Hash of validated consensus transaction set
         std::optional<uint256> validatedConsensusHash;
         // Consensus metadata of built ledger
-        std::optional<Json::Value> consensus;
+        std::optional<boost::json::value> consensus;
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
     ConsensusValidated m_consensus_validated;

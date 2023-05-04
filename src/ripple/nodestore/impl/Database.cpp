@@ -375,9 +375,8 @@ Database::storeLedger(
 }
 
 void
-Database::getCountsJson(Json::Value& obj)
+Database::getCountsJson(boost::json::object& obj)
 {
-    assert(obj.isObject());
 
     {
         std::unique_lock<std::mutex> lock(readLock_);
@@ -388,20 +387,20 @@ Database::getCountsJson(Json::Value& obj)
     obj["read_threads_running"] = runningThreads_.load();
     obj["read_request_bundle"] = requestBundle_;
 
-    obj[jss::node_writes] = std::to_string(storeCount_);
-    obj[jss::node_reads_total] = std::to_string(fetchTotalCount_);
-    obj[jss::node_reads_hit] = std::to_string(fetchHitCount_);
-    obj[jss::node_written_bytes] = std::to_string(storeSz_);
-    obj[jss::node_read_bytes] = std::to_string(fetchSz_);
-    obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
+    obj[jss::node_writes.c_str()] = std::to_string(storeCount_);
+    obj[jss::node_reads_total.c_str()] = std::to_string(fetchTotalCount_);
+    obj[jss::node_reads_hit.c_str()] = std::to_string(fetchHitCount_);
+    obj[jss::node_written_bytes.c_str()] = std::to_string(storeSz_);
+    obj[jss::node_read_bytes.c_str()] = std::to_string(fetchSz_);
+    obj[jss::node_reads_duration_us.c_str()] = std::to_string(fetchDurationUs_);
 
     if (auto c = getCounters())
     {
-        obj[jss::node_read_errors] = std::to_string(c->readErrors);
-        obj[jss::node_read_retries] = std::to_string(c->readRetries);
-        obj[jss::node_write_retries] = std::to_string(c->writeRetries);
-        obj[jss::node_writes_delayed] = std::to_string(c->writesDelayed);
-        obj[jss::node_writes_duration_us] = std::to_string(c->writeDurationUs);
+        obj[jss::node_read_errors.c_str()] = std::to_string(c->readErrors);
+        obj[jss::node_read_retries.c_str()] = std::to_string(c->readRetries);
+        obj[jss::node_write_retries.c_str()] = std::to_string(c->writeRetries);
+        obj[jss::node_writes_delayed.c_str()] = std::to_string(c->writesDelayed);
+        obj[jss::node_writes_duration_us.c_str()] = std::to_string(c->writeDurationUs);
     }
 }
 

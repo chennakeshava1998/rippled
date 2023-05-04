@@ -32,6 +32,7 @@
 #include <boost/logic/tribool.hpp>
 #include <optional>
 #include <sstream>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -427,7 +428,7 @@ public:
         @param full True if verbose response desired.
         @return     The Json state.
     */
-    Json::Value
+    boost::json::value
     getJson(bool full) const;
 
 private:
@@ -904,13 +905,12 @@ Consensus<Adaptor>::simulate(
 }
 
 template <class Adaptor>
-Json::Value
+boost::json::value
 Consensus<Adaptor>::getJson(bool full) const
 {
     using std::to_string;
-    using Int = Json::Value::Int;
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     ret["proposing"] = (mode_.get() == ConsensusMode::proposing);
     ret["proposers"] = static_cast<int>(currPeerPositions_.size());
@@ -920,7 +920,7 @@ Consensus<Adaptor>::getJson(bool full) const
         ret["synched"] = true;
         ret["ledger_seq"] =
             static_cast<std::uint32_t>(previousLedger_.seq()) + 1;
-        ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
+        ret["close_granularity"] = static_cast<int>(closeResolution_.count());
     }
     else
         ret["synched"] = false;
@@ -928,7 +928,7 @@ Consensus<Adaptor>::getJson(bool full) const
     ret["phase"] = to_string(phase_);
 
     if (result_ && !result_->disputes.empty() && !full)
-        ret["disputes"] = static_cast<Int>(result_->disputes.size());
+        ret["disputes"] = static_cast<int>(result_->disputes.size());
 
     if (result_)
         ret["our_position"] = result_->position.getJson();
@@ -937,16 +937,16 @@ Consensus<Adaptor>::getJson(bool full) const
     {
         if (result_)
             ret["current_ms"] =
-                static_cast<Int>(result_->roundTime.read().count());
+                static_cast<int>(result_->roundTime.read().count());
         ret["converge_percent"] = convergePercent_;
-        ret["close_resolution"] = static_cast<Int>(closeResolution_.count());
+        ret["close_resolution"] = static_cast<int>(closeResolution_.count());
         ret["have_time_consensus"] = haveCloseTimeConsensus_;
-        ret["previous_proposers"] = static_cast<Int>(prevProposers_);
-        ret["previous_mseconds"] = static_cast<Int>(prevRoundTime_.count());
+        ret["previous_proposers"] = static_cast<int>(prevProposers_);
+        ret["previous_mseconds"] = static_cast<int>(prevRoundTime_.count());
 
         if (!currPeerPositions_.empty())
         {
-            Json::Value ppj(Json::objectValue);
+            boost::json::object ppj;
 
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
@@ -957,17 +957,17 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!acquired_.empty())
         {
-            Json::Value acq(Json::arrayValue);
+            boost::json::array acq;
             for (auto const& at : acquired_)
             {
-                acq.append(to_string(at.first));
+                acq.emplace_back(to_string(at.first));
             }
             ret["acquired"] = std::move(acq);
         }
 
         if (result_ && !result_->disputes.empty())
         {
-            Json::Value dsj(Json::objectValue);
+            boost::json::object dsj;
             for (auto const& [txId, dispute] : result_->disputes)
             {
                 dsj[to_string(txId)] = dispute.getJson();
@@ -977,7 +977,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!rawCloseTimes_.peers.empty())
         {
-            Json::Value ctj(Json::objectValue);
+            boost::json::object ctj;
             for (auto const& ct : rawCloseTimes_.peers)
             {
                 ctj[std::to_string(ct.first.time_since_epoch().count())] =
@@ -988,10 +988,10 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!deadNodes_.empty())
         {
-            Json::Value dnj(Json::arrayValue);
+            boost::json::array dnj;
             for (auto const& dn : deadNodes_)
             {
-                dnj.append(to_string(dn));
+                dnj.emplace_back(to_string(dn));
             }
             ret["dead_nodes"] = std::move(dnj);
         }
@@ -1060,9 +1060,9 @@ Consensus<Adaptor>::checkLedger()
                         << ", "
                         << " mode=" << to_string(mode_.get());
         JLOG(j_.warn()) << prevLedgerID_ << " to " << netLgr;
-        JLOG(j_.warn()) << Json::Compact{previousLedger_.getJson()};
+        JLOG(j_.warn()) << serialize(previousLedger_.getJson());
         JLOG(j_.debug()) << "State on consensus change "
-                         << Json::Compact{getJson(true)};
+                         << serialize(getJson(true));
         handleWrongLedger(netLgr);
     }
     else if (previousLedger_.id() != prevLedgerID_)
@@ -1590,7 +1590,7 @@ Consensus<Adaptor>::haveConsensus()
     if (result_->state == ConsensusState::MovedOn)
     {
         JLOG(j_.error()) << "Unable to reach consensus";
-        JLOG(j_.error()) << Json::Compact{getJson(true)};
+        JLOG(j_.error()) << serialize(getJson(true));
     }
 
     return true;

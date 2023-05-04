@@ -32,7 +32,7 @@ struct JsonContext;
 
 /** Execute an RPC command and store the results in a Json::Value. */
 Status
-doCommand(RPC::JsonContext&, Json::Value&);
+doCommand(RPC::JsonContext&, boost::json::value&);
 
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method);

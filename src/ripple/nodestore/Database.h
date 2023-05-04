@@ -209,7 +209,7 @@ public:
     }
 
     void
-    getCountsJson(Json::Value& obj);
+    getCountsJson(boost::json::object& obj);
 
     /** Returns the number of file descriptors the database expects to need */
     int

@@ -132,7 +132,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    clean(Json::Value const& params) override
+    clean(boost::json::value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;

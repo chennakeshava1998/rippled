@@ -94,7 +94,7 @@ public:
     }
 
     //! JSON representation of proposal
-    Json::Value
+    boost::json::value
     getJson() const;
 
 private:
