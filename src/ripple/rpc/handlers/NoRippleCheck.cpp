@@ -34,7 +34,7 @@ namespace ripple {
 static void
 fillTransaction(
     RPC::JsonContext& context,
-    Json::Value& txArray,
+    boost::json::object& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
     ReadView const& ledger)
@@ -57,18 +57,18 @@ fillTransaction(
 //   role: gateway|user             // account role to assume
 //   transactions: true             // optional, reccommend transactions
 // }
-Json::Value
+boost::json::value
 doNoRippleCheck(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    if (!params.isMember(jss::account))
+    if (!params.contains(jss::account.c_str()))
         return RPC::missing_field_error("account");
 
-    if (!params.isMember("role"))
+    if (!params.contains("role"))
         return RPC::missing_field_error("role");
     bool roleGateway = false;
     {
-        std::string const role = params["role"].asString();
+        std::string const role = std::string{params.at("role").as_string()};
         if (role == "gateway")
             roleGateway = true;
         else if (role != "user")
@@ -80,25 +80,27 @@ doNoRippleCheck(RPC::JsonContext& context)
         return *err;
 
     bool transactions = false;
-    if (params.isMember(jss::transactions))
-        transactions = params["transactions"].asBool();
+    if (params.contains(jss::transactions.c_str()))
+        transactions = params.at("transactions").as_bool();
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto resultJson = RPC::lookupLedger(ledger, context);
     if (!ledger)
-        return result;
+        return resultJson;
 
-    Json::Value dummy;
-    Json::Value& jvTransactions =
-        transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
+    boost::json::object result = resultJson.as_object();
 
-    std::string strIdent(params[jss::account].asString());
+    boost::json::array dummy;
+    boost::json::array& jvTransactions =
+        transactions ? (result[jss::transactions.c_str()].emplace_array()) : dummy;
+
+    std::string strIdent(params.at(jss::account.c_str()).as_string());
     AccountID accountID;
 
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto jv = RPC::accountFromString(accountID, strIdent);
+    if (!jv.is_null())
     {
-        for (auto it(jv.begin()); it != jv.end(); ++it)
-            result[it.memberName()] = *it;
+        result = jv.as_object();
 
         return result;
     }
@@ -109,23 +111,23 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     std::uint32_t seq = sle->getFieldU32(sfSequence);
 
-    Json::Value& problems = (result["problems"] = Json::arrayValue);
+    boost::json::array& problems = (result["problems"].emplace_array());
 
     bool bDefaultRipple = sle->getFieldU32(sfFlags) & lsfDefaultRipple;
 
     if (bDefaultRipple & !roleGateway)
     {
-        problems.append(
+        problems.emplace_back(
             "You appear to have set your default ripple flag even though you "
             "are not a gateway. This is not recommended unless you are "
             "experimenting");
     }
     else if (roleGateway & !bDefaultRipple)
     {
-        problems.append("You should immediately set your default ripple flag");
+        problems.emplace_back("You should immediately set your default ripple flag");
         if (transactions)
         {
-            Json::Value& tx = jvTransactions.append(Json::objectValue);
+            boost::json::object& tx = jvTransactions.emplace_back(boost::json::object()).as_object();
             tx["TransactionType"] = jss::AccountSet;
             tx["SetFlag"] = 8;
             fillTransaction(context, tx, accountID, seq, *ledger);
@@ -171,13 +173,13 @@ doNoRippleCheck(RPC::JsonContext& context)
                     problem += to_string(peerLimit.getCurrency());
                     problem += " line to ";
                     problem += to_string(peerLimit.getIssuer());
-                    problems.append(problem);
+                    problems.emplace_back(problem);
 
                     STAmount limitAmount(ownedItem->getFieldAmount(
                         bLow ? sfLowLimit : sfHighLimit));
                     limitAmount.setIssuer(peer);
 
-                    Json::Value& tx = jvTransactions.append(Json::objectValue);
+                    boost::json::object& tx = jvTransactions.emplace_back(boost::json::object()).as_object();
                     tx["TransactionType"] = jss::TrustSet;
                     tx["LimitAmount"] = limitAmount.getJson(JsonOptions::none);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
