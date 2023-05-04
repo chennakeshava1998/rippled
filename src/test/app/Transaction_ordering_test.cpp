@@ -52,16 +52,16 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.close();
 
         {
-            auto const result =
-                env.rpc("tx", to_string(tx1.stx->getTransactionID()));
+            auto result =
+                env.rpc("tx", to_string(tx1.stx->getTransactionID())).as_object();
             BEAST_EXPECT(
-                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+                result["result"].as_object()["meta"].as_object()["TransactionResult"] == "tesSUCCESS");
         }
         {
-            auto const result =
-                env.rpc("tx", to_string(tx2.stx->getTransactionID()));
+            auto result =
+                env.rpc("tx", to_string(tx2.stx->getTransactionID())).as_object();
             BEAST_EXPECT(
-                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+                result["result"].as_object()["meta"].as_object()["TransactionResult"] == "tesSUCCESS");
         }
     }
 
@@ -97,16 +97,16 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.close();
 
         {
-            auto const result =
-                env.rpc("tx", to_string(tx1.stx->getTransactionID()));
+            auto result =
+                env.rpc("tx", to_string(tx1.stx->getTransactionID())).as_object();
             BEAST_EXPECT(
-                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+                result["result"].as_object()["meta"].as_object()["TransactionResult"] == "tesSUCCESS");
         }
         {
-            auto const result =
-                env.rpc("tx", to_string(tx2.stx->getTransactionID()));
+            auto result =
+                env.rpc("tx", to_string(tx2.stx->getTransactionID())).as_object();
             BEAST_EXPECT(
-                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+                result["result"].as_object()["meta"].as_object()["TransactionResult"] == "tesSUCCESS");
         }
     }
 
@@ -150,10 +150,10 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         for (auto i = 0; i < 5; ++i)
         {
-            auto const result =
-                env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
+            auto result =
+                env.rpc("tx", to_string(tx[i].stx->getTransactionID())).as_object();
             BEAST_EXPECT(
-                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+                result["result"].as_object()["meta"].as_object()["TransactionResult"] == "tesSUCCESS");
         }
     }
 

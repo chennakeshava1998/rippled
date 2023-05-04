@@ -29,19 +29,19 @@ struct SetAuth_test : public beast::unit_test::suite
     // Set just the tfSetfAuth flag on a trust line
     // If the trust line does not exist, then it should
     // be created under the new rules.
-    static Json::Value
+    static boost::json::object
     auth(
         jtx::Account const& account,
         jtx::Account const& dest,
         std::string const& currency)
     {
         using namespace jtx;
-        Json::Value jv;
-        jv[jss::Account] = account.human();
-        jv[jss::LimitAmount] =
+        boost::json::object jv;
+        jv[jss::Account.c_str()] = account.human();
+        jv[jss::LimitAmount.c_str()] =
             STAmount({to_currency(currency), dest}).getJson(JsonOptions::none);
-        jv[jss::TransactionType] = jss::TrustSet;
-        jv[jss::Flags] = tfSetfAuth;
+        jv[jss::TransactionType.c_str()] = jss::TrustSet;
+        jv[jss::Flags.c_str()] = tfSetfAuth;
         return jv;
     }
 

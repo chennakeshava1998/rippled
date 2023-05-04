@@ -98,15 +98,15 @@ public:
             env(trust(creator, assistor["USD"](100)),
                 require(lines(creator, 3)));
 
-            Json::Value jv;
+            boost::json::object jv;
             jv["account"] = creator.human();
-            auto const lines = env.rpc("json", "account_lines", to_string(jv));
+            auto lines = env.rpc("json", "account_lines", serialize(jv)).as_object();
             // Verify that all lines have 100 limit from creator
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 3);
-            for (auto const& line : lines[jss::result][jss::lines])
+            BEAST_EXPECT(lines[jss::result.c_str()].as_object()[jss::lines.c_str()].is_array());
+            BEAST_EXPECT(lines[jss::result.c_str()].as_object()[jss::lines.c_str()].as_array().size() == 3);
+            for (auto const& line : lines[jss::result.c_str()].as_object()[jss::lines.c_str()].as_array())
             {
-                BEAST_EXPECT(line[jss::limit] == "100");
+                BEAST_EXPECT(line.at(jss::limit.c_str()) == "100");
             }
         }
     }
@@ -145,14 +145,14 @@ public:
         env.close();
     }
 
-    Json::Value
+    boost::json::object
     trust_explicit_amt(jtx::Account const& a, STAmount const& amt)
     {
-        Json::Value jv;
-        jv[jss::Account] = a.human();
-        jv[jss::LimitAmount] = amt.getJson(JsonOptions::none);
-        jv[jss::TransactionType] = jss::TrustSet;
-        jv[jss::Flags] = 0;
+        boost::json::object jv;
+        jv[jss::Account.c_str()] = a.human();
+        jv[jss::LimitAmount.c_str()] = amt.getJson(JsonOptions::none);
+        jv[jss::TransactionType.c_str()] = jss::TrustSet;
+        jv[jss::Flags.c_str()] = 0;
         return jv;
     }
 
@@ -224,7 +224,7 @@ public:
 
         env.fund(XRP(10000), fromAcct, toAcct);
 
-        auto txWithoutQuality = trust(toAcct, fromAcct["USD"](100));
+        auto txWithoutQuality = trust(toAcct, fromAcct["USD"](100)).as_object();
         txWithoutQuality["QualityIn"] = "0";
         txWithoutQuality["QualityOut"] = "0";
 
@@ -236,16 +236,16 @@ public:
         auto& tx2 = createQuality ? txWithoutQuality : txWithQuality;
 
         auto check_quality = [&](const bool exists) {
-            Json::Value jv;
+            boost::json::object jv;
             jv["account"] = toAcct.human();
-            auto const lines = env.rpc("json", "account_lines", to_string(jv));
+            auto lines = env.rpc("json", "account_lines", serialize(jv)).as_object();
             auto quality = exists ? 1000 : 0;
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 1);
+            BEAST_EXPECT(lines[jss::result.c_str()].as_object()[jss::lines.c_str()].is_array());
+            BEAST_EXPECT(lines[jss::result.c_str()].as_object()[jss::lines.c_str()].as_array().size() == 1);
             BEAST_EXPECT(
-                lines[jss::result][jss::lines][0u][jss::quality_in] == quality);
+                lines[jss::result.c_str()].as_object()[jss::lines.c_str()].as_object()[0u].as_object()[jss::quality_in.c_str()] == quality);
             BEAST_EXPECT(
-                lines[jss::result][jss::lines][0u][jss::quality_out] ==
+                lines[jss::result.c_str()].as_object()[jss::lines.c_str()].as_object()[0u].as_object()[jss::quality_out.c_str()] ==
                 quality);
         };
 

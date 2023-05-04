@@ -29,6 +29,7 @@
 #include <boost/coroutine/all.hpp>
 #include <boost/range/begin.hpp>  // workaround for boost 1.72 bug
 #include <boost/range/end.hpp>    // workaround for boost 1.72 bug
+#include <boost/json.hpp>
 
 namespace ripple {
 
