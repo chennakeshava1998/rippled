@@ -39,20 +39,20 @@ public:
         Env env(*this);
         {
             // manifest with no public key
-            auto const info = env.rpc("json", "manifest", "{ }");
+            auto info = env.rpc("json", "manifest", "{ }").as_object();
             BEAST_EXPECT(
-                info[jss::result][jss::error_message] ==
+                info[jss::result.c_str()].as_object()[jss::error_message.c_str()] ==
                 "Missing field 'public_key'.");
         }
         {
             // manifest with manlformed public key
-            auto const info = env.rpc(
+            auto info = env.rpc(
                 "json",
                 "manifest",
                 "{ \"public_key\": "
-                "\"abcdef12345\"}");
+                "\"abcdef12345\"}").as_object();
             BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "Invalid parameters.");
+                info[jss::result.c_str()].as_object()[jss::error_message.c_str()] == "Invalid parameters.");
         }
     }
 
@@ -69,14 +69,14 @@ public:
                     return cfg;
                 })};
         {
-            auto const info = env.rpc(
+            auto info = env.rpc(
                 "json",
                 "manifest",
                 "{ \"public_key\": "
                 "\"" +
-                    key + "\"}");
-            BEAST_EXPECT(info[jss::result][jss::requested] == key);
-            BEAST_EXPECT(info[jss::result][jss::status] == "success");
+                    key + "\"}").as_object();
+            BEAST_EXPECT(info[jss::result.c_str()].as_object()[jss::requested.c_str()].as_string() == key);
+            BEAST_EXPECT(info[jss::result.c_str()].as_object()[jss::status.c_str()] == "success");
         }
     }
 
