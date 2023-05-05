@@ -29,32 +29,32 @@ namespace test {
 namespace jtx {
 namespace token {
 
-Json::Value
+boost::json::object
 mint(jtx::Account const& account, std::uint32_t nfTokenTaxon)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfNFTokenTaxon.jsonName] = nfTokenTaxon;
-    jv[sfTransactionType.jsonName] = jss::NFTokenMint;
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
+    jv[sfNFTokenTaxon.jsonName.c_str()] = nfTokenTaxon;
+    jv[sfTransactionType.jsonName.c_str()] = jss::NFTokenMint;
     return jv;
 }
 
 void
 xferFee::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfTransferFee.jsonName] = xferFee_;
+    jt.jv.as_object()[sfTransferFee.jsonName.c_str()] = xferFee_;
 }
 
 void
 issuer::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfIssuer.jsonName] = issuer_;
+    jt.jv.as_object()[sfIssuer.jsonName.c_str()] = issuer_;
 }
 
 void
 uri::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfURI.jsonName] = uri_;
+    jt.jv.as_object()[sfURI.jsonName.c_str()] = uri_;
 }
 
 uint256
@@ -92,65 +92,65 @@ getID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
 
-Json::Value
+boost::json::object
 burn(jtx::Account const& account, uint256 const& nftokenID)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfNFTokenID.jsonName] = to_string(nftokenID);
-    jv[jss::TransactionType] = jss::NFTokenBurn;
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
+    jv[sfNFTokenID.jsonName.c_str()] = to_string(nftokenID);
+    jv[jss::TransactionType.c_str()] = jss::NFTokenBurn;
     return jv;
 }
 
-Json::Value
+boost::json::object
 createOffer(
     jtx::Account const& account,
     uint256 const& nftokenID,
     STAmount const& amount)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfNFTokenID.jsonName] = to_string(nftokenID);
-    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::none);
-    jv[jss::TransactionType] = jss::NFTokenCreateOffer;
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
+    jv[sfNFTokenID.jsonName.c_str()] = to_string(nftokenID);
+    jv[sfAmount.jsonName.c_str()] = amount.getJson(JsonOptions::none);
+    jv[jss::TransactionType.c_str()] = jss::NFTokenCreateOffer;
     return jv;
 }
 
 void
 owner::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfOwner.jsonName] = owner_;
+    jt.jv.as_object()[sfOwner.jsonName.c_str()] = owner_;
 }
 
 void
 expiration::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfExpiration.jsonName] = expires_;
+    jt.jv.as_object()[sfExpiration.jsonName.c_str()] = expires_;
 }
 
 void
 destination::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfDestination.jsonName] = dest_;
+    jt.jv.as_object()[sfDestination.jsonName.c_str()] = dest_;
 }
 
 template <typename T>
-static Json::Value
+static boost::json::object
 cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
     if (!empty(nftokenOffers))
     {
-        jv[sfNFTokenOffers.jsonName] = Json::arrayValue;
+        jv[sfNFTokenOffers.jsonName.c_str()].emplace_array();
         for (uint256 const& nftokenOffer : nftokenOffers)
-            jv[sfNFTokenOffers.jsonName].append(to_string(nftokenOffer));
+            jv[sfNFTokenOffers.jsonName.c_str()].as_array().emplace_back(to_string(nftokenOffer));
     }
-    jv[jss::TransactionType] = jss::NFTokenCancelOffer;
+    jv[jss::TransactionType.c_str()] = jss::NFTokenCancelOffer;
     return jv;
 }
 
-Json::Value
+boost::json::object
 cancelOffer(
     jtx::Account const& account,
     std::initializer_list<uint256> const& nftokenOffers)
@@ -158,7 +158,7 @@ cancelOffer(
     return cancelOfferImpl(account, nftokenOffers);
 }
 
-Json::Value
+boost::json::object
 cancelOffer(
     jtx::Account const& account,
     std::vector<uint256> const& nftokenOffers)
@@ -169,58 +169,58 @@ cancelOffer(
 void
 rootIndex::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfRootIndex.jsonName] = rootIndex_;
+    jt.jv.as_object()[sfRootIndex.jsonName.c_str()] = rootIndex_;
 }
 
-Json::Value
+boost::json::object
 acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfNFTokenBuyOffer.jsonName] = to_string(offerIndex);
-    jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
+    jv[sfNFTokenBuyOffer.jsonName.c_str()] = to_string(offerIndex);
+    jv[jss::TransactionType.c_str()] = jss::NFTokenAcceptOffer;
     return jv;
 }
 
-Json::Value
+boost::json::object
 acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfNFTokenSellOffer.jsonName] = to_string(offerIndex);
-    jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
+    jv[sfNFTokenSellOffer.jsonName.c_str()] = to_string(offerIndex);
+    jv[jss::TransactionType.c_str()] = jss::NFTokenAcceptOffer;
     return jv;
 }
 
-Json::Value
+boost::json::object
 brokerOffers(
     jtx::Account const& account,
     uint256 const& buyOfferIndex,
     uint256 const& sellOfferIndex)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfNFTokenBuyOffer.jsonName] = to_string(buyOfferIndex);
-    jv[sfNFTokenSellOffer.jsonName] = to_string(sellOfferIndex);
-    jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
+    boost::json::object jv;
+    jv[sfAccount.jsonName.c_str()] = account.human();
+    jv[sfNFTokenBuyOffer.jsonName.c_str()] = to_string(buyOfferIndex);
+    jv[sfNFTokenSellOffer.jsonName.c_str()] = to_string(sellOfferIndex);
+    jv[jss::TransactionType.c_str()] = jss::NFTokenAcceptOffer;
     return jv;
 }
 
 void
 brokerFee::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::none);
+    jt.jv.as_object()[sfNFTokenBrokerFee.jsonName.c_str()] = brokerFee_.getJson(JsonOptions::none);
 }
 
-Json::Value
+boost::json::object
 setMinter(jtx::Account const& account, jtx::Account const& minter)
 {
-    Json::Value jt = fset(account, asfAuthorizedNFTokenMinter);
-    jt[sfNFTokenMinter.fieldName] = minter.human();
+    boost::json::object jt = fset(account, asfAuthorizedNFTokenMinter).as_object();
+    jt[sfNFTokenMinter.fieldName.c_str()] = minter.human();
     return jt;
 }
 
-Json::Value
+boost::json::value
 clearMinter(jtx::Account const& account)
 {
     return fclear(account, asfAuthorizedNFTokenMinter);

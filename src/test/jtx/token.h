@@ -35,7 +35,7 @@ namespace jtx {
 namespace token {
 
 /** Mint an NFToken. */
-Json::Value
+boost::json::object
 mint(jtx::Account const& account, std::uint32_t tokenTaxon = 0);
 
 /** Sets the optional TransferFee on an NFTokenMint. */
@@ -103,11 +103,11 @@ getID(
     std::uint16_t xferFee = 0);
 
 /** Burn an NFToken. */
-Json::Value
+boost::json::object
 burn(jtx::Account const& account, uint256 const& nftokenID);
 
 /** Create an NFTokenOffer. */
-Json::Value
+boost::json::object
 createOffer(
     jtx::Account const& account,
     uint256 const& nftokenID,
@@ -159,12 +159,12 @@ public:
 };
 
 /** Cancel NFTokenOffers. */
-Json::Value
+boost::json::object
 cancelOffer(
     jtx::Account const& account,
     std::initializer_list<uint256> const& nftokenOffers = {});
 
-Json::Value
+boost::json::object
 cancelOffer(
     jtx::Account const& account,
     std::vector<uint256> const& nftokenOffers);
@@ -185,15 +185,15 @@ public:
 };
 
 /** Accept an NFToken buy offer. */
-Json::Value
+boost::json::object
 acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Accept an NFToken sell offer. */
-Json::Value
+boost::json::object
 acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Broker two NFToken offers. */
-Json::Value
+boost::json::object
 brokerOffers(
     jtx::Account const& account,
     uint256 const& buyOfferIndex,
@@ -215,11 +215,11 @@ public:
 };
 
 /** Set the authorized minter on an account root. */
-Json::Value
+boost::json::object
 setMinter(jtx::Account const& account, jtx::Account const& minter);
 
 /** Clear any authorized minter from an account root. */
-Json::Value
+boost::json::value
 clearMinter(jtx::Account const& account);
 
 }  // namespace token
