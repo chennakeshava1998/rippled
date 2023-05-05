@@ -256,19 +256,19 @@ public:
         database import if one is running, otherwise an error
         object.
      */
-    virtual Json::Value
+    virtual boost::json::object
     getDatabaseImportStatus() const = 0;
 
     /** Initiates a NodeStore to ShardStore import and returns
         the result in a JSON object.
      */
-    virtual Json::Value
+    virtual boost::json::object
     startNodeToShard() = 0;
 
     /** Terminates a NodeStore to ShardStore import and returns
         the result in a JSON object.
     */
-    virtual Json::Value
+    virtual boost::json::object
     stopNodeToShard() = 0;
 
     /** Returns the first ledger sequence of the shard currently being imported

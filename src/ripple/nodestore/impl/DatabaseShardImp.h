@@ -132,13 +132,13 @@ public:
     void
     sweep() override;
 
-    Json::Value
+    boost::json::object
     getDatabaseImportStatus() const override;
 
-    Json::Value
+    boost::json::object
     startNodeToShard() override;
 
-    Json::Value
+    boost::json::object
     stopNodeToShard() override;
 
     std::optional<std::uint32_t>

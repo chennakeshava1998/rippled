@@ -1226,21 +1226,21 @@ DatabaseShardImp::getDatabaseImportStatus() const
     {
         boost::json::object ret;
 
-        ret[jss::firstShardIndex] = databaseImportStatus_->earliestIndex;
-        ret[jss::lastShardIndex] = databaseImportStatus_->latestIndex;
-        ret[jss::currentShardIndex] = databaseImportStatus_->currentIndex;
+        ret[jss::firstShardIndex.c_str()] = databaseImportStatus_->earliestIndex;
+        ret[jss::lastShardIndex.c_str()] = databaseImportStatus_->latestIndex;
+        ret[jss::currentShardIndex.c_str()] = databaseImportStatus_->currentIndex;
 
         boost::json::object currentShard;
-        currentShard[jss::firstSequence] = databaseImportStatus_->firstSeq;
-        currentShard[jss::lastSequence] = databaseImportStatus_->lastSeq;
+        currentShard[jss::firstSequence.c_str()] = databaseImportStatus_->firstSeq;
+        currentShard[jss::lastSequence.c_str()] = databaseImportStatus_->lastSeq;
 
         if (auto shard = databaseImportStatus_->currentShard.lock(); shard)
-            currentShard[jss::storedSeqs] = shard->getStoredSeqs();
+            currentShard[jss::storedSeqs.c_str()] = shard->getStoredSeqs();
 
-        ret[jss::currentShard] = currentShard;
+        ret[jss::currentShard.c_str()] = currentShard;
 
         if (haltDatabaseImport_)
-            ret[jss::message] = "Database import halt initiated...";
+            ret[jss::message.c_str()] = "Database import halt initiated...";
 
         return ret;
     }
@@ -1248,7 +1248,7 @@ DatabaseShardImp::getDatabaseImportStatus() const
     return RPC::make_error(rpcINTERNAL, "Database import not running");
 }
 
-Json::Value
+boost::json::object
 DatabaseShardImp::startNodeToShard()
 {
     std::lock_guard lock(mutex_);
@@ -1265,13 +1265,13 @@ DatabaseShardImp::startNodeToShard()
 
     startDatabaseImportThread(lock);
 
-    Json::Value result(Json::objectValue);
-    result[jss::message] = "Database import initiated...";
+    boost::json::object result;
+    result[jss::message.c_str()] = "Database import initiated...";
 
     return result;
 }
 
-Json::Value
+boost::json::object
 DatabaseShardImp::stopNodeToShard()
 {
     std::lock_guard lock(mutex_);
@@ -1287,8 +1287,8 @@ DatabaseShardImp::stopNodeToShard()
 
     haltDatabaseImport_ = true;
 
-    Json::Value result(Json::objectValue);
-    result[jss::message] = "Database import halt initiated...";
+    boost::json::object result;
+    result[jss::message.c_str()] = "Database import halt initiated...";
 
     return result;
 }
