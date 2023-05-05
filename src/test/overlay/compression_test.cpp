@@ -214,14 +214,14 @@ public:
         std::string usdTxBlob = "";
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jrequestUsd;
-            jrequestUsd[jss::secret] = toBase58(generateSeed("bob"));
-            jrequestUsd[jss::tx_json] =
+            boost::json::object jrequestUsd;
+            jrequestUsd[jss::secret.c_str()] = toBase58(generateSeed("bob"));
+            jrequestUsd[jss::tx_json.c_str()] =
                 pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value jreply_usd = wsc->invoke("sign", jrequestUsd);
+            boost::json::object jreply_usd = wsc->invoke("sign", jrequestUsd).as_object();
 
             usdTxBlob =
-                toBinary(jreply_usd[jss::result][jss::tx_blob].asString());
+                toBinary(std::string{jreply_usd[jss::result.c_str()].as_object()[jss::tx_blob.c_str()].as_string()});
         }
 
         auto transaction = std::make_shared<protocol::TMTransaction>();
