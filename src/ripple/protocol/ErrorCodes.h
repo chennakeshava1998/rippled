@@ -249,9 +249,9 @@ inject_error(error_code_i code, std::string const& message, JsonValue& json)
 
 /** Returns a new json object that reflects the error code. */
 /** @{ */
-boost::json::value
+boost::json::object
 make_error(error_code_i code);
-boost::json::value
+boost::json::object
 make_error(error_code_i code, std::string const& message);
 /** @} */
 

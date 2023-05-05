@@ -824,7 +824,7 @@ public:
         }
     }
 
-    Json::Value
+    boost::json::object
     getJsonTrie() const
     {
         std::lock_guard lock{mutex_};

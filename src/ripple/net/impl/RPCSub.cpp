@@ -74,7 +74,7 @@ public:
     ~RPCSubImp() = default;
 
     void
-    send(Json::Value const& jvObj, bool broadcast) override
+    send(boost::json::object const& jvObj, bool broadcast) override
     {
         std::lock_guard sl(mLock);
 
@@ -124,7 +124,7 @@ private:
     void
     sendThread()
     {
-        Json::Value jvEvent;
+        boost::json::object jvEvent;
         bool bSend;
 
         do
@@ -199,7 +199,7 @@ private:
 
     bool mSending;  // Sending threead is active.
 
-    std::deque<std::pair<int, Json::Value>> mDeque;
+    std::deque<std::pair<int, boost::json::object>> mDeque;
 
     beast::Journal const j_;
     Logs& logs_;

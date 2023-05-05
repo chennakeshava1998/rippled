@@ -29,6 +29,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <boost/container/flat_map.hpp>
 #include <memory>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -128,7 +129,7 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    Json::Value
+    boost::json::object
     getJson() const;
 
 private:
@@ -253,12 +254,12 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 }
 
 template <class Tx_t, class NodeID_t>
-Json::Value
+boost::json::object
 DisputedTx<Tx_t, NodeID_t>::getJson() const
 {
     using std::to_string;
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     ret["yays"] = yays_;
     ret["nays"] = nays_;
@@ -266,7 +267,7 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
 
     if (!votes_.empty())
     {
-        Json::Value votesj(Json::objectValue);
+        boost::json::object votesj;
         for (auto const& [nodeId, vote] : votes_)
             votesj[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votesj);

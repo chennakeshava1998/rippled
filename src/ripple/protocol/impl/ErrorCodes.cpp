@@ -174,18 +174,18 @@ get_error_info(error_code_i code)
     return detail::sortedErrorInfos[code - 1];
 }
 
-Json::Value
+boost::json::object
 make_error(error_code_i code)
 {
-    Json::Value json;
+    boost::json::object json;
     inject_error(code, json);
     return json;
 }
 
-Json::Value
+boost::json::object
 make_error(error_code_i code, std::string const& message)
 {
-    Json::Value json;
+    boost::json::object json;
     inject_error(code, message, json);
     return json;
 }

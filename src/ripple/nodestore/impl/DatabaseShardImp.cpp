@@ -1219,18 +1219,18 @@ DatabaseShardImp::sweep()
     }
 }
 
-Json::Value
+boost::json::object
 DatabaseShardImp::getDatabaseImportStatus() const
 {
     if (std::lock_guard lock(mutex_); databaseImportStatus_)
     {
-        Json::Value ret(Json::objectValue);
+        boost::json::object ret;
 
         ret[jss::firstShardIndex] = databaseImportStatus_->earliestIndex;
         ret[jss::lastShardIndex] = databaseImportStatus_->latestIndex;
         ret[jss::currentShardIndex] = databaseImportStatus_->currentIndex;
 
-        Json::Value currentShard(Json::objectValue);
+        boost::json::object currentShard;
         currentShard[jss::firstSequence] = databaseImportStatus_->firstSeq;
         currentShard[jss::lastSequence] = databaseImportStatus_->lastSeq;
 

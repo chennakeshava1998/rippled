@@ -217,7 +217,7 @@ public:
     isOverloaded();
 
     // Cannot be const because LoadMonitor has no const methods.
-    boost::json::value
+    boost::json::object
     getJson(int c = 0);
 
     /** Block until no jobs running. */

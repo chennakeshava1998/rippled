@@ -241,10 +241,10 @@ struct Node
                  << ")";
     }
 
-    Json::Value
+    boost::json::object
     getJson() const
     {
-        Json::Value res;
+        boost::json::object res;
         std::stringstream sps;
         sps << span;
         res["span"] = sps.str();
@@ -254,10 +254,10 @@ struct Node
         res["branchSupport"] = branchSupport;
         if (!children.empty())
         {
-            Json::Value& cs = (res["children"] = Json::arrayValue);
+            boost::json::array& cs = res["children"].emplace_array();
             for (auto const& child : children)
             {
-                cs.append(child->getJson());
+                cs.emplace_back(child->getJson());
             }
         }
         return res;
@@ -787,12 +787,12 @@ public:
 
     /** Dump JSON representation of trie state
      */
-    Json::Value
+    boost::json::object
     getJson() const
     {
-        Json::Value res;
+        boost::json::object res;
         res["trie"] = root->getJson();
-        res["seq_support"] = Json::objectValue;
+        res["seq_support"].emplace_object();
         for (auto const& [seq, sup] : seqSupport)
             res["seq_support"][to_string(seq)] = sup;
         return res;

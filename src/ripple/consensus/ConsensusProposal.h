@@ -195,21 +195,21 @@ public:
     }
 
     //! Get JSON representation for debugging
-    Json::Value
+    boost::json::object
     getJson() const
     {
         using std::to_string;
 
-        Json::Value ret = Json::objectValue;
-        ret[jss::previous_ledger] = to_string(prevLedger());
+        boost::json::object ret;
+        ret[jss::previous_ledger.c_str()] = to_string(prevLedger());
 
         if (!isBowOut())
         {
-            ret[jss::transaction_hash] = to_string(position());
-            ret[jss::propose_seq] = proposeSeq();
+            ret[jss::transaction_hash.c_str()] = to_string(position());
+            ret[jss::propose_seq.c_str()] = proposeSeq();
         }
 
-        ret[jss::close_time] =
+        ret[jss::close_time.c_str()] =
             to_string(closeTime().time_since_epoch().count());
 
         return ret;

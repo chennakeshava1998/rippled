@@ -199,7 +199,7 @@ public:
     getConsumer();
 
     virtual void
-    send(boost::json::value const& jvObj, bool broadcast) = 0;
+    send(boost::json::object const& jvObj, bool broadcast) = 0;
 
     std::uint64_t
     getSeq();

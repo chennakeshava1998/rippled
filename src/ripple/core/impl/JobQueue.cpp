@@ -192,15 +192,15 @@ JobQueue::isOverloaded()
     });
 }
 
-Json::Value
+boost::json::object
 JobQueue::getJson(int c)
 {
     using namespace std::chrono_literals;
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     ret["threads"] = m_workers.getNumberOfThreads();
 
-    Json::Value priorities = Json::arrayValue;
+    boost::json::array priorities;
 
     std::lock_guard lock(m_mutex);
 
@@ -221,7 +221,7 @@ JobQueue::getJson(int c)
         if ((stats.count != 0) || (waiting != 0) ||
             (stats.latencyPeak != 0ms) || (running != 0))
         {
-            Json::Value& pri = priorities.append(Json::objectValue);
+            boost::json::object& pri = priorities.emplace_back(boost::json::object()).as_object();
 
             pri["job_type"] = data.name();
 
