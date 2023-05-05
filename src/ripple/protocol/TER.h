@@ -398,6 +398,10 @@ public:
         return Json::Value{code_};
     }
 
+    operator boost::json::value() const
+    {
+        return boost::json::value{code_};
+    }
     // Streaming operator.
     friend std::ostream&
     operator<<(std::ostream& os, TERSubset const& rhs)

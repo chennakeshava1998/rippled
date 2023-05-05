@@ -34,7 +34,7 @@ class STTx;
 namespace RPC {
 
 template <class L>
-Json::Value
+boost::json::object
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 {
     std::map<
@@ -169,36 +169,36 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         }
     }
 
-    Json::Value jvObj(Json::objectValue);
-    jvObj[jss::type] = "bookChanges";
-    jvObj[jss::ledger_index] = lpAccepted->info().seq;
-    jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
-    jvObj[jss::ledger_time] = Json::Value::UInt(
+    boost::json::object jvObj;
+    jvObj[jss::type.c_str()] = "bookChanges";
+    jvObj[jss::ledger_index.c_str()] = lpAccepted->info().seq;
+    jvObj[jss::ledger_hash.c_str()] = to_string(lpAccepted->info().hash);
+    jvObj[jss::ledger_time.c_str()] = Json::Value::UInt(
         lpAccepted->info().closeTime.time_since_epoch().count());
 
-    jvObj[jss::changes] = Json::arrayValue;
+    jvObj[jss::changes.c_str()] = Json::arrayValue;
 
     for (auto const& entry : tally)
     {
-        Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
+        boost::json::object& inner = jvObj[jss::changes.c_str()].emplace_object();
 
         STAmount volA = std::get<0>(entry.second);
         STAmount volB = std::get<1>(entry.second);
 
-        inner[jss::currency_a] =
+        inner[jss::currency_a.c_str()] =
             (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
-        inner[jss::currency_b] =
+        inner[jss::currency_b.c_str()] =
             (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
 
-        inner[jss::volume_a] =
+        inner[jss::volume_a.c_str()] =
             (isXRP(volA) ? to_string(volA.xrp()) : to_string(volA.iou()));
-        inner[jss::volume_b] =
+        inner[jss::volume_b.c_str()] =
             (isXRP(volB) ? to_string(volB.xrp()) : to_string(volB.iou()));
 
-        inner[jss::high] = to_string(std::get<2>(entry.second).iou());
-        inner[jss::low] = to_string(std::get<3>(entry.second).iou());
-        inner[jss::open] = to_string(std::get<4>(entry.second).iou());
-        inner[jss::close] = to_string(std::get<5>(entry.second).iou());
+        inner[jss::high.c_str()] = to_string(std::get<2>(entry.second).iou());
+        inner[jss::low.c_str()] = to_string(std::get<3>(entry.second).iou());
+        inner[jss::open.c_str()] = to_string(std::get<4>(entry.second).iou());
+        inner[jss::close.c_str()] = to_string(std::get<5>(entry.second).iou());
     }
 
     return jvObj;

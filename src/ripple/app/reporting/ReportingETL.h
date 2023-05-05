@@ -306,10 +306,10 @@ public:
         return journal_;
     }
 
-    Json::Value
+    boost::json::object
     getInfo()
     {
-        Json::Value result(Json::objectValue);
+        boost::json::object result;
 
         result["etl_sources"] = loadBalancer_.toJson();
         result["is_writer"] = writing_.load();

@@ -162,7 +162,7 @@ public:
         bool const bProof,
         unsigned int iLimit,
         boost::json::value const& jvMarker,
-        boost::json::value& jvResult) = 0;
+        boost::json::object& jvResult) = 0;
 
     //--------------------------------------------------------------------------
 
@@ -266,9 +266,7 @@ public:
     virtual void
     forwardManifest(boost::json::value const& jvObj) = 0;
     virtual void
-    forwardProposedTransaction(boost::json::value const& jvObj) = 0;
-    virtual void
-    forwardProposedAccountTransaction(boost::json::value const& jvObj) = 0;
+    forwardProposedTransaction(boost::json::object const& jvObj) = 0;
 
     virtual void
     stateAccounting(boost::json::object& obj) = 0;

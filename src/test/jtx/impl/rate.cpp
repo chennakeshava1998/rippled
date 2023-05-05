@@ -26,15 +26,15 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-Json::Value
+boost::json::object
 rate(Account const& account, double multiplier)
 {
     if (multiplier > 4)
         Throw<std::runtime_error>("rate multiplier out of range");
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransferRate] = std::uint32_t(1000000000 * multiplier);
-    jv[jss::TransactionType] = jss::AccountSet;
+    boost::json::object jv;
+    jv[jss::Account.c_str()] = account.human();
+    jv[jss::TransferRate.c_str()] = std::uint32_t(1000000000 * multiplier);
+    jv[jss::TransactionType.c_str()] = jss::AccountSet;
     return jv;
 }
 

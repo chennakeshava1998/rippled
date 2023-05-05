@@ -32,29 +32,29 @@
 namespace ripple {
 
 void
-addChannel(Json::Value& jsonLines, SLE const& line)
+addChannel(boost::json::array& jsonLines, SLE const& line)
 {
-    Json::Value& jDst(jsonLines.append(Json::objectValue));
-    jDst[jss::channel_id] = to_string(line.key());
-    jDst[jss::account] = to_string(line[sfAccount]);
-    jDst[jss::destination_account] = to_string(line[sfDestination]);
-    jDst[jss::amount] = line[sfAmount].getText();
-    jDst[jss::balance] = line[sfBalance].getText();
+    boost::json::object& jDst(jsonLines.emplace_back(boost::json::object()).as_object());
+    jDst[jss::channel_id.c_str()] = to_string(line.key());
+    jDst[jss::account.c_str()] = to_string(line[sfAccount]);
+    jDst[jss::destination_account.c_str()] = to_string(line[sfDestination]);
+    jDst[jss::amount.c_str()] = line[sfAmount].getText();
+    jDst[jss::balance.c_str()] = line[sfBalance].getText();
     if (publicKeyType(line[sfPublicKey]))
     {
         PublicKey const pk(line[sfPublicKey]);
-        jDst[jss::public_key] = toBase58(TokenType::AccountPublic, pk);
-        jDst[jss::public_key_hex] = strHex(pk);
+        jDst[jss::public_key.c_str()] = toBase58(TokenType::AccountPublic, pk);
+        jDst[jss::public_key_hex.c_str()] = strHex(pk);
     }
-    jDst[jss::settle_delay] = line[sfSettleDelay];
+    jDst[jss::settle_delay.c_str()] = line[sfSettleDelay];
     if (auto const& v = line[~sfExpiration])
-        jDst[jss::expiration] = *v;
+        jDst[jss::expiration.c_str()] = *v;
     if (auto const& v = line[~sfCancelAfter])
-        jDst[jss::cancel_after] = *v;
+        jDst[jss::cancel_after.c_str()] = *v;
     if (auto const& v = line[~sfSourceTag])
-        jDst[jss::source_tag] = *v;
+        jDst[jss::source_tag.c_str()] = *v;
     if (auto const& v = line[~sfDestinationTag])
-        jDst[jss::destination_tag] = *v;
+        jDst[jss::destination_tag.c_str()] = *v;
 }
 
 // {
@@ -64,36 +64,37 @@ addChannel(Json::Value& jsonLines, SLE const& line)
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value
+boost::json::value
 doAccountChannels(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+    if (!params.contains(jss::account.c_str()))
+        return RPC::missing_field_error(jss::account.c_str());
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = RPC::lookupLedger(ledger, context).as_object();
     if (!ledger)
         return result;
 
-    std::string strIdent(params[jss::account].asString());
+    std::string strIdent(params.at(jss::account.c_str()).as_string());
     AccountID accountID;
 
-    if (auto const err = RPC::accountFromString(accountID, strIdent))
+
+    if (boost::json::value err = RPC::accountFromString(accountID, strIdent); !err.is_null())
         return err;
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     std::string strDst;
-    if (params.isMember(jss::destination_account))
-        strDst = params[jss::destination_account].asString();
+    if (params.contains(jss::destination_account.c_str()))
+        strDst = params.at(jss::destination_account.c_str()).as_string();
     auto hasDst = !strDst.empty();
 
     AccountID raDstAccount;
     if (hasDst)
     {
-        if (auto const err = RPC::accountFromString(raDstAccount, strDst))
+        if (auto err = RPC::accountFromString(raDstAccount, strDst); !err.is_null())
             return err;
     }
 
@@ -104,7 +105,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (limit == 0u)
         return rpcError(rpcINVALID_PARAMS);
 
-    Json::Value jsonChannels{Json::arrayValue};
+    boost::json::array jsonChannels;
     struct VisitData
     {
         std::vector<std::shared_ptr<SLE const>> items;
@@ -117,14 +118,14 @@ doAccountChannels(RPC::JsonContext& context)
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
-    if (params.isMember(jss::marker))
+    if (params.contains(jss::marker.c_str()))
     {
-        if (!params[jss::marker].isString())
-            return RPC::expected_field_error(jss::marker, "string");
+        if (!params.at(jss::marker.c_str()).is_string())
+            return RPC::expected_field_error(jss::marker.c_str(), "string");
 
         // Marker is composed of a comma separated index and start hint. The
         // former will be read as hex, and the latter using boost lexical cast.
-        std::stringstream marker(params[jss::marker].asString());
+        std::stringstream marker(std::string{params.at(jss::marker.c_str()).as_string()});
         std::string value;
         if (!std::getline(marker, value, ','))
             return rpcError(rpcINVALID_PARAMS);
@@ -197,18 +198,18 @@ doAccountChannels(RPC::JsonContext& context)
     // no need to return a marker.
     if (count == limit + 1 && marker)
     {
-        result[jss::limit] = limit;
-        result[jss::marker] =
+        result[jss::limit.c_str()] = limit;
+        result[jss::marker.c_str()] =
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account.c_str()] = toBase58(accountID);
 
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
 
     context.loadType = Resource::feeMediumBurdenRPC;
-    result[jss::channels] = std::move(jsonChannels);
+    result[jss::channels.c_str()] = std::move(jsonChannels);
     return result;
 }
 

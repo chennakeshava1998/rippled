@@ -456,23 +456,23 @@ PeerImp::json()
         switch (last_status.newstatus())
         {
             case protocol::nsCONNECTING:
-                ret[jss::status] = "connecting";
+                ret[jss::status.c_str()] = "connecting";
                 break;
 
             case protocol::nsCONNECTED:
-                ret[jss::status] = "connected";
+                ret[jss::status.c_str()] = "connected";
                 break;
 
             case protocol::nsMONITORING:
-                ret[jss::status] = "monitoring";
+                ret[jss::status.c_str()] = "monitoring";
                 break;
 
             case protocol::nsVALIDATING:
-                ret[jss::status] = "validating";
+                ret[jss::status.c_str()] = "validating";
                 break;
 
             case protocol::nsSHUTTING:
-                ret[jss::status] = "shutting";
+                ret[jss::status.c_str()] = "shutting";
                 break;
 
             default:
@@ -2115,27 +2115,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
             m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([=, this]() -> Json::Value {
-        Json::Value j = Json::objectValue;
+    app_.getOPs().pubPeerStatus([=, this]() -> boost::json::object {
+        boost::json::object j;
 
         if (m->has_newstatus())
         {
             switch (m->newstatus())
             {
                 case protocol::nsCONNECTING:
-                    j[jss::status] = "CONNECTING";
+                    j[jss::status.c_str()] = "CONNECTING";
                     break;
                 case protocol::nsCONNECTED:
-                    j[jss::status] = "CONNECTED";
+                    j[jss::status.c_str()] = "CONNECTED";
                     break;
                 case protocol::nsMONITORING:
-                    j[jss::status] = "MONITORING";
+                    j[jss::status.c_str()] = "MONITORING";
                     break;
                 case protocol::nsVALIDATING:
-                    j[jss::status] = "VALIDATING";
+                    j[jss::status.c_str()] = "VALIDATING";
                     break;
                 case protocol::nsSHUTTING:
-                    j[jss::status] = "SHUTTING";
+                    j[jss::status.c_str()] = "SHUTTING";
                     break;
             }
         }
@@ -2145,23 +2145,23 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
             switch (m->newevent())
             {
                 case protocol::neCLOSING_LEDGER:
-                    j[jss::action] = "CLOSING_LEDGER";
+                    j[jss::action.c_str()] = "CLOSING_LEDGER";
                     break;
                 case protocol::neACCEPTED_LEDGER:
-                    j[jss::action] = "ACCEPTED_LEDGER";
+                    j[jss::action.c_str()] = "ACCEPTED_LEDGER";
                     break;
                 case protocol::neSWITCHED_LEDGER:
-                    j[jss::action] = "SWITCHED_LEDGER";
+                    j[jss::action.c_str()] = "SWITCHED_LEDGER";
                     break;
                 case protocol::neLOST_SYNC:
-                    j[jss::action] = "LOST_SYNC";
+                    j[jss::action.c_str()] = "LOST_SYNC";
                     break;
             }
         }
 
         if (m->has_ledgerseq())
         {
-            j[jss::ledger_index] = m->ledgerseq();
+            j[jss::ledger_index.c_str()] = m->ledgerseq();
         }
 
         if (m->has_ledgerhash())
@@ -2171,18 +2171,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
                 std::lock_guard sl(recentLock_);
                 closedLedgerHash = closedLedgerHash_;
             }
-            j[jss::ledger_hash] = to_string(closedLedgerHash);
+            j[jss::ledger_hash.c_str()] = to_string(closedLedgerHash);
         }
 
         if (m->has_networktime())
         {
-            j[jss::date] = Json::UInt(m->networktime());
+            j[jss::date.c_str()] = Json::UInt(m->networktime());
         }
 
         if (m->has_firstseq() && m->has_lastseq())
         {
-            j[jss::ledger_index_min] = Json::UInt(m->firstseq());
-            j[jss::ledger_index_max] = Json::UInt(m->lastseq());
+            j[jss::ledger_index_min.c_str()] = Json::UInt(m->firstseq());
+            j[jss::ledger_index_max.c_str()] = Json::UInt(m->lastseq());
         }
 
         return j;

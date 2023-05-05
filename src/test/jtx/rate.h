@@ -28,7 +28,7 @@ namespace test {
 namespace jtx {
 
 /** Set a transfer rate. */
-Json::Value
+boost::json::object
 rate(Account const& account, double multiplier);
 
 }  // namespace jtx

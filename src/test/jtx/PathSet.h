@@ -113,7 +113,7 @@ public:
     push_back(jtx::Account const& acc);
     Path&
     push_back(STPathElement const& pe);
-    Json::Value
+    boost::json::value
     json() const;
 
 private:
@@ -156,7 +156,7 @@ Path::addHelper(First&& first, Rest&&... rest)
         addHelper(std::forward<Rest>(rest)...);
 }
 
-inline Json::Value
+inline boost::json::value
 Path::json() const
 {
     return path.getJson(JsonOptions::none);
@@ -180,10 +180,10 @@ public:
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    Json::Value
+    boost::json::object
     json() const
     {
-        Json::Value v;
+        boost::json::object v;
         v["Paths"] = paths.getJson(JsonOptions::none);
         return v;
     }

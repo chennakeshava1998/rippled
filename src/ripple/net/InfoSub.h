@@ -124,7 +124,7 @@ public:
 
         // VFALCO TODO Document the bool return value
         virtual bool
-        subLedger(ref ispListener, boost::json::value& jvResult) = 0;
+        subLedger(ref ispListener, boost::json::object& jvResult) = 0;
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
@@ -141,7 +141,7 @@ public:
         pubManifest(Manifest const&) = 0;
 
         virtual bool
-        subServer(ref ispListener, boost::json::value& jvResult, bool admin) = 0;
+        subServer(ref ispListener, boost::json::object& jvResult, bool admin) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
 

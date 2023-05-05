@@ -68,16 +68,18 @@ public:
     }
 
     void
-    send(Json::Value const& jv, bool) override
+    send(boost::json::value const& jv, bool) override
     {
         auto sp = ws_.lock();
         if (!sp)
             return;
         boost::beast::multi_buffer sb;
-        Json::stream(jv, [&](void const* data, std::size_t n) {
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(data, n)));
-        });
+        std::string data = serialize(jv);
+        auto n = data.size();
+
+        sb.commit(boost::asio::buffer_copy(
+                            sb.prepare(n), boost::asio::buffer(data, n)));
+
         auto m = std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb));
         sp->send(m);
     }
