@@ -662,7 +662,7 @@ ValidatorSite::onTextFetch(
     cv_.notify_all();
 }
 
-boost::json::value
+boost::json::object
 ValidatorSite::getJson() const
 {
     using namespace std::chrono;

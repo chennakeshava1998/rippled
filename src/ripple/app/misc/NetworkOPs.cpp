@@ -419,7 +419,7 @@ public:
 
     boost::json::value
     getConsensusInfo() override;
-    boost::json::value
+    boost::json::object
     getServerInfo(bool human, bool admin, bool counters) override;
     void
     clearLedgerFetch() override;
@@ -452,9 +452,9 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) override;
 
     void
-    forwardValidation(boost::json::value const& jvObj) override;
+    forwardValidation(boost::json::object const& jvObj) override;
     void
-    forwardManifest(boost::json::value const& jvObj) override;
+    forwardManifest(boost::json::object const& jvObj) override;
     void
     forwardProposedTransaction(boost::json::object const& jvObj) override;
     void
@@ -1664,7 +1664,7 @@ NetworkOPsImp::checkLastClosedLedger(
 
     auto& validations = app_.getValidations();
     JLOG(m_journal.debug())
-        << "ValidationTrie " << Json::Compact(validations.getJsonTrie());
+        << "ValidationTrie " << serialize(validations.getJsonTrie()); // Keshava: find an alternative to Json::Compact, use serialize as a stop-gap solution
 
     // Will rely on peer LCL if no trusted validations exist
     hash_map<uint256, std::uint32_t> peerCounts;
@@ -2292,7 +2292,7 @@ NetworkOPsImp::getConsensusInfo()
     return mConsensus.getJson(true);
 }
 
-boost::json::value
+boost::json::object
 NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 {
     boost::json::object info;
@@ -2739,7 +2739,7 @@ NetworkOPsImp::forwardProposedTransaction(boost::json::object const& jvObj)
 }
 
 void
-NetworkOPsImp::forwardValidation(boost::json::value const& jvObj)
+NetworkOPsImp::forwardValidation(boost::json::object const& jvObj)
 {
     std::lock_guard sl(mSubLock);
 
@@ -2759,7 +2759,7 @@ NetworkOPsImp::forwardValidation(boost::json::value const& jvObj)
 }
 
 void
-NetworkOPsImp::forwardManifest(boost::json::value const& jvObj)
+NetworkOPsImp::forwardManifest(boost::json::object const& jvObj)
 {
     std::lock_guard sl(mSubLock);
 
@@ -3450,7 +3450,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             << toBase58(subInfo.index_->accountId_) << " no database";
         if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
         {
-            sptr->send(rpcError(rpcINTERNAL), true);
+            sptr->send(rpcError(rpcINTERNAL).as_object(), true);
             unsubAccountHistory(sptr, subInfo.index_->accountId_, false);
         }
         return;
@@ -3505,7 +3505,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 return false;
             };
 
-            auto send = [&](boost::json::value const& jvObj,
+            auto send = [&](boost::json::object const& jvObj,
                             bool unsubscribe) -> bool {
                 if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
                 {
@@ -3635,7 +3635,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         JLOG(m_journal.debug())
                             << "AccountHistory job for account "
                             << toBase58(accountId) << " getMoreTxns failed.";
-                        send(rpcError(rpcINTERNAL), true);
+                        send(rpcError(rpcINTERNAL).as_object(), true);
                         return;
                     }
 
@@ -3648,7 +3648,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " empty tx or meta.";
-                            send(rpcError(rpcINTERNAL), true);
+                            send(rpcError(rpcINTERNAL).as_object(), true);
                             return;
                         }
                         auto curTxLedger =
@@ -3659,7 +3659,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " no ledger.";
-                            send(rpcError(rpcINTERNAL), true);
+                            send(rpcError(rpcINTERNAL).as_object(), true);
                             return;
                         }
                         std::shared_ptr<STTx const> stTxn =
@@ -3670,7 +3670,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 << "AccountHistory job for account "
                                 << toBase58(accountId)
                                 << " getSTransaction failed.";
-                            send(rpcError(rpcINTERNAL), true);
+                            send(rpcError(rpcINTERNAL).as_object(), true);
                             return;
                         }
                         boost::json::object jvTx = transJson(

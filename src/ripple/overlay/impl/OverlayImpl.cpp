@@ -683,25 +683,25 @@ OverlayImpl::reportTraffic(
     m_traffic.addCount(cat, isInbound, number);
 }
 
-Json::Value
+boost::json::object
 OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
 {
     using namespace std::chrono;
 
-    Json::Value jv(Json::objectValue);
+    boost::json::object jv;
 
     // Add shard info from this server to json result
     if (auto shardStore = app_.getShardStore())
     {
         if (includePublicKey)
-            jv[jss::public_key] =
+            jv[jss::public_key.c_str()] =
                 toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
 
         auto const shardInfo{shardStore->getShardInfo()};
         if (!shardInfo->finalized().empty())
-            jv[jss::complete_shards] = shardInfo->finalizedToString();
+            jv[jss::complete_shards.c_str()] = shardInfo->finalizedToString();
         if (!shardInfo->incomplete().empty())
-            jv[jss::incomplete_shards] = shardInfo->incompleteToString();
+            jv[jss::incomplete_shards.c_str()] = shardInfo->incompleteToString();
     }
 
     if (relays == 0 || size() == 0)
@@ -750,20 +750,20 @@ OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
     // Add shard info to json result
     if (!peerShardInfo.empty())
     {
-        auto& av = jv[jss::peers] = Json::Value(Json::arrayValue);
+        boost::json::array& av = jv[jss::peers.c_str()].emplace_array();
         for (auto const& [publicKey, shardInfo] : peerShardInfo)
         {
-            auto& pv{av.append(Json::Value(Json::objectValue))};
+            boost::json::object& pv{av.emplace_back(boost::json::object()).as_object()};
             if (includePublicKey)
             {
-                pv[jss::public_key] =
+                pv[jss::public_key.c_str()] =
                     toBase58(TokenType::NodePublic, publicKey);
             }
 
             if (!shardInfo.finalized().empty())
-                pv[jss::complete_shards] = shardInfo.finalizedToString();
+                pv[jss::complete_shards.c_str()] = shardInfo.finalizedToString();
             if (!shardInfo.incomplete().empty())
-                pv[jss::incomplete_shards] = shardInfo.incompleteToString();
+                pv[jss::incomplete_shards.c_str()] = shardInfo.incompleteToString();
         }
     }
 
@@ -797,31 +797,31 @@ OverlayImpl::limit()
     return m_peerFinder->config().maxPeers;
 }
 
-Json::Value
+boost::json::object
 OverlayImpl::getOverlayInfo()
 {
     using namespace std::chrono;
-    Json::Value jv;
-    auto& av = jv["active"] = Json::Value(Json::arrayValue);
+    boost::json::object jv;
+    auto& av = jv["active"].emplace_array();
 
     for_each([&](std::shared_ptr<PeerImp>&& sp) {
-        auto& pv = av.append(Json::Value(Json::objectValue));
-        pv[jss::public_key] = base64_encode(
+        auto& pv = av.emplace_back(boost::json::object()).as_object();
+        pv[jss::public_key.c_str()] = base64_encode(
             sp->getNodePublic().data(), sp->getNodePublic().size());
-        pv[jss::type] = sp->slot()->inbound() ? "in" : "out";
-        pv[jss::uptime] = static_cast<std::uint32_t>(
+        pv[jss::type.c_str()] = sp->slot()->inbound() ? "in" : "out";
+        pv[jss::uptime.c_str()] = static_cast<std::uint32_t>(
             duration_cast<seconds>(sp->uptime()).count());
         if (sp->crawl())
         {
-            pv[jss::ip] = sp->getRemoteAddress().address().to_string();
+            pv[jss::ip.c_str()] = sp->getRemoteAddress().address().to_string();
             if (sp->slot()->inbound())
             {
                 if (auto port = sp->slot()->listening_port())
-                    pv[jss::port] = *port;
+                    pv[jss::port.c_str()] = *port;
             }
             else
             {
-                pv[jss::port] = std::to_string(sp->getRemoteAddress().port());
+                pv[jss::port.c_str()] = std::to_string(sp->getRemoteAddress().port());
             }
         }
 
@@ -829,13 +829,13 @@ OverlayImpl::getOverlayInfo()
             auto version{sp->getVersion()};
             if (!version.empty())
                 // Could move here if Json::value supported moving from strings
-                pv[jss::version] = version;
+                pv[jss::version.c_str()] = version;
         }
 
         std::uint32_t minSeq, maxSeq;
         sp->ledgerRange(minSeq, maxSeq);
         if (minSeq != 0 || maxSeq != 0)
-            pv[jss::complete_ledgers] =
+            pv[jss::complete_ledgers.c_str()] =
                 std::to_string(minSeq) + "-" + std::to_string(maxSeq);
 
         auto const peerShardInfos{sp->getPeerShardInfos()};
@@ -844,87 +844,87 @@ OverlayImpl::getOverlayInfo()
         {
             auto const& shardInfo{it->second};
             if (!shardInfo.finalized().empty())
-                pv[jss::complete_shards] = shardInfo.finalizedToString();
+                pv[jss::complete_shards.c_str()] = shardInfo.finalizedToString();
             if (!shardInfo.incomplete().empty())
-                pv[jss::incomplete_shards] = shardInfo.incompleteToString();
+                pv[jss::incomplete_shards.c_str()] = shardInfo.incompleteToString();
         }
     });
 
     return jv;
 }
 
-Json::Value
+boost::json::object
 OverlayImpl::getServerInfo()
 {
     bool const humanReadable = false;
     bool const admin = false;
     bool const counters = false;
 
-    Json::Value server_info =
+    boost::json::object server_info =
         app_.getOPs().getServerInfo(humanReadable, admin, counters);
 
     // Filter out some information
-    server_info.removeMember(jss::hostid);
-    server_info.removeMember(jss::load_factor_fee_escalation);
-    server_info.removeMember(jss::load_factor_fee_queue);
-    server_info.removeMember(jss::validation_quorum);
+    server_info.erase(jss::hostid.c_str());
+    server_info.erase(jss::load_factor_fee_escalation.c_str());
+    server_info.erase(jss::load_factor_fee_queue.c_str());
+    server_info.erase(jss::validation_quorum.c_str());
 
-    if (server_info.isMember(jss::validated_ledger))
+    if (server_info.contains(jss::validated_ledger.c_str()))
     {
-        Json::Value& validated_ledger = server_info[jss::validated_ledger];
+        boost::json::object& validated_ledger = server_info[jss::validated_ledger.c_str()].as_object();
 
-        validated_ledger.removeMember(jss::base_fee);
-        validated_ledger.removeMember(jss::reserve_base_xrp);
-        validated_ledger.removeMember(jss::reserve_inc_xrp);
+        validated_ledger.erase(jss::base_fee.c_str());
+        validated_ledger.erase(jss::reserve_base_xrp.c_str());
+        validated_ledger.erase(jss::reserve_inc_xrp.c_str());
     }
 
     return server_info;
 }
 
-Json::Value
+boost::json::object
 OverlayImpl::getServerCounts()
 {
     return getCountsJson(app_, 10);
 }
 
-Json::Value
+boost::json::object
 OverlayImpl::getUnlInfo()
 {
-    Json::Value validators = app_.validators().getJson();
+    boost::json::object validators = app_.validators().getJson();
 
-    if (validators.isMember(jss::publisher_lists))
+    if (validators.contains(jss::publisher_lists.c_str()))
     {
-        Json::Value& publisher_lists = validators[jss::publisher_lists];
+        boost::json::array& publisher_lists = validators[jss::publisher_lists.c_str()].as_array();
 
         for (auto& publisher : publisher_lists)
         {
-            publisher.removeMember(jss::list);
+            publisher.as_object().erase(jss::list.c_str());
         }
     }
 
-    validators.removeMember(jss::signing_keys);
-    validators.removeMember(jss::trusted_validator_keys);
-    validators.removeMember(jss::validation_quorum);
+    validators.erase(jss::signing_keys.c_str());
+    validators.erase(jss::trusted_validator_keys.c_str());
+    validators.erase(jss::validation_quorum.c_str());
 
-    Json::Value validatorSites = app_.validatorSites().getJson();
+    boost::json::object validatorSites = app_.validatorSites().getJson();
 
-    if (validatorSites.isMember(jss::validator_sites))
+    if (validatorSites.contains(jss::validator_sites.c_str()))
     {
-        validators[jss::validator_sites] =
-            std::move(validatorSites[jss::validator_sites]);
+        validators[jss::validator_sites.c_str()] =
+            std::move(validatorSites[jss::validator_sites.c_str()]);
     }
 
     return validators;
 }
 
 // Returns information on verified peers.
-Json::Value
+boost::json::array
 OverlayImpl::json()
 {
-    Json::Value json;
+    boost::json::array json;
     for (auto const& peer : getActivePeers())
     {
-        json.append(peer->json());
+        json.emplace_back(peer->json());
     }
     return json;
 }
@@ -942,23 +942,24 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["version"] = Json::Value(2u);
+    msg.body()["version"] = 2u;
 
     if (setup_.crawlOptions & CrawlOptions::Overlay)
     {
-        msg.body()["overlay"] = getOverlayInfo();
+        // Keshava: temporary solution, need to figure a workaround for msg.body()
+        msg.body()["overlay"] = serialize(getOverlayInfo());
     }
     if (setup_.crawlOptions & CrawlOptions::ServerInfo)
     {
-        msg.body()["server"] = getServerInfo();
+        msg.body()["server"] = serialize(getServerInfo());
     }
     if (setup_.crawlOptions & CrawlOptions::ServerCounts)
     {
-        msg.body()["counts"] = getServerCounts();
+        msg.body()["counts"] = serialize(getServerCounts());
     }
     if (setup_.crawlOptions & CrawlOptions::Unl)
     {
-        msg.body()["unl"] = getUnlInfo();
+        msg.body()["unl"] = serialize(getUnlInfo());
     }
 
     msg.prepare_payload();
@@ -1018,7 +1019,7 @@ OverlayImpl::processValidatorList(
         // 404 not found
         return fail(boost::beast::http::status::not_found);
     }
-    else if (!*vl)
+    else if ((*vl).is_null())
     {
         return fail(boost::beast::http::status::bad_request);
     }
@@ -1026,7 +1027,7 @@ OverlayImpl::processValidatorList(
     {
         msg.result(boost::beast::http::status::ok);
 
-        msg.body() = *vl;
+        msg.body() = serialize(*vl);
 
         msg.prepare_payload();
         handoff.response = std::make_shared<SimpleWriter>(msg);
@@ -1048,16 +1049,16 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto info = getServerInfo();
 
     int last_validated_ledger_age = -1;
-    if (info.isMember(jss::validated_ledger))
+    if (info.contains(jss::validated_ledger.c_str()))
         last_validated_ledger_age =
-            info[jss::validated_ledger][jss::age].asInt();
+            info[jss::validated_ledger.c_str()].as_object()[jss::age.c_str()].as_int64();
     bool amendment_blocked = false;
-    if (info.isMember(jss::amendment_blocked))
+    if (info.contains(jss::amendment_blocked.c_str()))
         amendment_blocked = true;
-    int number_peers = info[jss::peers].asInt();
-    std::string server_state = info[jss::server_state].asString();
-    auto load_factor = info[jss::load_factor_server].asDouble() /
-        info[jss::load_base].asDouble();
+    int number_peers = info[jss::peers.c_str()].as_int64();
+    std::string server_state = std::string{info[jss::server_state.c_str()].as_string()};
+    auto load_factor = info[jss::load_factor_server.c_str()].as_double() /
+        info[jss::load_base.c_str()].as_double();
 
     enum { healthy, warning, critical };
     int health = healthy;
@@ -1066,10 +1067,10 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
             health = state;
     };
 
-    msg.body()[jss::info] = Json::objectValue;
+    msg.body()[jss::info.c_str()] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
-        msg.body()[jss::info][jss::validated_ledger] =
+        msg.body()[jss::info.c_str()][jss::validated_ledger.c_str()] =
             last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
             set_health(warning);
@@ -1079,13 +1080,13 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (amendment_blocked)
     {
-        msg.body()[jss::info][jss::amendment_blocked] = true;
+        msg.body()[jss::info.c_str()][jss::amendment_blocked.c_str()] = true;
         set_health(critical);
     }
 
     if (number_peers <= 7)
     {
-        msg.body()[jss::info][jss::peers] = number_peers;
+        msg.body()[jss::info.c_str()][jss::peers.c_str()] = number_peers;
         if (number_peers != 0)
             set_health(warning);
         else
@@ -1095,7 +1096,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     if (!(server_state == "full" || server_state == "validating" ||
           server_state == "proposing"))
     {
-        msg.body()[jss::info][jss::server_state] = server_state;
+        msg.body()[jss::info.c_str()][jss::server_state.c_str()] = server_state;
         if (server_state == "syncing" || server_state == "tracking" ||
             server_state == "connected")
         {
@@ -1107,7 +1108,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (load_factor > 100)
     {
-        msg.body()[jss::info][jss::load_factor] = load_factor;
+        msg.body()[jss::info.c_str()][jss::load_factor.c_str()] = load_factor;
         if (load_factor < 1000)
             set_health(warning);
         else

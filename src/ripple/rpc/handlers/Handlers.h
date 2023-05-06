@@ -68,7 +68,7 @@ Json::Value
 doFetchInfo(RPC::JsonContext&);
 Json::Value
 doGatewayBalances(RPC::JsonContext&);
-Json::Value
+boost::json::object
 doGetCounts(RPC::JsonContext&);
 Json::Value
 doLedgerAccept(RPC::JsonContext&);

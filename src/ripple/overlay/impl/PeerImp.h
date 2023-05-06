@@ -354,7 +354,7 @@ public:
         return clock_type::now() - creationTime_;
     }
 
-    Json::Value
+    boost::json::object
     json() override;
 
     bool

@@ -102,7 +102,7 @@ public:
     virtual PublicKey const&
     getNodePublic() const = 0;
 
-    virtual Json::Value
+    virtual boost::json::object
     json() = 0;
 
     virtual bool

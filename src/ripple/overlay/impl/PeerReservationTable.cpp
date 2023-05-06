@@ -37,13 +37,13 @@
 namespace ripple {
 
 auto
-PeerReservation::toJson() const -> Json::Value
+PeerReservation::toJson() const -> boost::json::object
 {
-    Json::Value result{Json::objectValue};
-    result[jss::node] = toBase58(TokenType::NodePublic, nodeId);
+    boost::json::object result;
+    result[jss::node.c_str()] = toBase58(TokenType::NodePublic, nodeId);
     if (!description.empty())
     {
-        result[jss::description] = description;
+        result[jss::description.c_str()] = description;
     }
     return result;
 }

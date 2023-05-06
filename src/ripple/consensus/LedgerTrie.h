@@ -794,7 +794,7 @@ public:
         res["trie"] = root->getJson();
         res["seq_support"].emplace_object();
         for (auto const& [seq, sup] : seqSupport)
-            res["seq_support"][to_string(seq)] = sup;
+            res["seq_support"].as_object()[to_string(seq)] = sup;
         return res;
     }
 

@@ -118,7 +118,7 @@ public:
     /** Return diagnostics on the status of all peers.
         @deprecated This is superceded by PropertyStream
     */
-    virtual Json::Value
+    virtual boost::json::array
     json() = 0;
 
     /** Returns a sequence representing the current list of peers.
@@ -225,7 +225,7 @@ public:
         @param hops the maximum jumps the crawler will attempt.
         The number of hops achieved is not guaranteed.
     */
-    virtual Json::Value
+    virtual boost::json::object
     crawlShards(bool includePublicKey, std::uint32_t hops) = 0;
 
     /** Returns the ID of the network this server is configured for, if any.
@@ -242,7 +242,7 @@ public:
     /** Returns tx reduce-relay metrics
         @return json value of tx reduce-relay metrics
      */
-    virtual Json::Value
+    virtual boost::json::object
     txMetrics() const = 0;
 };
 

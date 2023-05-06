@@ -193,7 +193,7 @@ public:
     std::size_t
     size() const override;
 
-    Json::Value
+    boost::json::array
     json() override;
 
     PeerSequence
@@ -392,7 +392,7 @@ public:
         return setup_.networkID;
     }
 
-    Json::Value
+    boost::json::object
     crawlShards(bool includePublicKey, std::uint32_t relays) override;
 
     /** Called when the reply from the last peer in a peer chain is received.
@@ -435,7 +435,7 @@ public:
     void
     deletePeer(Peer::id_t id);
 
-    Json::Value
+    boost::json::object
     txMetrics() const override
     {
         return txMetrics_.json();
@@ -514,28 +514,28 @@ private:
         Reported through the /crawl API
         Controlled through the config section [crawl] overlay=[0|1]
     */
-    Json::Value
+    boost::json::object
     getOverlayInfo();
 
     /** Returns information about the local server.
         Reported through the /crawl API
         Controlled through the config section [crawl] server=[0|1]
     */
-    Json::Value
+    boost::json::object
     getServerInfo();
 
     /** Returns information about the local server's performance counters.
         Reported through the /crawl API
         Controlled through the config section [crawl] counts=[0|1]
     */
-    Json::Value
+    boost::json::object
     getServerCounts();
 
     /** Returns information about the local server's UNL.
         Reported through the /crawl API
         Controlled through the config section [crawl] unl=[0|1]
     */
-    Json::Value
+    boost::json::object
     getUnlInfo();
 
     //--------------------------------------------------------------------------

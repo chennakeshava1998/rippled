@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 getCountsJson(Application& app, int minObjectCount);
 
 }

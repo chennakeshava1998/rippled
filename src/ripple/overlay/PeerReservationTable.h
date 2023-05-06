@@ -47,7 +47,7 @@ public:
     std::string description{};
 
     auto
-    toJson() const -> Json::Value;
+    toJson() const -> boost::json::object;
 
     template <typename Hasher>
     friend void

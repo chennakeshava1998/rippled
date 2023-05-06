@@ -221,7 +221,7 @@ public:
 
     virtual boost::json::value
     getConsensusInfo() = 0;
-    virtual boost::json::value
+    virtual boost::json::object
     getServerInfo(bool human, bool admin, bool counters) = 0;
     virtual void
     clearLedgerFetch() = 0;
@@ -262,9 +262,9 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
     virtual void
-    forwardValidation(boost::json::value const& jvObj) = 0;
+    forwardValidation(boost::json::object const& jvObj) = 0;
     virtual void
-    forwardManifest(boost::json::value const& jvObj) = 0;
+    forwardManifest(boost::json::object const& jvObj) = 0;
     virtual void
     forwardProposedTransaction(boost::json::object const& jvObj) = 0;
 

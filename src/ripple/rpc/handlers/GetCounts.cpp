@@ -61,12 +61,12 @@ textTime(
         text += "s";
 }
 
-Json::Value
+boost::json::object
 getCountsJson(Application& app, int minObjectCount)
 {
     auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     for (auto const& [k, v] : objectCounts)
     {
@@ -84,39 +84,39 @@ getCountsJson(Application& app, int minObjectCount)
         auto dbKB = db->getKBUsedAll();
 
         if (dbKB > 0)
-            ret[jss::dbKBTotal] = dbKB;
+            ret[jss::dbKBTotal.c_str()] = dbKB;
 
         dbKB = db->getKBUsedLedger();
 
         if (dbKB > 0)
-            ret[jss::dbKBLedger] = dbKB;
+            ret[jss::dbKBLedger.c_str()] = dbKB;
 
         dbKB = db->getKBUsedTransaction();
 
         if (dbKB > 0)
-            ret[jss::dbKBTransaction] = dbKB;
+            ret[jss::dbKBTransaction.c_str()] = dbKB;
 
         {
             std::size_t c = app.getOPs().getLocalTxCount();
             if (c > 0)
-                ret[jss::local_txs] = static_cast<Json::UInt>(c);
+                ret[jss::local_txs.c_str()] = static_cast<Json::UInt>(c);
         }
     }
 
-    ret[jss::write_load] = app.getNodeStore().getWriteLoad();
+    ret[jss::write_load.c_str()] = app.getNodeStore().getWriteLoad();
 
-    ret[jss::historical_perminute] =
+    ret[jss::historical_perminute.c_str()] =
         static_cast<int>(app.getInboundLedgers().fetchRate());
-    ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
-    ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
-    ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
-    ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
+    ret[jss::SLE_hit_rate.c_str()] = app.cachedSLEs().rate();
+    ret[jss::ledger_hit_rate.c_str()] = app.getLedgerMaster().getCacheHitRate();
+    ret[jss::AL_size.c_str()] = Json::UInt(app.getAcceptedLedgerCache().size());
+    ret[jss::AL_hit_rate.c_str()] = app.getAcceptedLedgerCache().getHitRate();
 
-    ret[jss::fullbelow_size] =
+    ret[jss::fullbelow_size.c_str()] =
         static_cast<int>(app.getNodeFamily().getFullBelowCache(0)->size());
-    ret[jss::treenode_cache_size] =
+    ret[jss::treenode_cache_size.c_str()] =
         app.getNodeFamily().getTreeNodeCache(0)->getCacheSize();
-    ret[jss::treenode_track_size] =
+    ret[jss::treenode_track_size.c_str()] =
         app.getNodeFamily().getTreeNodeCache(0)->getTrackSize();
 
     std::string uptime;
@@ -127,24 +127,24 @@ getCountsJson(Application& app, int minObjectCount)
     textTime(uptime, s, "hour", 1h);
     textTime(uptime, s, "minute", 1min);
     textTime(uptime, s, "second", 1s);
-    ret[jss::uptime] = uptime;
+    ret[jss::uptime.c_str()] = uptime;
 
     if (auto shardStore = app.getShardStore())
     {
         auto shardFamily{dynamic_cast<ShardFamily*>(app.getShardFamily())};
         auto const [cacheSz, trackSz] = shardFamily->getTreeNodeCacheSize();
-        Json::Value& jv = (ret[jss::shards] = Json::objectValue);
+        boost::json::object& jv = ret[jss::shards.c_str()].emplace_object();
 
-        jv[jss::fullbelow_size] = shardFamily->getFullBelowCacheSize();
-        jv[jss::treenode_cache_size] = cacheSz;
-        jv[jss::treenode_track_size] = trackSz;
-        ret[jss::write_load] = shardStore->getWriteLoad();
-        jv[jss::node_writes] = std::to_string(shardStore->getStoreCount());
-        jv[jss::node_reads_total] = shardStore->getFetchTotalCount();
-        jv[jss::node_reads_hit] = shardStore->getFetchHitCount();
-        jv[jss::node_written_bytes] =
+        jv[jss::fullbelow_size.c_str()] = shardFamily->getFullBelowCacheSize();
+        jv[jss::treenode_cache_size.c_str()] = cacheSz;
+        jv[jss::treenode_track_size.c_str()] = trackSz;
+        ret[jss::write_load.c_str()] = shardStore->getWriteLoad();
+        jv[jss::node_writes.c_str()] = std::to_string(shardStore->getStoreCount());
+        jv[jss::node_reads_total.c_str()] = shardStore->getFetchTotalCount();
+        jv[jss::node_reads_hit.c_str()] = shardStore->getFetchHitCount();
+        jv[jss::node_written_bytes.c_str()] =
             std::to_string(shardStore->getStoreSize());
-        jv[jss::node_read_bytes] = shardStore->getFetchSize();
+        jv[jss::node_read_bytes.c_str()] = shardStore->getFetchSize();
     }
     else
     {
@@ -157,13 +157,13 @@ getCountsJson(Application& app, int minObjectCount)
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value
+boost::json::object
 doGetCounts(RPC::JsonContext& context)
 {
     int minCount = 10;
 
-    if (context.params.isMember(jss::min_count))
-        minCount = context.params[jss::min_count].asUInt();
+    if (context.params.contains(jss::min_count.c_str()))
+        minCount = context.params[jss::min_count.c_str()].as_uint64();
 
     return getCountsJson(context.app, minCount);
 }

@@ -192,7 +192,7 @@ public:
 
     /** Return JSON representation of configured validator sites
      */
-    boost::json::value
+    boost::json::object
     getJson() const;
 
 private:

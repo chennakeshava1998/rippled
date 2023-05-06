@@ -1504,7 +1504,7 @@ ValidatorList::expires() const
     return expires(read_lock);
 }
 
-boost::json::value
+boost::json::object
 ValidatorList::getJson() const
 {
     boost::json::object res;

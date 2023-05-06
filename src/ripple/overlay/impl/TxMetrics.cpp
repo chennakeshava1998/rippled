@@ -113,12 +113,12 @@ SingleMetrics::addMetrics(std::uint32_t val)
     }
 }
 
-Json::Value
+boost::json::object
 TxMetrics::json() const
 {
     std::lock_guard l(mutex);
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
     ret[jss::txr_tx_cnt] = std::to_string(tx.m1.rollingAvg);
     ret[jss::txr_tx_sz] = std::to_string(tx.m2.rollingAvg);

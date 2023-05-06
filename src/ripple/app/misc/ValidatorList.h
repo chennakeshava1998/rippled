@@ -646,7 +646,7 @@ public:
         @par Thread Safety
         May be called concurrently
     */
-    boost::json::value
+    boost::json::object
     getJson() const;
 
     using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;

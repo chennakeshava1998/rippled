@@ -376,63 +376,63 @@ PeerImp::getVersion() const
     return headers_["Server"].to_string();
 }
 
-Json::Value
+boost::json::object
 PeerImp::json()
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
-    ret[jss::public_key] = toBase58(TokenType::NodePublic, publicKey_);
-    ret[jss::address] = remote_address_.to_string();
+    ret[jss::public_key.c_str()] = toBase58(TokenType::NodePublic, publicKey_);
+    ret[jss::address.c_str()] = remote_address_.to_string();
 
     if (inbound_)
-        ret[jss::inbound] = true;
+        ret[jss::inbound.c_str()] = true;
 
     if (cluster())
     {
-        ret[jss::cluster] = true;
+        ret[jss::cluster.c_str()] = true;
 
         if (auto const n = name(); !n.empty())
             // Could move here if Json::Value supported moving from a string
-            ret[jss::name] = n;
+            ret[jss::name.c_str()] = n;
     }
 
     if (auto const d = domain(); !d.empty())
-        ret[jss::server_domain] = domain();
+        ret[jss::server_domain.c_str()] = domain();
 
     if (auto const nid = headers_["Network-ID"].to_string(); !nid.empty())
-        ret[jss::network_id] = nid;
+        ret[jss::network_id.c_str()] = nid;
 
-    ret[jss::load] = usage_.balance();
+    ret[jss::load.c_str()] = usage_.balance();
 
     if (auto const version = getVersion(); !version.empty())
-        ret[jss::version] = version;
+        ret[jss::version.c_str()] = version;
 
-    ret[jss::protocol] = to_string(protocol_);
+    ret[jss::protocol.c_str()] = to_string(protocol_);
 
     {
         std::lock_guard sl(recentLock_);
         if (latency_)
-            ret[jss::latency] = static_cast<Json::UInt>(latency_->count());
+            ret[jss::latency.c_str()] = static_cast<Json::UInt>(latency_->count());
     }
 
-    ret[jss::uptime] = static_cast<Json::UInt>(
+    ret[jss::uptime.c_str()] = static_cast<Json::UInt>(
         std::chrono::duration_cast<std::chrono::seconds>(uptime()).count());
 
     std::uint32_t minSeq, maxSeq;
     ledgerRange(minSeq, maxSeq);
 
     if ((minSeq != 0) || (maxSeq != 0))
-        ret[jss::complete_ledgers] =
+        ret[jss::complete_ledgers.c_str()] =
             std::to_string(minSeq) + " - " + std::to_string(maxSeq);
 
     switch (tracking_.load())
     {
         case Tracking::diverged:
-            ret[jss::track] = "diverged";
+            ret[jss::track.c_str()] = "diverged";
             break;
 
         case Tracking::unknown:
-            ret[jss::track] = "unknown";
+            ret[jss::track.c_str()] = "unknown";
             break;
 
         case Tracking::converged:
@@ -449,7 +449,7 @@ PeerImp::json()
     }
 
     if (closedLedgerHash != beast::zero)
-        ret[jss::ledger] = to_string(closedLedgerHash);
+        ret[jss::ledger.c_str()] = to_string(closedLedgerHash);
 
     if (last_status.has_newstatus())
     {
@@ -481,14 +481,14 @@ PeerImp::json()
         }
     }
 
-    ret[jss::metrics] = Json::Value(Json::objectValue);
-    ret[jss::metrics][jss::total_bytes_recv] =
+    ret[jss::metrics.c_str()].emplace_object();
+    ret[jss::metrics.c_str()].as_object()[jss::total_bytes_recv.c_str()] =
         std::to_string(metrics_.recv.total_bytes());
-    ret[jss::metrics][jss::total_bytes_sent] =
+    ret[jss::metrics.c_str()].as_object()[jss::total_bytes_sent.c_str()] =
         std::to_string(metrics_.sent.total_bytes());
-    ret[jss::metrics][jss::avg_bps_recv] =
+    ret[jss::metrics.c_str()].as_object()[jss::avg_bps_recv.c_str()] =
         std::to_string(metrics_.recv.average_bytes());
-    ret[jss::metrics][jss::avg_bps_sent] =
+    ret[jss::metrics.c_str()].as_object()[jss::avg_bps_sent.c_str()] =
         std::to_string(metrics_.sent.average_bytes());
 
     return ret;
