@@ -40,9 +40,9 @@ public:
 
     virtual ~InfoSubRequest() = default;
 
-    virtual boost::json::value
+    virtual boost::json::object
     doClose() = 0;
-    virtual boost::json::value
+    virtual boost::json::object
     doStatus(boost::json::value const&) = 0;
 };
 

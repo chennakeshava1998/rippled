@@ -48,16 +48,16 @@ namespace ripple {
 // }
 
 // TODO(tom): what is that "default"?
-Json::Value
+boost::json::object
 doAccountInfo(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     std::string strIdent;
-    if (params.isMember(jss::account))
-        strIdent = params[jss::account].asString();
-    else if (params.isMember(jss::ident))
-        strIdent = params[jss::ident].asString();
+    if (params.contains(jss::account.c_str()))
+        strIdent = params[jss::account.c_str()].as_string();
+    else if (params.contains(jss::ident.c_str()))
+        strIdent = params[jss::ident.c_str()].as_string();
     else
         return RPC::missing_field_error(jss::account);
 
@@ -67,14 +67,14 @@ doAccountInfo(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    bool bStrict = params.isMember(jss::strict) && params[jss::strict].asBool();
+    bool bStrict = params.contains(jss::strict.c_str()) && params[jss::strict.c_str()].as_bool();
     AccountID accountID;
 
     // Get info on account.
 
-    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
+    boost::json::object jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
 
-    if (jvAccepted)
+    if (!jvAccepted.empty())
         return jvAccepted;
 
     static constexpr std::
@@ -103,7 +103,7 @@ doAccountInfo(RPC::JsonContext& context)
     if (sleAccepted)
     {
         auto const queue =
-            params.isMember(jss::queue) && params[jss::queue].asBool();
+            params.contains(jss::queue.c_str()) && params[jss::queue.c_str()].as_bool();
 
         if (queue && !ledger->open())
         {
@@ -114,9 +114,9 @@ doAccountInfo(RPC::JsonContext& context)
         }
 
         RPC::injectSLE(jvAccepted, *sleAccepted);
-        result[jss::account_data] = jvAccepted;
+        result[jss::account_data.c_str()] = jvAccepted;
 
-        Json::Value acctFlags{Json::objectValue};
+        boost::json::object acctFlags;
         for (auto const& lsf : lsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
@@ -125,11 +125,11 @@ doAccountInfo(RPC::JsonContext& context)
             for (auto const& lsf : disallowIncomingFlags)
                 acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
         }
-        result[jss::account_flags] = std::move(acctFlags);
+        result[jss::account_flags.c_str()] = std::move(acctFlags);
 
         // Return SignerList(s) if that is requested.
-        if (params.isMember(jss::signer_lists) &&
-            params[jss::signer_lists].asBool())
+        if (params.contains(jss::signer_lists.c_str()) &&
+            params[jss::signer_lists.c_str()].as_bool())
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
@@ -147,12 +147,12 @@ doAccountInfo(RPC::JsonContext& context)
             // onwards.
             if (context.apiVersion == 1)
             {
-                result[jss::account_data][jss::signer_lists] =
+                result[jss::account_data.c_str()].as_object()[jss::signer_lists.c_str()] =
                     std::move(jvSignerList);
             }
             else
             {
-                result[jss::signer_lists] = std::move(jvSignerList);
+                result[jss::signer_lists.c_str()] = std::move(jvSignerList);
             }
         }
         // Return queue info if that is requested
@@ -166,8 +166,7 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::txn_count.c_str()] =
                     static_cast<std::uint64_t>(txs.size());
 
-                boost::json::value& jvQueueTx = jvQueueData[jss::transactions.c_str()];
-                jvQueueTx.emplace_array();
+                boost::json::array& jvQueueTx = jvQueueData[jss::transactions.c_str()].emplace_array();
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -220,34 +219,34 @@ doAccountInfo(RPC::JsonContext& context)
                         anyAuthChanged = authChanged;
                     jvTx[jss::auth_change.c_str()] = authChanged;
 
-                    jvQueueTx.append(std::move(jvTx));
+                    jvQueueTx.emplace_back(std::move(jvTx));
                 }
 
                 if (seqCount)
-                    jvQueueData[jss::sequence_count] = seqCount;
+                    jvQueueData[jss::sequence_count.c_str()] = seqCount;
                 if (ticketCount)
-                    jvQueueData[jss::ticket_count] = ticketCount;
+                    jvQueueData[jss::ticket_count.c_str()] = ticketCount;
                 if (lowestSeq)
-                    jvQueueData[jss::lowest_sequence] = *lowestSeq;
+                    jvQueueData[jss::lowest_sequence.c_str()] = *lowestSeq;
                 if (highestSeq)
-                    jvQueueData[jss::highest_sequence] = *highestSeq;
+                    jvQueueData[jss::highest_sequence.c_str()] = *highestSeq;
                 if (lowestTicket)
-                    jvQueueData[jss::lowest_ticket] = *lowestTicket;
+                    jvQueueData[jss::lowest_ticket.c_str()] = *lowestTicket;
                 if (highestTicket)
-                    jvQueueData[jss::highest_ticket] = *highestTicket;
+                    jvQueueData[jss::highest_ticket.c_str()] = *highestTicket;
 
-                jvQueueData[jss::auth_change_queued] = anyAuthChanged;
-                jvQueueData[jss::max_spend_drops_total] = to_string(totalSpend);
+                jvQueueData[jss::auth_change_queued.c_str()] = anyAuthChanged;
+                jvQueueData[jss::max_spend_drops_total.c_str()] = to_string(totalSpend);
             }
             else
-                jvQueueData[jss::txn_count] = 0u;
+                jvQueueData[jss::txn_count.c_str()] = 0u;
 
-            result[jss::queue_data] = std::move(jvQueueData);
+            result[jss::queue_data.c_str()] = std::move(jvQueueData);
         }
     }
     else
     {
-        result[jss::account] = toBase58(accountID);
+        result[jss::account.c_str()] = toBase58(accountID);
         RPC::inject_error(rpcACT_NOT_FOUND, result);
     }
 

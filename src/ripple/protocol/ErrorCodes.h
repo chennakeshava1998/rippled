@@ -257,7 +257,7 @@ make_error(error_code_i code, std::string const& message);
 
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
-inline boost::json::value
+inline boost::json::object
 make_param_error(std::string const& message)
 {
     return make_error(rpcINVALID_PARAMS, message);
@@ -269,13 +269,13 @@ missing_field_message(std::string const& name)
     return "Missing field '" + name + "'.";
 }
 
-inline boost::json::value
+inline boost::json::object
 missing_field_error(std::string const& name)
 {
     return make_param_error(missing_field_message(name));
 }
 
-inline boost::json::value
+inline boost::json::object
 missing_field_error(Json::StaticString name)
 {
     return missing_field_error(std::string(name));
@@ -287,13 +287,13 @@ object_field_message(std::string const& name)
     return "Invalid field '" + name + "', not object.";
 }
 
-inline boost::json::value
+inline boost::json::object
 object_field_error(std::string const& name)
 {
     return make_param_error(object_field_message(name));
 }
 
-inline boost::json::value
+inline boost::json::object
 object_field_error(Json::StaticString name)
 {
     return object_field_error(std::string(name));
@@ -311,13 +311,13 @@ invalid_field_message(Json::StaticString name)
     return invalid_field_message(std::string(name));
 }
 
-inline boost::json::value
+inline boost::json::object
 invalid_field_error(std::string const& name)
 {
     return make_param_error(invalid_field_message(name));
 }
 
-inline boost::json::value
+inline boost::json::object
 invalid_field_error(Json::StaticString name)
 {
     return invalid_field_error(std::string(name));
@@ -335,19 +335,19 @@ expected_field_message(Json::StaticString name, std::string const& type)
     return expected_field_message(std::string(name), type);
 }
 
-inline boost::json::value
+inline boost::json::object
 expected_field_error(std::string const& name, std::string const& type)
 {
     return make_param_error(expected_field_message(name, type));
 }
 
-inline boost::json::value
+inline boost::json::object
 expected_field_error(Json::StaticString name, std::string const& type)
 {
     return expected_field_error(std::string(name), type);
 }
 
-inline boost::json::value
+inline boost::json::object
 not_validator_error()
 {
     return make_param_error("not a validator");

@@ -192,12 +192,12 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
 
     auto const sleDest = lrLedger->read(keylet::account(*raDstAccount));
 
-    Json::Value& jvDestCur =
-        (jvStatus[jss::destination_currencies] = Json::arrayValue);
+    boost::json::array& jvDestCur =
+        (jvStatus[jss::destination_currencies.c_str()].emplace_array());
 
     if (!sleDest)
     {
-        jvDestCur.append(Json::Value(systemCurrencyCode()));
+        jvDestCur.emplace_back(boost::json::string(systemCurrencyCode()));
         if (!saDstAmount.native())
         {
             // Only XRP can be send to a non-existent account.
@@ -221,13 +221,13 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
             accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 
         for (auto const& currency : usDestCurrID)
-            jvDestCur.append(to_string(currency));
-        jvStatus[jss::destination_tag] =
+            jvDestCur.emplace_back(to_string(currency));
+        jvStatus[jss::destination_tag.c_str()] =
             (sleDest->getFlags() & lsfRequireDestTag);
     }
 
-    jvStatus[jss::ledger_hash] = to_string(lrLedger->info().hash);
-    jvStatus[jss::ledger_index] = lrLedger->seq();
+    jvStatus[jss::ledger_hash.c_str()] = to_string(lrLedger->info().hash);
+    jvStatus[jss::ledger_index.c_str()] = lrLedger->seq();
     return true;
 }
 
@@ -240,10 +240,10 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     If there's an error, we need to be sure to return it to the caller
     in all cases.
 */
-std::pair<bool, Json::Value>
+std::pair<bool, boost::json::object>
 PathRequest::doCreate(
     std::shared_ptr<RippleLineCache> const& cache,
-    Json::Value const& value)
+    boost::json::object const& value)
 {
     bool valid = false;
 
@@ -271,28 +271,28 @@ PathRequest::doCreate(
 }
 
 int
-PathRequest::parseJson(Json::Value const& jvParams)
+PathRequest::parseJson(boost::json::object const& jvParams)
 {
-    if (!jvParams.isMember(jss::source_account))
+    if (!jvParams.contains(jss::source_account.c_str()))
     {
         jvStatus = rpcError(rpcSRC_ACT_MISSING);
         return PFR_PJ_INVALID;
     }
 
-    if (!jvParams.isMember(jss::destination_account))
+    if (!jvParams.contains(jss::destination_account.c_str()))
     {
         jvStatus = rpcError(rpcDST_ACT_MISSING);
         return PFR_PJ_INVALID;
     }
 
-    if (!jvParams.isMember(jss::destination_amount))
+    if (!jvParams.contains(jss::destination_amount.c_str()))
     {
         jvStatus = rpcError(rpcDST_AMT_MISSING);
         return PFR_PJ_INVALID;
     }
 
     raSrcAccount =
-        parseBase58<AccountID>(jvParams[jss::source_account].asString());
+        parseBase58<AccountID>(std::string{jvParams.at(jss::source_account.c_str()).as_string()});
     if (!raSrcAccount)
     {
         jvStatus = rpcError(rpcSRC_ACT_MALFORMED);
@@ -300,14 +300,14 @@ PathRequest::parseJson(Json::Value const& jvParams)
     }
 
     raDstAccount =
-        parseBase58<AccountID>(jvParams[jss::destination_account].asString());
+        parseBase58<AccountID>(std::string{jvParams.at(jss::destination_account.c_str()).as_string()});
     if (!raDstAccount)
     {
         jvStatus = rpcError(rpcDST_ACT_MALFORMED);
         return PFR_PJ_INVALID;
     }
 
-    if (!amountFromJsonNoThrow(saDstAmount, jvParams[jss::destination_amount]))
+    if (!amountFromJsonNoThrow(saDstAmount, jvParams.at(jss::destination_amount.c_str())))
     {
         jvStatus = rpcError(rpcDST_AMT_MALFORMED);
         return PFR_PJ_INVALID;
@@ -324,7 +324,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
         return PFR_PJ_INVALID;
     }
 
-    if (jvParams.isMember(jss::send_max))
+    if (jvParams.contains(jss::send_max.c_str()))
     {
         // Send_max requires destination amount to be -1.
         if (!convert_all_)
@@ -334,7 +334,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
         }
 
         saSendMax.emplace();
-        if (!amountFromJsonNoThrow(*saSendMax, jvParams[jss::send_max]) ||
+        if (!amountFromJsonNoThrow(*saSendMax, jvParams.at(jss::send_max.c_str())) ||
             (saSendMax->getCurrency().isZero() &&
              saSendMax->getIssuer().isNonZero()) ||
             (saSendMax->getCurrency() == badCurrency()) ||
@@ -346,11 +346,11 @@ PathRequest::parseJson(Json::Value const& jvParams)
         }
     }
 
-    if (jvParams.isMember(jss::source_currencies))
+    if (jvParams.contains(jss::source_currencies.c_str()))
     {
-        Json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
-        if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::max_src_cur)
+        boost::json::value const& jvSrcCurrencies = jvParams.at(jss::source_currencies.c_str());
+        if (!jvSrcCurrencies.is_array() || jvSrcCurrencies.as_array().size() == 0 ||
+            jvSrcCurrencies.as_array().size() > RPC::Tuning::max_src_cur)
         {
             jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
             return PFR_PJ_INVALID;
@@ -358,13 +358,13 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
         sciSourceCurrencies.clear();
 
-        for (auto const& c : jvSrcCurrencies)
+        for (auto const& c : jvSrcCurrencies.as_array())
         {
             // Mandatory currency
             Currency srcCurrencyID;
-            if (!c.isObject() || !c.isMember(jss::currency) ||
-                !c[jss::currency].isString() ||
-                !to_currency(srcCurrencyID, c[jss::currency].asString()))
+            if (!c.is_object() || !c.as_object().contains(jss::currency.c_str()) ||
+                !c.as_object().at(jss::currency.c_str()).is_string() ||
+                !to_currency(srcCurrencyID, std::string{c.as_object().at(jss::currency.c_str()).as_string()}))
             {
                 jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
                 return PFR_PJ_INVALID;
@@ -372,9 +372,9 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
             // Optional issuer
             AccountID srcIssuerID;
-            if (c.isMember(jss::issuer) &&
-                (!c[jss::issuer].isString() ||
-                 !to_issuer(srcIssuerID, c[jss::issuer].asString())))
+            if (c.as_object().contains(jss::issuer.c_str()) &&
+                (!c.as_object().at(jss::issuer.c_str()).is_string() ||
+                 !to_issuer(srcIssuerID, std::string{c.as_object().at(jss::issuer.c_str()).as_string()})))
             {
                 jvStatus = rpcError(rpcSRC_ISR_MALFORMED);
                 return PFR_PJ_INVALID;
@@ -434,26 +434,26 @@ PathRequest::parseJson(Json::Value const& jvParams)
         }
     }
 
-    if (jvParams.isMember(jss::id))
-        jvId = jvParams[jss::id];
+    if (jvParams.contains(jss::id.c_str()))
+        jvId = jvParams.at(jss::id.c_str());
 
     return PFR_PJ_NOCHANGE;
 }
 
-Json::Value
+boost::json::object
 PathRequest::doClose()
 {
     JLOG(m_journal.debug()) << iIdentifier << " closed";
     std::lock_guard sl(mLock);
-    jvStatus[jss::closed] = true;
+    jvStatus[jss::closed.c_str()] = true;
     return jvStatus;
 }
 
-Json::Value
-PathRequest::doStatus(Json::Value const&)
+boost::json::object
+PathRequest::doStatus(boost::json::value const&)
 {
     std::lock_guard sl(mLock);
-    jvStatus[jss::status] = jss::success;
+    jvStatus[jss::status.c_str()] = jss::success;
     return jvStatus;
 }
 
@@ -495,7 +495,7 @@ bool
 PathRequest::findPaths(
     std::shared_ptr<RippleLineCache> const& cache,
     int const level,
-    Json::Value& jvArray,
+    boost::json::array& jvArray,
     std::function<bool(void)> const& continueCallback)
 {
     auto sourceCurrencies = sciSourceCurrencies;
@@ -619,23 +619,23 @@ PathRequest::findPaths(
 
         if (rc.result() == tesSUCCESS)
         {
-            Json::Value jvEntry(Json::objectValue);
+            boost::json::object jvEntry;
             rc.actualAmountIn.setIssuer(sourceAccount);
-            jvEntry[jss::source_amount] =
+            jvEntry[jss::source_amount.c_str()] =
                 rc.actualAmountIn.getJson(JsonOptions::none);
-            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::none);
+            jvEntry[jss::paths_computed.c_str()] = ps.getJson(JsonOptions::none);
 
             if (convert_all_)
-                jvEntry[jss::destination_amount] =
+                jvEntry[jss::destination_amount.c_str()] =
                     rc.actualAmountOut.getJson(JsonOptions::none);
 
             if (hasCompletion())
             {
                 // Old ripple_path_find API requires this
-                jvEntry[jss::paths_canonical] = Json::arrayValue;
+                jvEntry[jss::paths_canonical.c_str()] = Json::arrayValue;
             }
 
-            jvArray.append(jvEntry);
+            jvArray.emplace_back(jvEntry);
         }
         else
         {
@@ -653,7 +653,7 @@ PathRequest::findPaths(
     return true;
 }
 
-Json::Value
+boost::json::object
 PathRequest::doUpdate(
     std::shared_ptr<RippleLineCache> const& cache,
     bool fast,
@@ -670,25 +670,25 @@ PathRequest::doUpdate(
             return jvStatus;
     }
 
-    Json::Value newStatus = Json::objectValue;
+    boost::json::object newStatus;
 
     if (hasCompletion())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destCurrencies =
-            (newStatus[jss::destination_currencies] = Json::arrayValue);
+        boost::json::array& destCurrencies =
+            (newStatus[jss::destination_currencies.c_str()].emplace_array());
         auto usCurrencies = accountDestCurrencies(*raDstAccount, cache, true);
         for (auto const& c : usCurrencies)
-            destCurrencies.append(to_string(c));
+            destCurrencies.emplace_back(to_string(c));
     }
 
-    newStatus[jss::source_account] = toBase58(*raSrcAccount);
-    newStatus[jss::destination_account] = toBase58(*raDstAccount);
-    newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
-    newStatus[jss::full_reply] = !fast;
+    newStatus[jss::source_account.c_str()] = toBase58(*raSrcAccount);
+    newStatus[jss::destination_account.c_str()] = toBase58(*raDstAccount);
+    newStatus[jss::destination_amount.c_str()] = saDstAmount.getJson(JsonOptions::none);
+    newStatus[jss::full_reply.c_str()] = !fast;
 
-    if (jvId)
-        newStatus[jss::id] = jvId;
+    if (!jvId.is_null())
+        newStatus[jss::id.c_str()] = jvId;
 
     bool loaded = app_.getFeeTrack().isLoadedLocal();
 
@@ -725,11 +725,11 @@ PathRequest::doUpdate(
 
     JLOG(m_journal.debug()) << iIdentifier << " processing at level " << iLevel;
 
-    Json::Value jvArray = Json::arrayValue;
+    boost::json::array jvArray;
     if (findPaths(cache, iLevel, jvArray, continueCallback))
     {
         bLastSuccess = jvArray.size() != 0;
-        newStatus[jss::alternatives] = std::move(jvArray);
+        newStatus[jss::alternatives.c_str()] = std::move(jvArray);
     }
     else
     {

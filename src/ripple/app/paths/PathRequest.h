@@ -85,18 +85,18 @@ public:
     void
     updateComplete();
 
-    std::pair<bool, Json::Value>
-    doCreate(std::shared_ptr<RippleLineCache> const&, Json::Value const&);
+    std::pair<bool, boost::json::object>
+    doCreate(std::shared_ptr<RippleLineCache> const&, boost::json::object const&);
 
-    Json::Value
+    boost::json::object
     doClose() override;
-    Json::Value
-    doStatus(Json::Value const&) override;
+    boost::json::object
+    doStatus(boost::json::value const&) override;
     void
     doAborting() const;
 
     // update jvStatus
-    Json::Value
+    boost::json::object
     doUpdate(
         std::shared_ptr<RippleLineCache> const&,
         bool fast,
@@ -126,11 +126,11 @@ private:
     findPaths(
         std::shared_ptr<RippleLineCache> const&,
         int const,
-        Json::Value&,
+        boost::json::array&,
         std::function<bool(void)> const&);
 
     int
-    parseJson(Json::Value const&);
+    parseJson(boost::json::object const&);
 
     Application& app_;
     beast::Journal m_journal;
@@ -143,8 +143,8 @@ private:
     std::function<void(void)> fCompletion;
     Resource::Consumer& consumer_;  // Charge according to source currencies
 
-    Json::Value jvId;
-    Json::Value jvStatus;  // Last result
+    boost::json::value jvId;
+    boost::json::object jvStatus;  // Last result
 
     // Client request parameters
     std::optional<AccountID> raSrcAccount;

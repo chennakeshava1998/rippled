@@ -56,9 +56,9 @@ public:
     };
 
     struct AccountTxMarker
-    {
-        std::uint32_t ledgerSeq = 0;
-        std::uint32_t txnSeq = 0;
+    {// Keshava: can I make these as uint_64 instead? because boost::json::uint is 64 bits long
+        std::uint64_t ledgerSeq = 0;
+        std::uint64_t txnSeq = 0;
     };
 
     struct AccountTxOptions

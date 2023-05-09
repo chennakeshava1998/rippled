@@ -26,6 +26,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <boost/json.hpp>
 
 namespace ripple {
 

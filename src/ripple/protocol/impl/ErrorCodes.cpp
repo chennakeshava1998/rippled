@@ -207,10 +207,10 @@ error_code_http_status(error_code_i code)
 }  // namespace RPC
 
 std::string
-rpcErrorString(Json::Value const& jv)
+rpcErrorString(boost::json::object const& jv)
 {
     assert(RPC::contains_error(jv));
-    return jv[jss::error].asString() + jv[jss::error_message].asString();
+    return std::string{jv.at(jss::error.c_str()).as_string()} + std::string{jv.at(jss::error_message.c_str()).as_string()};
 }
 
 }  // namespace ripple

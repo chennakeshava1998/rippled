@@ -27,7 +27,7 @@ namespace ripple {
 // VFALCO NOTE these are deprecated
 bool
 isRpcError(boost::json::value jvResult);
-boost::json::value
+boost::json::object
 rpcError(int iError);
 
 }  // namespace ripple

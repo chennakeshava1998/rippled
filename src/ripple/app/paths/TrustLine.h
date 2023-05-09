@@ -164,7 +164,7 @@ public:
         return !mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    Json::Value
+    boost::json::object
     getJson(int);
 
 protected:

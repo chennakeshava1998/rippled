@@ -61,30 +61,30 @@ public:
 
     // Create a new-style path request that pushes
     // updates to a subscriber
-    Json::Value
+    boost::json::object
     makePathRequest(
         std::shared_ptr<InfoSub> const& subscriber,
         std::shared_ptr<ReadView const> const& ledger,
-        Json::Value const& request);
+        boost::json::object const& request);
 
     // Create an old-style path request that is
     // managed by a coroutine and updated by
     // the path engine
-    Json::Value
+    boost::json::object
     makeLegacyPathRequest(
         PathRequest::pointer& req,
         std::function<void(void)> completion,
         Resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
-        Json::Value const& request);
+        boost::json::object const& request);
 
     // Execute an old-style path request immediately
     // with the ledger specified by the caller
-    Json::Value
+    boost::json::object
     doLegacyPathRequest(
         Resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
-        Json::Value const& request);
+        boost::json::object const& request);
 
     void
     reportFast(std::chrono::milliseconds ms)

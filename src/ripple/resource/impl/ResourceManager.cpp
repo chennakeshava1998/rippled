@@ -123,13 +123,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Json::Value
+    boost::json::object
     getJson() override
     {
         return logic_.getJson();
     }
 
-    Json::Value
+    boost::json::object
     getJson(int threshold) override
     {
         return logic_.getJson(threshold);

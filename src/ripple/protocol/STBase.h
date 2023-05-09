@@ -99,7 +99,7 @@ public:
     virtual std::string
     getText() const;
 
-    virtual boost::json::value getJson(JsonOptions /*options*/) const;
+    virtual boost::json::object getJson(JsonOptions /*options*/) const;
 
     virtual void
     add(Serializer& s) const;

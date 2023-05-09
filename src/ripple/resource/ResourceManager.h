@@ -28,6 +28,7 @@
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/Gossip.h>
 #include <boost/utility/string_view.hpp>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace Resource {
@@ -64,9 +65,9 @@ public:
     exportConsumers() = 0;
 
     /** Extract consumer information for reporting. */
-    virtual Json::Value
+    virtual boost::json::object
     getJson() = 0;
-    virtual Json::Value
+    virtual boost::json::object
     getJson(int threshold) = 0;
 
     /** Import packaged consumer information.

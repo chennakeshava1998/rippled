@@ -356,9 +356,9 @@ OverlayImpl::makeRedirectResponse(
     }
     msg.insert("Content-Type", "application/json");
     msg.insert(boost::beast::http::field::connection, "close");
-    msg.body() = Json::objectValue;
+    msg.body() = boost::json::object();
     {
-        Json::Value& ips = (msg.body()["peer-ips"] = Json::arrayValue);
+        boost::json::array& ips = (msg.body()["peer-ips"].emplace_array());
         for (auto const& _ : m_peerFinder->redirect(slot))
             ips.append(_.address.to_string());
     }

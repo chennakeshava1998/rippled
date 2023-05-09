@@ -133,10 +133,10 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                             // it can be freed if the client disconnects, and
                             // thus fail to lock later.
                             ipSub.reset();
-                            Json::Value update = request->doUpdate(
+                            boost::json::object update = request->doUpdate(
                                 cache, false, continueCallback);
                             request->updateComplete();
-                            update[jss::type] = "path_find";
+                            update[jss::type.c_str()] = "path_find";
                             if ((ipSub = getSubscriber(request)))
                             {
                                 ipSub->send(update, false);
@@ -241,11 +241,11 @@ PathRequests::insertPathRequest(PathRequest::pointer const& req)
 }
 
 // Make a new-style path_find request
-Json::Value
+boost::json::object
 PathRequests::makePathRequest(
     std::shared_ptr<InfoSub> const& subscriber,
     std::shared_ptr<ReadView const> const& inLedger,
-    Json::Value const& requestJson)
+    boost::json::object const& requestJson)
 {
     auto req = std::make_shared<PathRequest>(
         app_, subscriber, ++mLastIdentifier, *this, mJournal);
@@ -263,13 +263,13 @@ PathRequests::makePathRequest(
 }
 
 // Make an old-style ripple_path_find request
-Json::Value
+boost::json::object
 PathRequests::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function<void(void)> completion,
     Resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
-    Json::Value const& request)
+    boost::json::object const& request)
 {
     // This assignment must take place before the
     // completion function is called
@@ -296,11 +296,11 @@ PathRequests::makeLegacyPathRequest(
     return std::move(jvRes);
 }
 
-Json::Value
+boost::json::object
 PathRequests::doLegacyPathRequest(
     Resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
-    Json::Value const& request)
+    boost::json::object const& request)
 {
     auto cache = std::make_shared<RippleLineCache>(
         inLedger, app_.journal("RippleLineCache"));

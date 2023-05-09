@@ -51,28 +51,28 @@ using LedgerShortcut = RelationalDatabase::LedgerShortcut;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
-std::variant<std::optional<LedgerSpecifier>, Json::Value>
-parseLedgerArgs(Json::Value const& params)
+std::variant<std::optional<LedgerSpecifier>, boost::json::object>
+parseLedgerArgs(boost::json::object const& params)
 {
-    Json::Value response;
-    if (params.isMember(jss::ledger_index_min) ||
-        params.isMember(jss::ledger_index_max))
+    boost::json::object response;
+    if (params.contains(jss::ledger_index_min.c_str()) ||
+        params.contains(jss::ledger_index_max.c_str()))
     {
-        uint32_t min = params.isMember(jss::ledger_index_min) &&
-                params[jss::ledger_index_min].asInt() >= 0
-            ? params[jss::ledger_index_min].asUInt()
+        uint32_t min = params.contains(jss::ledger_index_min.c_str()) &&
+                params.at(jss::ledger_index_min.c_str()).as_int64() >= 0
+            ? params.at(jss::ledger_index_min.c_str()).as_int64()
             : 0;
-        uint32_t max = params.isMember(jss::ledger_index_max) &&
-                params[jss::ledger_index_max].asInt() >= 0
-            ? params[jss::ledger_index_max].asUInt()
+        uint32_t max = params.contains(jss::ledger_index_max.c_str()) &&
+                params.at(jss::ledger_index_max.c_str()).as_int64() >= 0
+            ? params.at(jss::ledger_index_max.c_str()).as_uint64()
             : UINT32_MAX;
 
         return LedgerRange{min, max};
     }
-    else if (params.isMember(jss::ledger_hash))
+    else if (params.contains(jss::ledger_hash.c_str()))
     {
-        auto& hashValue = params[jss::ledger_hash];
-        if (!hashValue.isString())
+        auto& hashValue = params.at(jss::ledger_hash.c_str());
+        if (!hashValue.is_string())
         {
             RPC::Status status{rpcINVALID_PARAMS, "ledgerHashNotString"};
             status.inject(response);
@@ -80,7 +80,7 @@ parseLedgerArgs(Json::Value const& params)
         }
 
         LedgerHash hash;
-        if (!hash.parseHex(hashValue.asString()))
+        if (!hash.parseHex(hashValue.as_string()))
         {
             RPC::Status status{rpcINVALID_PARAMS, "ledgerHashMalformed"};
             status.inject(response);
@@ -88,14 +88,15 @@ parseLedgerArgs(Json::Value const& params)
         }
         return hash;
     }
-    else if (params.isMember(jss::ledger_index))
+    else if (params.contains(jss::ledger_index.c_str()))
     {
         LedgerSpecifier ledger;
-        if (params[jss::ledger_index].isNumeric())
-            ledger = params[jss::ledger_index].asUInt();
+        if (params.at(jss::ledger_index.c_str()).is_number())
+            // Keshava: Why do I need to do this cast? why is boost::json's uint_64 type not compatible with LedgerSpecifier?
+            ledger = static_cast<unsigned int>(params.at(jss::ledger_index.c_str()).as_uint64());
         else
         {
-            std::string ledgerStr = params[jss::ledger_index].asString();
+            std::string ledgerStr{params.at(jss::ledger_index.c_str()).as_string()};
 
             if (ledgerStr == "current" || ledgerStr.empty())
                 ledger = LedgerShortcut::CURRENT;
@@ -267,13 +268,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     return {result, rpcSUCCESS};
 }
 
-Json::Value
+boost::json::object
 populateJsonResponse(
     std::pair<AccountTxResult, RPC::Status> const& res,
     AccountTxArgs const& args,
     RPC::JsonContext const& context)
 {
-    Json::Value response;
+    boost::json::object response;
     RPC::Status const& error = res.second;
     if (error.toErrorCode() != rpcSUCCESS)
     {
@@ -282,13 +283,13 @@ populateJsonResponse(
     else
     {
         AccountTxResult const& result = res.first;
-        response[jss::validated] = true;
-        response[jss::limit] = result.limit;
-        response[jss::account] = context.params[jss::account].asString();
-        response[jss::ledger_index_min] = result.ledgerRange.min;
-        response[jss::ledger_index_max] = result.ledgerRange.max;
+        response[jss::validated.c_str()] = true;
+        response[jss::limit.c_str()] = result.limit;
+        response[jss::account.c_str()] = context.params.at(jss::account.c_str()).as_string();
+        response[jss::ledger_index_min.c_str()] = result.ledgerRange.min;
+        response[jss::ledger_index_max.c_str()] = result.ledgerRange.max;
 
-        Json::Value& jvTxns = (response[jss::transactions] = Json::arrayValue);
+        boost::json::array& jvTxns = (response[jss::transactions.c_str()].emplace_array());
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
@@ -297,16 +298,16 @@ populateJsonResponse(
             {
                 if (txn)
                 {
-                    Json::Value& jvObj = jvTxns.append(Json::objectValue);
+                    boost::json::object& jvObj = jvTxns.emplace_back(boost::json::object()).as_object();
 
-                    jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    jvObj[jss::tx.c_str()] = txn->getJson(JsonOptions::include_date);
                     if (txnMeta)
                     {
-                        jvObj[jss::meta] =
+                        jvObj[jss::meta.c_str()] =
                             txnMeta->getJson(JsonOptions::include_date);
-                        jvObj[jss::validated] = true;
+                        jvObj[jss::validated.c_str()] = true;
                         insertDeliveredAmount(
-                            jvObj[jss::meta], context, txn, *txnMeta);
+                            jvObj[jss::meta.c_str()].as_object(), context, txn, *txnMeta);
                     }
                 }
             }
@@ -318,20 +319,20 @@ populateJsonResponse(
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))
             {
-                Json::Value& jvObj = jvTxns.append(Json::objectValue);
+                boost::json::object& jvObj = jvTxns.emplace_back(boost::json::object()).as_object();
 
-                jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
-                jvObj[jss::meta] = strHex(std::get<1>(binaryData));
-                jvObj[jss::ledger_index] = std::get<2>(binaryData);
-                jvObj[jss::validated] = true;
+                jvObj[jss::tx_blob.c_str()] = strHex(std::get<0>(binaryData));
+                jvObj[jss::meta.c_str()] = strHex(std::get<1>(binaryData));
+                jvObj[jss::ledger_index.c_str()] = std::get<2>(binaryData);
+                jvObj[jss::validated.c_str()] = true;
             }
         }
 
         if (result.marker)
         {
-            response[jss::marker] = Json::objectValue;
-            response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
-            response[jss::marker][jss::seq] = result.marker->txnSeq;
+            response[jss::marker.c_str()].emplace_object();
+            response[jss::marker.c_str()].as_object()[jss::ledger.c_str()] = result.marker->ledgerSeq;
+            response[jss::marker.c_str()].as_object()[jss::seq.c_str()] = result.marker->txnSeq;
         }
         if (context.app.config().reporting())
             response["used_postgres"] = true;
@@ -351,7 +352,7 @@ populateJsonResponse(
 //   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,
 //   resume previous query
 // }
-Json::Value
+boost::json::object
 doAccountTxJson(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
@@ -359,25 +360,25 @@ doAccountTxJson(RPC::JsonContext& context)
 
     auto& params = context.params;
     AccountTxArgs args;
-    Json::Value response;
+    boost::json::object response;
 
-    args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
-    args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
+    args.limit = params.contains(jss::limit.c_str()) ? params.at(jss::limit.c_str()).as_uint64() : 0;
+    args.binary = params.contains(jss::binary.c_str()) && params.at(jss::binary.c_str()).as_bool();
     args.forward =
-        params.isMember(jss::forward) && params[jss::forward].asBool();
+        params.contains(jss::forward.c_str()) && params.at(jss::forward.c_str()).as_bool();
 
-    if (!params.isMember(jss::account))
+    if (!params.contains(jss::account.c_str()))
         return rpcError(rpcINVALID_PARAMS);
 
     auto const account =
-        parseBase58<AccountID>(params[jss::account].asString());
+        parseBase58<AccountID>(std::string{params.at(jss::account.c_str()).as_string()});
     if (!account)
         return rpcError(rpcACT_MALFORMED);
 
     args.account = *account;
 
     auto parseRes = parseLedgerArgs(params);
-    if (auto jv = std::get_if<Json::Value>(&parseRes))
+    if (auto jv = std::get_if<boost::json::object>(&parseRes))
     {
         return *jv;
     }
@@ -386,12 +387,12 @@ doAccountTxJson(RPC::JsonContext& context)
         args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
     }
 
-    if (params.isMember(jss::marker))
+    if (params.contains(jss::marker.c_str()))
     {
-        auto& token = params[jss::marker];
-        if (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||
-            !token[jss::ledger].isConvertibleTo(Json::ValueType::uintValue) ||
-            !token[jss::seq].isConvertibleTo(Json::ValueType::uintValue))
+        auto& token = params.at(jss::marker.c_str()).as_object();
+        if (!token.contains(jss::ledger.c_str()) || !token.contains(jss::seq.c_str()) ||
+            !token[jss::ledger.c_str()].is_uint64() ||
+            !token[jss::seq.c_str()].is_uint64())
         {
             RPC::Status status{
                 rpcINVALID_PARAMS,
@@ -400,7 +401,7 @@ doAccountTxJson(RPC::JsonContext& context)
             status.inject(response);
             return response;
         }
-        args.marker = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};
+        args.marker = {token[jss::ledger.c_str()].as_uint64(), token[jss::seq.c_str()].as_uint64()};
     }
 
     auto res = doAccountTxHelp(context, args);

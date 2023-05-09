@@ -391,7 +391,7 @@ flatFetchTransactions(
 static std::pair<AccountTxResult, RPC::Status>
 processAccountTxStoredProcedureResult(
     RelationalDatabase::AccountTxArgs const& args,
-    Json::Value& result,
+    boost::json::object& result,
     Application& app,
     beast::Journal j)
 {
@@ -400,17 +400,16 @@ processAccountTxStoredProcedureResult(
 
     try
     {
-        if (result.isMember("transactions"))
+        if (result.contains("transactions"))
         {
             std::vector<uint256> nodestoreHashes;
             std::vector<uint32_t> ledgerSequences;
-            for (auto& t : result["transactions"])
+            for (auto& t : result["transactions"].as_array())
             {
-                if (t.isMember("ledger_seq") && t.isMember("nodestore_hash"))
+                if (t.as_object().contains("ledger_seq") && t.as_object().contains("nodestore_hash"))
                 {
-                    uint32_t ledgerSequence = t["ledger_seq"].asUInt();
-                    std::string nodestoreHashHex =
-                        t["nodestore_hash"].asString();
+                    uint32_t ledgerSequence = t.as_object()["ledger_seq"].as_uint64();
+                    std::string nodestoreHashHex{t.as_object()["nodestore_hash"].as_string()};
                     nodestoreHashHex.erase(0, 2);
                     uint256 nodestoreHash;
                     if (!nodestoreHash.parseHex(nodestoreHashHex))
@@ -443,28 +442,28 @@ processAccountTxStoredProcedureResult(
 
             JLOG(j.trace()) << __func__ << " : processed db results";
 
-            if (result.isMember("marker"))
+            if (result.contains("marker"))
             {
                 auto& marker = result["marker"];
-                assert(marker.isMember("ledger"));
-                assert(marker.isMember("seq"));
+                assert(marker.contains("ledger"));
+                assert(marker.contains("seq"));
                 ret.marker = {
-                    marker["ledger"].asUInt(), marker["seq"].asUInt()};
+                    marker.as_object()["ledger"].as_uint64(), marker.as_object()["seq"].as_uint64()};
             }
-            assert(result.isMember("ledger_index_min"));
-            assert(result.isMember("ledger_index_max"));
+            assert(result.contains("ledger_index_min"));
+            assert(result.contains("ledger_index_max"));
             ret.ledgerRange = {
-                result["ledger_index_min"].asUInt(),
-                result["ledger_index_max"].asUInt()};
+                static_cast<uint32_t>(result["ledger_index_min"].as_uint64()),
+                static_cast<uint32_t>(result["ledger_index_max"].as_uint64())};
             return {ret, rpcSUCCESS};
         }
-        else if (result.isMember("error"))
+        else if (result.contains("error"))
         {
             JLOG(j.debug())
-                << __func__ << " : error = " << result["error"].asString();
+                << __func__ << " : error = " << result["error"].as_string();
             return {
                 ret,
-                RPC::Status{rpcINVALID_PARAMS, result["error"].asString()}};
+                RPC::Status{rpcINVALID_PARAMS, std::string{result["error"].as_string()}}};
         }
         else
         {
@@ -938,10 +937,8 @@ PostgresDatabaseImp::getAccountTx(AccountTxArgs const& args)
                      << "postgres result = " << resultStr
                      << " : account = " << strHex(args.account);
 
-    Json::Value v;
-    Json::Reader reader;
-    bool success = reader.parse(resultStr, resultStr + strlen(resultStr), v);
-    if (success)
+    boost::json::value v = boost::json::parse(resultStr);
+    if (!v.is_null())
     {
         return processAccountTxStoredProcedureResult(args, v, app_, j_);
     }
@@ -1003,7 +1000,7 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
     bool success = reader.parse(resultStr, resultStr + strlen(resultStr), v);
     if (success)
     {
-        if (v.isMember("nodestore_hash") && v.isMember("ledger_seq"))
+        if (v.contains("nodestore_hash") && v.contains("ledger_seq"))
         {
             uint256 nodestoreHash;
             if (!nodestoreHash.parseHex(
@@ -1013,7 +1010,7 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
             if (nodestoreHash.isNonZero())
                 return {std::make_pair(nodestoreHash, ledgerSeq)};
         }
-        if (v.isMember("min_seq") && v.isMember("max_seq"))
+        if (v.contains("min_seq") && v.contains("max_seq"))
         {
             return {ClosedInterval<uint32_t>(
                 v["min_seq"].asUInt(), v["max_seq"].asUInt())};

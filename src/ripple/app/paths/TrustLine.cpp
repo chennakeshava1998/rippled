@@ -39,10 +39,10 @@ TrustLineBase::TrustLineBase(
         mBalance.negate();
 }
 
-Json::Value
+boost::json::object
 TrustLineBase::getJson(int)
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
     ret["low_id"] = to_string(mLowLimit.getIssuer());
     ret["high_id"] = to_string(mHighLimit.getIssuer());
     return ret;

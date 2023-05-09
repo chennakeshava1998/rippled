@@ -96,9 +96,9 @@ STBase::getText() const
     return std::string();
 }
 
-Json::Value STBase::getJson(JsonOptions /*options*/) const
+boost::json::value STBase::getJson(JsonOptions /*options*/) const
 {
-    return getText();
+    return boost::json::string{ getText()};
 }
 
 void

@@ -22,6 +22,7 @@
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -290,30 +291,28 @@ ConnectAttempt::processResponse()
 {
     if (response_.result() == boost::beast::http::status::service_unavailable)
     {
-        Json::Value json;
-        Json::Reader r;
         std::string s;
         s.reserve(boost::asio::buffer_size(response_.body().data()));
         for (auto const buffer : response_.body().data())
             s.append(
                 boost::asio::buffer_cast<char const*>(buffer),
                 boost::asio::buffer_size(buffer));
-        auto const success = r.parse(s, json);
-        if (success)
+        boost::json::value json = boost::json::parse(s);
+        if (!json.is_null())
         {
-            if (json.isObject() && json.isMember("peer-ips"))
+            if (json.is_object() && json.as_object().contains("peer-ips"))
             {
-                Json::Value const& ips = json["peer-ips"];
-                if (ips.isArray())
+                boost::json::value const& ips = json.as_object()["peer-ips"];
+                if (ips.is_array())
                 {
                     std::vector<boost::asio::ip::tcp::endpoint> eps;
-                    eps.reserve(ips.size());
-                    for (auto const& v : ips)
+                    eps.reserve(ips.as_array().size());
+                    for (auto const& v : ips.as_array())
                     {
-                        if (v.isString())
+                        if (v.is_string())
                         {
                             error_code ec;
-                            auto const ep = parse_endpoint(v.asString(), ec);
+                            auto const ep = parse_endpoint(std::string{v.as_string()}, ec);
                             if (!ec)
                                 eps.push_back(ep);
                         }

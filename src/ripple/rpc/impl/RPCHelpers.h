@@ -54,7 +54,7 @@ accountFromStringStrict(std::string const&);
 // --> bStrict: Only allow account id or public key.
 //
 // Returns a boost::json::object, containing error information if there was one.
-boost::json::value
+boost::json::object
 accountFromString(
     AccountID& result,
     std::string const& strIdent,
@@ -141,7 +141,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
     If there is no error in the return value, then the ledger pointer will have
     been filled.
 */
-boost::json::value
+boost::json::object
 lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
@@ -187,14 +187,14 @@ isHexTxID(std::string const& txid);
         urlgravatar field JSON if sfEmailHash is present.
 */
 void
-injectSLE(boost::json::value& jv, SLE const& sle);
+injectSLE(boost::json::object& jv, SLE const& sle);
 
 /** Retrieve the limit value from a JsonContext, or set a default -
     then restrict the limit by max and min if not an ADMIN request.
 
     If there is an error, return it as JSON.
 */
-std::optional<boost::json::value>
+std::optional<boost::json::object>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const&,

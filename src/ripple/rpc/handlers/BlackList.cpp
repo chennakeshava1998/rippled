@@ -24,12 +24,12 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doBlackList(RPC::JsonContext& context)
 {
     auto& rm = context.app.getResourceManager();
-    if (context.params.isMember(jss::threshold))
-        return rm.getJson(context.params[jss::threshold].asInt());
+    if (context.params.contains(jss::threshold.c_str()))
+        return rm.getJson(context.params[jss::threshold.c_str()].as_int64());
     else
         return rm.getJson();
 }

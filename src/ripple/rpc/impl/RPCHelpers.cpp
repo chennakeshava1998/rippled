@@ -83,7 +83,7 @@ accountFromStringWithCode(
     return rpcSUCCESS;
 }
 
-boost::json::value
+boost::json::object
 accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
 {
     error_code_i code = accountFromStringWithCode(result, strIdent, bStrict);
@@ -345,31 +345,31 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 
     auto& params = context.params;
 
-    auto indexValue = params[jss::ledger_index];
-    auto hashValue = params[jss::ledger_hash];
+    auto indexValue = params[jss::ledger_index.c_str()];
+    auto hashValue = params[jss::ledger_hash.c_str()];
 
     // We need to support the legacy "ledger" field.
-    auto& legacyLedger = params[jss::ledger];
-    if (legacyLedger)
+    auto& legacyLedger = params[jss::ledger.c_str()];
+    if (!legacyLedger.is_null())
     {
-        if (legacyLedger.asString().size() > 12)
+        if (legacyLedger.as_string().size() > 12)
             hashValue = legacyLedger;
         else
             indexValue = legacyLedger;
     }
 
-    if (hashValue)
+    if (!hashValue.is_null())
     {
-        if (!hashValue.isString())
+        if (!hashValue.is_string())
             return {rpcINVALID_PARAMS, "ledgerHashNotString"};
 
         uint256 ledgerHash;
-        if (!ledgerHash.parseHex(hashValue.asString()))
+        if (!ledgerHash.parseHex(hashValue.as_string()))
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         return getLedger(ledger, ledgerHash, context);
     }
 
-    auto const index = indexValue.asString();
+    auto const index = std::string{indexValue.as_string()};
 
     if (index == "current" ||
         (index.empty() && !context.app.config().reporting()))
@@ -698,12 +698,12 @@ lookupLedger(
     return Status::OK;
 }
 
-boost::json::value
+boost::json::object
 lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
 {
-    boost::json::value result;
+    boost::json::object result;
     if (auto status = lookupLedger(ledger, context, result))
-        status.inject(result.as_object());
+        status.inject(result);
 
     return result;
 }
@@ -725,7 +725,7 @@ parseAccountIds(boost::json::array const& jvArray)
 }
 
 void
-injectSLE(boost::json::value& jv, SLE const& sle)
+injectSLE(boost::json::object& jv, SLE const& sle)
 {
     jv = sle.getJson(JsonOptions::none);
     if (sle.getType() == ltACCOUNT_ROOT)
@@ -739,29 +739,29 @@ injectSLE(boost::json::value& jv, SLE const& sle)
             // VFALCO TODO Give a name and move this constant
             //             to a more visible location. Also
             //             shouldn't this be https?
-            jv.as_object()[jss::urlgravatar.c_str()] =
+            jv[jss::urlgravatar.c_str()] =
                 str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
         }
     }
     else
     {
-        jv.as_object()[jss::Invalid.c_str()] = true;
+        jv[jss::Invalid.c_str()] = true;
     }
 }
 
-std::optional<boost::json::value>
+std::optional<boost::json::object>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const& range,
     JsonContext const& context)
 {
     limit = range.rdefault;
-    if (auto const& jvLimit = context.params[jss::limit])
+    if (auto const& jvLimit = context.params.at(jss::limit.c_str()); !jvLimit.is_null())
     {
-        if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+        if (!(jvLimit.is_uint64() || (jvLimit.is_int64() && jvLimit.as_int64() >= 0)))
             return RPC::expected_field_error(jss::limit, "unsigned integer");
 
-        limit = jvLimit.asUInt();
+        limit = jvLimit.as_uint64();
         if (!isUnlimited(context.role))
             limit = std::max(range.rmin, std::min(range.rmax, limit));
     }
@@ -1060,8 +1060,8 @@ getLedgerByContext(RPC::JsonContext& context)
     if (context.app.config().reporting())
         return rpcError(rpcREPORTING_UNSUPPORTED);
 
-    auto const hasHash = context.params.isMember(jss::ledger_hash);
-    auto const hasIndex = context.params.isMember(jss::ledger_index);
+    auto const hasHash = context.params.contains(jss::ledger_hash.c_str());
+    auto const hasIndex = context.params.contains(jss::ledger_index.c_str());
     std::uint32_t ledgerIndex = 0;
 
     auto& ledgerMaster = context.app.getLedgerMaster();
@@ -1077,14 +1077,14 @@ getLedgerByContext(RPC::JsonContext& context)
 
     if (hasHash)
     {
-        auto const& jsonHash = context.params[jss::ledger_hash];
-        if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
+        auto const& jsonHash = context.params[jss::ledger_hash.c_str()];
+        if (!jsonHash.is_string() || !ledgerHash.parseHex(jsonHash.as_string()))
             return RPC::invalid_field_error(jss::ledger_hash);
     }
     else
     {
-        auto const& jsonIndex = context.params[jss::ledger_index];
-        if (!jsonIndex.isInt())
+        auto const& jsonIndex = context.params[jss::ledger_index.c_str()];
+        if (!jsonIndex.is_int64())
             return RPC::invalid_field_error(jss::ledger_index);
 
         // We need a validated ledger to get the hash from the sequence
@@ -1096,7 +1096,7 @@ getLedgerByContext(RPC::JsonContext& context)
             return rpcError(rpcNOT_SYNCED);
         }
 
-        ledgerIndex = jsonIndex.asInt();
+        ledgerIndex = jsonIndex.as_int64();
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->info().seq)

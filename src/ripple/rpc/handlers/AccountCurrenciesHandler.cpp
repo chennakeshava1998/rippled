@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doAccountCurrencies(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -39,19 +39,19 @@ doAccountCurrencies(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
+    if (!(params.contains(jss::account.c_str()) || params.contains(jss::ident.c_str())))
         return RPC::missing_field_error(jss::account);
 
     std::string const strIdent(
-        params.isMember(jss::account) ? params[jss::account].asString()
-                                      : params[jss::ident].asString());
+        params.contains(jss::account.c_str()) ? params[jss::account.c_str()].as_string()
+                                      : params[jss::ident.c_str()].as_string());
 
     bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
+        params.contains(jss::strict.c_str()) && params[jss::strict.c_str()].as_bool();
 
     // Get info on account.
     AccountID accountID;  // out param
-    if (auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict))
+    if (auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict); !jvAccepted.empty())
         return jvAccepted;
 
     if (!ledger->exists(keylet::account(accountID)))
@@ -71,15 +71,15 @@ doAccountCurrencies(RPC::JsonContext& context)
     send.erase(badCurrency());
     receive.erase(badCurrency());
 
-    Json::Value& sendCurrencies =
-        (result[jss::send_currencies] = Json::arrayValue);
+    boost::json::array& sendCurrencies =
+        (result[jss::send_currencies.c_str()].emplace_array());
     for (auto const& c : send)
-        sendCurrencies.append(to_string(c));
+        sendCurrencies.emplace_back(to_string(c));
 
-    Json::Value& recvCurrencies =
-        (result[jss::receive_currencies] = Json::arrayValue);
+    boost::json::array& recvCurrencies =
+        (result[jss::receive_currencies.c_str()].emplace_array());
     for (auto const& c : receive)
-        recvCurrencies.append(to_string(c));
+        recvCurrencies.emplace_back(to_string(c));
 
     return result;
 }

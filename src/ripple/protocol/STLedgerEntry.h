@@ -52,7 +52,7 @@ public:
     std::string
     getText() const override;
 
-    boost::json::value
+    boost::json::object
     getJson(JsonOptions options) const override;
 
     /** Returns the 'key' (or 'index') of this item.

@@ -42,37 +42,37 @@ struct VisitData
 };
 
 void
-addLine(Json::Value& jsonLines, RPCTrustLine const& line)
+addLine(boost::json::array& jsonLines, RPCTrustLine const& line)
 {
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
-    Json::Value& jPeer(jsonLines.append(Json::objectValue));
+    boost::json::object& jPeer(jsonLines.emplace_back(boost::json::object()).as_object());
 
-    jPeer[jss::account] = to_string(line.getAccountIDPeer());
+    jPeer[jss::account.c_str()] = to_string(line.getAccountIDPeer());
     // Amount reported is positive if current account holds other
     // account's IOUs.
     //
     // Amount reported is negative if other account holds current
     // account's IOUs.
-    jPeer[jss::balance] = saBalance.getText();
-    jPeer[jss::currency] = to_string(saBalance.issue().currency);
-    jPeer[jss::limit] = saLimit.getText();
-    jPeer[jss::limit_peer] = saLimitPeer.getText();
-    jPeer[jss::quality_in] = line.getQualityIn().value;
-    jPeer[jss::quality_out] = line.getQualityOut().value;
+    jPeer[jss::balance.c_str()] = saBalance.getText();
+    jPeer[jss::currency.c_str()] = to_string(saBalance.issue().currency);
+    jPeer[jss::limit.c_str()] = saLimit.getText();
+    jPeer[jss::limit_peer.c_str()] = saLimitPeer.getText();
+    jPeer[jss::quality_in.c_str()] = line.getQualityIn().value;
+    jPeer[jss::quality_out.c_str()] = line.getQualityOut().value;
     if (line.getAuth())
-        jPeer[jss::authorized] = true;
+        jPeer[jss::authorized.c_str()] = true;
     if (line.getAuthPeer())
-        jPeer[jss::peer_authorized] = true;
+        jPeer[jss::peer_authorized.c_str()] = true;
     if (line.getNoRipple() || !line.getDefaultRipple())
-        jPeer[jss::no_ripple] = line.getNoRipple();
+        jPeer[jss::no_ripple.c_str()] = line.getNoRipple();
     if (line.getNoRipplePeer() || !line.getDefaultRipple())
-        jPeer[jss::no_ripple_peer] = line.getNoRipplePeer();
+        jPeer[jss::no_ripple_peer.c_str()] = line.getNoRipplePeer();
     if (line.getFreeze())
-        jPeer[jss::freeze] = true;
+        jPeer[jss::freeze.c_str()] = true;
     if (line.getFreezePeer())
-        jPeer[jss::freeze_peer] = true;
+        jPeer[jss::freeze_peer.c_str()] = true;
 }
 
 // {
@@ -84,11 +84,11 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 //   ignore_default: bool           // do not return lines in default state (on
 //   this account's side)
 // }
-Json::Value
+boost::json::object
 doAccountLines(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    if (!params.isMember(jss::account))
+    if (!params.contains(jss::account.c_str()))
         return RPC::missing_field_error(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
@@ -96,13 +96,14 @@ doAccountLines(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    std::string strIdent(params[jss::account].asString());
+    std::string strIdent(params.at(jss::account.c_str()).as_string());
     AccountID accountID;
 
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    if (auto jv = RPC::accountFromString(accountID, strIdent); !jv.empty())
     {
+        // Keshava: is there any easier way to copy items from one boost::json::object into the other?
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = *it;
+            result[it->key()] = it->value();
         return result;
     }
 
@@ -110,17 +111,17 @@ doAccountLines(RPC::JsonContext& context)
         return rpcError(rpcACT_NOT_FOUND);
 
     std::string strPeer;
-    if (params.isMember(jss::peer))
-        strPeer = params[jss::peer].asString();
+    if (params.contains(jss::peer.c_str()))
+        strPeer = params.at(jss::peer.c_str()).as_string();
     auto hasPeer = !strPeer.empty();
 
     AccountID raPeerAccount;
     if (hasPeer)
     {
-        if (auto jv = RPC::accountFromString(raPeerAccount, strPeer))
+        if (auto jv = RPC::accountFromString(raPeerAccount, strPeer); !jv.empty())
         {
             for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
+                result[it->key()] = it->value();
             return result;
         }
     }
@@ -134,23 +135,23 @@ doAccountLines(RPC::JsonContext& context)
 
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
-    bool ignoreDefault = params.isMember(jss::ignore_default) &&
-        params[jss::ignore_default].asBool();
+    bool ignoreDefault = params.contains(jss::ignore_default.c_str()) &&
+        params.at(jss::ignore_default.c_str()).as_bool();
 
-    Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
+    boost::json::array& jsonLines(result[jss::lines.c_str()].emplace_array());
     VisitData visitData = {
         {}, accountID, hasPeer, raPeerAccount, ignoreDefault, 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
-    if (params.isMember(jss::marker))
+    if (params.contains(jss::marker.c_str()))
     {
-        if (!params[jss::marker].isString())
+        if (!params.at(jss::marker.c_str()).is_string())
             return RPC::expected_field_error(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
         // former will be read as hex, and the latter using boost lexical cast.
-        std::stringstream marker(params[jss::marker].asString());
+        std::stringstream marker(std::string{params.at(jss::marker.c_str()).as_string()});
         std::string value;
         if (!std::getline(marker, value, ','))
             return rpcError(rpcINVALID_PARAMS);
@@ -247,12 +248,12 @@ doAccountLines(RPC::JsonContext& context)
     // no need to return a marker.
     if (count == limit + 1 && marker)
     {
-        result[jss::limit] = limit;
-        result[jss::marker] =
+        result[jss::limit.c_str()] = limit;
+        result[jss::marker.c_str()] =
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account.c_str()] = toBase58(accountID);
 
     for (auto const& item : visitData.items)
         addLine(jsonLines, item);

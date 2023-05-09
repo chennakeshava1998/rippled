@@ -33,6 +33,7 @@
 #include <ripple/resource/impl/Import.h>
 #include <cassert>
 #include <mutex>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace Resource {
@@ -197,19 +198,19 @@ public:
         return Consumer(*this, *entry);
     }
 
-    Json::Value
+    boost::json::object
     getJson()
     {
         return getJson(warningThreshold);
     }
 
     /** Returns a Json::objectValue. */
-    Json::Value
+    boost::json::object
     getJson(int threshold)
     {
         clock_type::time_point const now(m_clock.now());
 
-        Json::Value ret(Json::objectValue);
+        boost::json::object ret;
         std::lock_guard _(lock_);
 
         for (auto& inboundEntry : inbound_)
@@ -217,11 +218,11 @@ public:
             int localBalance = inboundEntry.local_balance.value(now);
             if ((localBalance + inboundEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry =
-                    (ret[inboundEntry.to_string()] = Json::objectValue);
-                entry[jss::local] = localBalance;
-                entry[jss::remote] = inboundEntry.remote_balance;
-                entry[jss::type] = "inbound";
+                boost::json::object& entry =
+                    (ret[inboundEntry.to_string()].emplace_object());
+                entry[jss::local.c_str()] = localBalance;
+                entry[jss::remote.c_str()] = inboundEntry.remote_balance;
+                entry[jss::type.c_str()] = "inbound";
             }
         }
         for (auto& outboundEntry : outbound_)
@@ -229,11 +230,11 @@ public:
             int localBalance = outboundEntry.local_balance.value(now);
             if ((localBalance + outboundEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry =
-                    (ret[outboundEntry.to_string()] = Json::objectValue);
-                entry[jss::local] = localBalance;
-                entry[jss::remote] = outboundEntry.remote_balance;
-                entry[jss::type] = "outbound";
+                boost::json::object& entry =
+                    (ret[outboundEntry.to_string()].emplace_object());
+                entry[jss::local.c_str()] = localBalance;
+                entry[jss::remote.c_str()] = outboundEntry.remote_balance;
+                entry[jss::type.c_str()] = "outbound";
             }
         }
         for (auto& adminEntry : admin_)
@@ -241,11 +242,11 @@ public:
             int localBalance = adminEntry.local_balance.value(now);
             if ((localBalance + adminEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry =
-                    (ret[adminEntry.to_string()] = Json::objectValue);
-                entry[jss::local] = localBalance;
-                entry[jss::remote] = adminEntry.remote_balance;
-                entry[jss::type] = "admin";
+                boost::json::object& entry =
+                    (ret[adminEntry.to_string()].emplace_object());
+                entry[jss::local.c_str()] = localBalance;
+                entry[jss::remote.c_str()] = adminEntry.remote_balance;
+                entry[jss::type.c_str()] = "admin";
             }
         }
 

@@ -25,7 +25,7 @@ namespace ripple {
 struct RPCErr;
 
 // VFALCO NOTE Deprecated function
-boost::json::value
+boost::json::object
 rpcError(int iError)
 {
     boost::json::object jvResult;
