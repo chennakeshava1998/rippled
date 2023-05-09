@@ -207,7 +207,7 @@ std::optional<Seed>
 parseRippleLibSeed(boost::json::value const& params);
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(boost::json::value const& params, Json::Value& error);
+keypairForSignature(boost::json::object const& params, boost::json::object& error);
 
 /**
  * API version numbers used in API version 1
@@ -290,7 +290,7 @@ getAPIVersionNumber(const boost::json::value& value, bool betaEnabled);
 
 /** Return a ledger based on ledger_hash or ledger_index,
     or an RPC error */
-std::variant<std::shared_ptr<Ledger const>, boost::json::value>
+std::variant<std::shared_ptr<Ledger const>, boost::json::object>
 getLedgerByContext(RPC::JsonContext& context);
 
 }  // namespace RPC

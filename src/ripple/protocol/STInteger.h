@@ -41,7 +41,7 @@ public:
     SerializedTypeID
     getSType() const override;
 
-    boost::json::value getJson(JsonOptions) const override;
+    boost::json::object getJson(JsonOptions) const override;
 
     std::string
     getText() const override;

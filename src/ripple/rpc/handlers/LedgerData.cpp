@@ -41,7 +41,7 @@ namespace ripple {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value
+boost::json::object
 doLedgerData(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
@@ -51,38 +51,38 @@ doLedgerData(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    bool const isMarker = params.isMember(jss::marker);
+    bool const isMarker = params.contains(jss::marker.c_str());
     ReadView::key_type key = ReadView::key_type();
     if (isMarker)
     {
-        Json::Value const& jMarker = params[jss::marker];
-        if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
+        boost::json::value const& jMarker = params.at(jss::marker.c_str());
+        if (!(jMarker.is_string() && key.parseHex(jMarker.as_string())))
             return RPC::expected_field_error(jss::marker, "valid");
     }
 
-    bool const isBinary = params[jss::binary].asBool();
+    bool const isBinary = params.at(jss::binary.c_str()).as_bool();
 
     int limit = -1;
-    if (params.isMember(jss::limit))
+    if (params.contains(jss::limit.c_str()))
     {
-        Json::Value const& jLimit = params[jss::limit];
-        if (!jLimit.isIntegral())
+        boost::json::value const& jLimit = params.at(jss::limit.c_str());
+        if (!jLimit.is_number())
             return RPC::expected_field_error(jss::limit, "integer");
 
-        limit = jLimit.asInt();
+        limit = jLimit.as_int64();
     }
 
     auto maxLimit = RPC::Tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
-    jvResult[jss::ledger_hash] = to_string(lpLedger->info().hash);
-    jvResult[jss::ledger_index] = lpLedger->info().seq;
+    jvResult[jss::ledger_hash.c_str()] = to_string(lpLedger->info().hash);
+    jvResult[jss::ledger_index.c_str()] = lpLedger->info().seq;
 
     if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] = getJson(LedgerFill(
+        jvResult[jss::ledger.c_str()] = getJson(LedgerFill(
             *lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
     }
 
@@ -93,10 +93,10 @@ doLedgerData(RPC::JsonContext& context)
         rpcStatus.inject(jvResult);
         return jvResult;
     }
-    Json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == Json::nullValue)
+    boost::json::value& nodes = jvResult[jss::state.c_str()];
+    if (nodes.is_null())
     {
-        nodes = Json::Value(Json::arrayValue);
+        nodes.emplace_array();
     }
 
     auto e = lpLedger->sles.end();
@@ -107,7 +107,7 @@ doLedgerData(RPC::JsonContext& context)
         {
             // Stop processing before the current key.
             auto k = sle->key();
-            jvResult[jss::marker] = to_string(--k);
+            jvResult[jss::marker.c_str()] = to_string(--k);
             break;
         }
 
@@ -115,15 +115,15 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                Json::Value& entry = nodes.append(Json::objectValue);
-                entry[jss::data] = serializeHex(*sle);
-                entry[jss::index] = to_string(sle->key());
+                boost::json::object& entry = nodes.as_array().emplace_back(boost::json::object()).as_object();
+                entry[jss::data.c_str()] = serializeHex(*sle);
+                entry[jss::index.c_str()] = to_string(sle->key());
             }
             else
             {
-                Json::Value& entry =
-                    nodes.append(sle->getJson(JsonOptions::none));
-                entry[jss::index] = to_string(sle->key());
+                boost::json::object& entry =
+                    nodes.as_array().emplace_back(sle->getJson(JsonOptions::none)).as_object();
+                entry[jss::index.c_str()] = to_string(sle->key());
             }
         }
     }

@@ -40,31 +40,31 @@ namespace ripple {
 //   channel_id: 256-bit channel id
 //   drops: 64-bit uint (as string)
 // }
-Json::Value
+boost::json::object
 doChannelAuthorize(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
-        if (!params.isMember(p))
+        if (!params.contains(p.c_str()))
             return RPC::missing_field_error(p);
 
     // Compatibility if a key type isn't specified. If it is, the
     // keypairForSignature code will validate parameters and return
     // the appropriate error.
-    if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
+    if (!params.contains(jss::key_type.c_str()) && !params.contains(jss::secret.c_str()))
         return RPC::missing_field_error(jss::secret);
 
-    Json::Value result;
+    boost::json::object result;
     auto const [pk, sk] = RPC::keypairForSignature(params, result);
     if (RPC::contains_error(result))
         return result;
 
     uint256 channelId;
-    if (!channelId.parseHex(params[jss::channel_id].asString()))
+    if (!channelId.parseHex(params.at(jss::channel_id.c_str()).as_string()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
-        ? to_uint64(params[jss::amount].asString())
+    std::optional<std::uint64_t> const optDrops = params.at(jss::amount.c_str()).is_string()
+        ? to_uint64(params.at(jss::amount.c_str()).as_string().c_str())
         : std::nullopt;
 
     if (!optDrops)
@@ -78,7 +78,7 @@ doChannelAuthorize(RPC::JsonContext& context)
     try
     {
         auto const buf = sign(pk, sk, msg.slice());
-        result[jss::signature] = strHex(buf);
+        result[jss::signature.c_str()] = strHex(buf);
     }
     catch (std::exception const& ex)
     {
@@ -95,18 +95,18 @@ doChannelAuthorize(RPC::JsonContext& context)
 //   drops: 64-bit uint (as string)
 //   signature: signature to verify
 // }
-Json::Value
+boost::json::object
 doChannelVerify(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     for (auto const& p :
          {jss::public_key, jss::channel_id, jss::amount, jss::signature})
-        if (!params.isMember(p))
+        if (!params.contains(p.c_str()))
             return RPC::missing_field_error(p);
 
     std::optional<PublicKey> pk;
     {
-        std::string const strPk = params[jss::public_key].asString();
+        std::string const strPk = params.at(jss::public_key.c_str()).as_string().c_str();
         pk = parseBase58<PublicKey>(TokenType::AccountPublic, strPk);
 
         if (!pk)
@@ -122,11 +122,11 @@ doChannelVerify(RPC::JsonContext& context)
     }
 
     uint256 channelId;
-    if (!channelId.parseHex(params[jss::channel_id].asString()))
+    if (!channelId.parseHex(params.at(jss::channel_id.c_str()).as_string()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
-        ? to_uint64(params[jss::amount].asString())
+    std::optional<std::uint64_t> const optDrops = params.at(jss::amount.c_str()).is_string()
+        ? to_uint64(params.at(jss::amount.c_str()).as_string().c_str())
         : std::nullopt;
 
     if (!optDrops)
@@ -134,15 +134,15 @@ doChannelVerify(RPC::JsonContext& context)
 
     std::uint64_t const drops = *optDrops;
 
-    auto sig = strUnHex(params[jss::signature].asString());
+    auto sig = strUnHex(params.at(jss::signature.c_str()).as_string().c_str());
     if (!sig || !sig->size())
         return rpcError(rpcINVALID_PARAMS);
 
     Serializer msg;
     serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
 
-    Json::Value result;
-    result[jss::signature_verified] =
+    boost::json::object result;
+    result[jss::signature_verified.c_str()] =
         verify(*pk, msg.slice(), makeSlice(*sig), /*canonical*/ true);
     return result;
 }

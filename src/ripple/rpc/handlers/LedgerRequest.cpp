@@ -36,18 +36,18 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value
+boost::json::object
 doLedgerRequest(RPC::JsonContext& context)
 {
     auto res = getLedgerByContext(context);
 
-    if (std::holds_alternative<Json::Value>(res))
-        return std::get<Json::Value>(res);
+    if (std::holds_alternative<boost::json::object>(res))
+        return std::get<boost::json::object>(res);
 
     auto const& ledger = std::get<std::shared_ptr<Ledger const>>(res);
 
-    Json::Value jvResult;
-    jvResult[jss::ledger_index] = ledger->info().seq;
+    boost::json::object jvResult;
+    jvResult[jss::ledger_index.c_str()] = ledger->info().seq;
     addJson(jvResult, {*ledger, &context, 0});
     return jvResult;
 }

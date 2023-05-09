@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doLedgerCleaner(RPC::JsonContext& context)
 {
     context.app.getLedgerCleaner().clean(context.params);

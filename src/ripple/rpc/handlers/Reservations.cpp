@@ -31,7 +31,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doPeerReservationsAdd(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -39,7 +39,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
 
     auto const& params = context.params;
 
-    if (!params.isMember(jss::public_key))
+    if (!params.contains(jss::public_key.c_str()))
         return RPC::missing_field_error(jss::public_key);
 
     // Returning JSON from every function ruins any attempt to encapsulate
@@ -55,23 +55,23 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     // flow. An error monad is purpose-built for this situation; it is
     // essentially an optional (the "maybe monad" in Haskell) with a non-unit
     // type for the failure case to capture more information.
-    if (!params[jss::public_key].isString())
+    if (!params.at(jss::public_key.c_str()).is_string())
         return RPC::expected_field_error(jss::public_key, "a string");
 
     // Same for the pattern of "if field F is present, make sure it has type T
     // and get it".
     std::string desc;
-    if (params.isMember(jss::description))
+    if (params.contains(jss::description.c_str()))
     {
-        if (!params[jss::description].isString())
+        if (!params.at(jss::description.c_str()).is_string())
             return RPC::expected_field_error(jss::description, "a string");
-        desc = params[jss::description].asString();
+        desc = params.at(jss::description.c_str()).as_string();
     }
 
     // channel_verify takes a key in both base58 and hex.
     // @nikb prefers that we take only base58.
     std::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic, params[jss::public_key].asString());
+        TokenType::NodePublic, params.at(jss::public_key.c_str()).as_string().c_str());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
@@ -79,15 +79,15 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     auto const previous = context.app.peerReservations().insert_or_assign(
         PeerReservation{nodeId, desc});
 
-    Json::Value result{Json::objectValue};
+    boost::json::object result;
     if (previous)
     {
-        result[jss::previous] = previous->toJson();
+        result[jss::previous.c_str()] = previous->toJson();
     }
     return result;
 }
 
-Json::Value
+boost::json::object
 doPeerReservationsDel(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -96,28 +96,28 @@ doPeerReservationsDel(RPC::JsonContext& context)
     auto const& params = context.params;
 
     // We repeat much of the parameter parsing from `doPeerReservationsAdd`.
-    if (!params.isMember(jss::public_key))
+    if (!params.contains(jss::public_key.c_str()))
         return RPC::missing_field_error(jss::public_key);
-    if (!params[jss::public_key].isString())
+    if (!params.at(jss::public_key.c_str()).is_string())
         return RPC::expected_field_error(jss::public_key, "a string");
 
     std::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic, params[jss::public_key].asString());
+        TokenType::NodePublic, params.at(jss::public_key.c_str()).as_string().c_str());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
     auto const previous = context.app.peerReservations().erase(nodeId);
 
-    Json::Value result{Json::objectValue};
+    boost::json::object result;
     if (previous)
     {
-        result[jss::previous] = previous->toJson();
+        result[jss::previous.c_str()] = previous->toJson();
     }
     return result;
 }
 
-Json::Value
+boost::json::object
 doPeerReservationsList(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -126,11 +126,11 @@ doPeerReservationsList(RPC::JsonContext& context)
     auto const& reservations = context.app.peerReservations().list();
     // Enumerate the reservations in context.app.peerReservations()
     // as a Json::Value.
-    Json::Value result{Json::objectValue};
-    Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
+    boost::json::object result;
+    boost::json::array& jaReservations = result[jss::reservations.c_str()].emplace_array();
     for (auto const& reservation : reservations)
     {
-        jaReservations.append(reservation.toJson());
+        jaReservations.emplace_back(reservation.toJson());
     }
     return result;
 }

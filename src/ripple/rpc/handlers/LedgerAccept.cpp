@@ -31,20 +31,20 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doLedgerAccept(RPC::JsonContext& context)
 {
-    Json::Value jvResult;
+    boost::json::object jvResult;
 
     if (!context.app.config().standalone() || context.app.config().reporting())
     {
-        jvResult[jss::error] = "notStandAlone";
+        jvResult[jss::error.c_str()] = "notStandAlone";
     }
     else
     {
         std::unique_lock lock{context.app.getMasterMutex()};
         context.netOps.acceptLedger();
-        jvResult[jss::ledger_current_index] =
+        jvResult[jss::ledger_current_index.c_str()] =
             context.ledgerMaster.getCurrentLedgerIndex();
     }
 

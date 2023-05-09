@@ -27,16 +27,16 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doServerState(RPC::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
-    ret[jss::state] = context.netOps.getServerInfo(
+    ret[jss::state.c_str()] = context.netOps.getServerInfo(
         false,
         context.role == Role::ADMIN,
-        context.params.isMember(jss::counters) &&
-            context.params[jss::counters].asBool());
+        context.params.contains(jss::counters.c_str()) &&
+            context.params[jss::counters.c_str()].as_bool());
 
     return ret;
 }

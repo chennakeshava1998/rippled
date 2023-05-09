@@ -27,22 +27,22 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doFetchInfo(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
         return rpcError(rpcREPORTING_UNSUPPORTED);
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
-    if (context.params.isMember(jss::clear) &&
-        context.params[jss::clear].asBool())
+    if (context.params.contains(jss::clear.c_str()) &&
+        context.params[jss::clear.c_str()].as_bool())
     {
         context.netOps.clearLedgerFetch();
-        ret[jss::clear] = true;
+        ret[jss::clear.c_str()] = true;
     }
 
-    ret[jss::info] = context.netOps.getLedgerFetchInfo();
+    ret[jss::info.c_str()] = context.netOps.getLedgerFetchInfo();
 
     return ret;
 }

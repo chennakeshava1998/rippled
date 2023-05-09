@@ -49,7 +49,7 @@ namespace ripple {
 
 // gateway_balances [<ledger>] <account> [<howallet> [<hotwallet [...
 
-Json::Value
+boost::json::object
 doGatewayBalances(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -61,44 +61,44 @@ doGatewayBalances(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
+    if (!(params.contains(jss::account.c_str()) || params.contains(jss::ident.c_str())))
         return RPC::missing_field_error(jss::account);
 
     std::string const strIdent(
-        params.isMember(jss::account) ? params[jss::account].asString()
-                                      : params[jss::ident].asString());
+        params.contains(jss::account.c_str()) ? params[jss::account.c_str()].as_string()
+                                      : params[jss::ident.c_str()].as_string());
 
     bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
+        params.contains(jss::strict.c_str()) && params[jss::strict.c_str()].as_bool();
 
     // Get info on account.
     AccountID accountID;
     auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
 
-    if (jvAccepted)
+    if (!jvAccepted.empty())
         return jvAccepted;
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account.c_str()] = toBase58(accountID);
 
     // Parse the specified hotwallet(s), if any
     std::set<AccountID> hotWallets;
 
-    if (params.isMember(jss::hotwallet))
+    if (params.contains(jss::hotwallet.c_str()))
     {
-        auto addHotWallet = [&hotWallets](Json::Value const& j) {
-            if (j.isString())
+        auto addHotWallet = [&hotWallets](boost::json::value const& j) {
+            if (j.is_string())
             {
                 auto const pk = parseBase58<PublicKey>(
-                    TokenType::AccountPublic, j.asString());
+                    TokenType::AccountPublic, j.as_string().c_str());
                 if (pk)
                 {
                     hotWallets.insert(calcAccountID(*pk));
                     return true;
                 }
 
-                auto const id = parseBase58<AccountID>(j.asString());
+                auto const id = parseBase58<AccountID>(j.as_string().c_str());
 
                 if (id)
                 {
@@ -110,27 +110,27 @@ doGatewayBalances(RPC::JsonContext& context)
             return false;
         };
 
-        Json::Value const& hw = params[jss::hotwallet];
+        boost::json::value const& hw = params[jss::hotwallet.c_str()];
         bool valid = true;
 
         // null is treated as a valid 0-sized array of hotwallet
-        if (hw.isArrayOrNull())
+        if (hw.is_array())
         {
-            for (unsigned i = 0; i < hw.size(); ++i)
-                valid &= addHotWallet(hw[i]);
+            for (auto const& i : hw.as_array())
+                valid &= addHotWallet(i);
         }
-        else if (hw.isString())
+        else if (hw.is_string())
         {
             valid &= addHotWallet(hw);
         }
-        else
+        else if (!hw.is_null())
         {
             valid = false;
         }
 
         if (!valid)
         {
-            result[jss::error] = "invalidHotWallet";
+            result[jss::error.c_str()] = "invalidHotWallet";
             return result;
         }
     }
@@ -207,12 +207,12 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (!sums.empty())
     {
-        Json::Value j;
+        boost::json::object j;
         for (auto const& [k, v] : sums)
         {
             j[to_string(k)] = v.getText();
         }
-        result[jss::obligations] = std::move(j);
+        result[jss::obligations.c_str()] = std::move(j);
     }
 
     auto populateResult =
@@ -221,21 +221,21 @@ doGatewayBalances(RPC::JsonContext& context)
             Json::StaticString const& name) {
             if (!array.empty())
             {
-                Json::Value j;
+                boost::json::object j;
                 for (auto const& [accId, accBalances] : array)
                 {
-                    Json::Value balanceArray;
+                    boost::json::array balanceArray;
                     for (auto const& balance : accBalances)
                     {
-                        Json::Value entry;
-                        entry[jss::currency] =
+                        boost::json::object entry;
+                        entry[jss::currency.c_str()] =
                             to_string(balance.issue().currency);
-                        entry[jss::value] = balance.getText();
-                        balanceArray.append(std::move(entry));
+                        entry[jss::value.c_str()] = balance.getText();
+                        balanceArray.emplace_back(std::move(entry));
                     }
                     j[to_string(accId)] = std::move(balanceArray);
                 }
-                result[name] = std::move(j);
+                result[name.c_str()] = std::move(j);
             }
         };
 

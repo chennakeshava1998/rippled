@@ -1822,7 +1822,7 @@ TxQ::getTxs() const
     return result;
 }
 
-boost::json::value
+boost::json::object
 TxQ::doRPC(Application& app) const
 {
     auto const view = app.openLedger().current();

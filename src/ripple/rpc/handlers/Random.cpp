@@ -35,7 +35,7 @@ struct JsonContext;
 // {
 //   random: <uint256>
 // }
-Json::Value
+boost::json::object
 doRandom(RPC::JsonContext& context)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
@@ -45,8 +45,8 @@ doRandom(RPC::JsonContext& context)
         uint256 rand;
         beast::rngfill(rand.begin(), rand.size(), crypto_prng());
 
-        Json::Value jvResult;
-        jvResult[jss::random] = to_string(rand);
+        boost::json::object jvResult;
+        jvResult[jss::random.c_str()] = to_string(rand);
         return jvResult;
     }
     catch (std::exception const&)

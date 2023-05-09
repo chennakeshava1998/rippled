@@ -40,7 +40,7 @@ namespace ripple {
         limit: <integer>
     }
 */
-Json::Value
+boost::json::object
 doCrawlShards(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -50,11 +50,11 @@ doCrawlShards(RPC::JsonContext& context)
         return rpcError(rpcNO_PERMISSION);
 
     std::uint32_t relays{0};
-    if (auto const& jv = context.params[jss::limit])
+    if (auto const& jv = context.params[jss::limit.c_str()]; !jv.is_null())
     {
-        if (!(jv.isUInt() || (jv.isInt() && jv.asInt() >= 0)))
+        if (!(jv.is_uint64() || (jv.is_int64() && jv.as_int64() >= 0)))
             return RPC::expected_field_error(jss::limit, "unsigned integer");
-        relays = std::min(jv.asUInt(), relayLimit);
+        relays = std::min(static_cast<unsigned int>(jv.as_uint64()), relayLimit);
         context.loadType = Resource::feeHighBurdenRPC;
     }
     else
@@ -62,9 +62,9 @@ doCrawlShards(RPC::JsonContext& context)
 
     // Collect shard info from server and peers
     bool const includePublicKey{
-        context.params.isMember(jss::public_key) &&
-        context.params[jss::public_key].asBool()};
-    Json::Value jvResult{
+        context.params.contains(jss::public_key.c_str()) &&
+        context.params[jss::public_key.c_str()].as_bool()};
+    boost::json::object jvResult{
         context.app.overlay().crawlShards(includePublicKey, relays)};
 
     return jvResult;

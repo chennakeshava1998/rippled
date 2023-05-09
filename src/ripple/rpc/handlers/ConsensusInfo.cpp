@@ -27,15 +27,15 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doConsensusInfo(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
         return rpcError(rpcREPORTING_UNSUPPORTED);
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
-    ret[jss::info] = context.netOps.getConsensusInfo();
+    ret[jss::info.c_str()] = context.netOps.getConsensusInfo();
 
     return ret;
 }

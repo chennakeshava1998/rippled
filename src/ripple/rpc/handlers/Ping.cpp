@@ -28,24 +28,24 @@ namespace RPC {
 struct JsonContext;
 }  // namespace RPC
 
-Json::Value
+boost::json::object
 doPing(RPC::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
     switch (context.role)
     {
         case Role::ADMIN:
-            ret[jss::role] = "admin";
+            ret[jss::role.c_str()] = "admin";
             break;
         case Role::IDENTIFIED:
-            ret[jss::role] = "identified";
-            ret[jss::username] = context.headers.user.to_string();
+            ret[jss::role.c_str()] = "identified";
+            ret[jss::username.c_str()] = context.headers.user.to_string();
             if (context.headers.forwardedFor.size())
-                ret[jss::ip] = context.headers.forwardedFor.to_string();
+                ret[jss::ip.c_str()] = context.headers.forwardedFor.to_string();
             break;
         case Role::PROXY:
-            ret[jss::role] = "proxied";
-            ret[jss::ip] = context.headers.forwardedFor.to_string();
+            ret[jss::role.c_str()] = "proxied";
+            ret[jss::ip.c_str()] = context.headers.forwardedFor.to_string();
         default:;
     }
 
@@ -53,7 +53,7 @@ doPing(RPC::JsonContext& context)
     if (context.infoSub)
     {
         if (context.infoSub->getConsumer().isUnlimited())
-            ret[jss::unlimited] = true;
+            ret[jss::unlimited.c_str()] = true;
     }
 
     return ret;

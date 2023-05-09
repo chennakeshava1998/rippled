@@ -28,7 +28,7 @@
 namespace ripple {
 
 // This interface is deprecated.
-Json::Value
+boost::json::object
 doRipplePathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
@@ -37,12 +37,12 @@ doRipplePathFind(RPC::JsonContext& context)
     context.loadType = Resource::feeHighBurdenRPC;
 
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult;
+    boost::json::object jvResult;
 
     if (!context.app.config().standalone() &&
-        !context.params.isMember(jss::ledger) &&
-        !context.params.isMember(jss::ledger_index) &&
-        !context.params.isMember(jss::ledger_hash))
+        !context.params.contains(jss::ledger.c_str()) &&
+        !context.params.contains(jss::ledger_index.c_str()) &&
+        !context.params.contains(jss::ledger_hash.c_str()))
     {
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
@@ -167,8 +167,8 @@ doRipplePathFind(RPC::JsonContext& context)
     auto result = context.app.getPathRequests().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
 
-    for (auto& fieldName : jvResult.getMemberNames())
-        result[fieldName] = std::move(jvResult[fieldName]);
+    for (auto& field : jvResult)
+        result[field.key()] = std::move(field.value()); // Keshava: Is it safe to pilfer/move from boost::json::object? jvResult is a local variable, so it should be okay
 
     return result;
 }

@@ -25,15 +25,15 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doLedgerClosed(RPC::JsonContext& context)
 {
     auto ledger = context.ledgerMaster.getClosedLedger();
     assert(ledger);
 
-    Json::Value jvResult;
-    jvResult[jss::ledger_index] = ledger->info().seq;
-    jvResult[jss::ledger_hash] = to_string(ledger->info().hash);
+    boost::json::object jvResult;
+    jvResult[jss::ledger_index.c_str()] = ledger->info().seq;
+    jvResult[jss::ledger_hash.c_str()] = to_string(ledger->info().hash);
 
     return jvResult;
 }

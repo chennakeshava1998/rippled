@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doPathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)

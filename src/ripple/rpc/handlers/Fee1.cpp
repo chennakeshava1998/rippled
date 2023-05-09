@@ -27,11 +27,11 @@
 #include <ripple/rpc/GRPCHandlers.h>
 
 namespace ripple {
-Json::Value
+boost::json::object
 doFee(RPC::JsonContext& context)
 {
     auto result = context.app.getTxQ().doRPC(context.app);
-    if (result.type() == Json::objectValue)
+    if (result.empty())
         return result;
     assert(false);
     RPC::inject_error(rpcINTERNAL, context.params);

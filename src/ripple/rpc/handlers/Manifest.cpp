@@ -26,7 +26,7 @@
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
-Json::Value
+boost::json::object
 doManifest(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -34,13 +34,13 @@ doManifest(RPC::JsonContext& context)
 
     auto& params = context.params;
 
-    if (!params.isMember(jss::public_key))
+    if (!params.contains(jss::public_key.c_str()))
         return RPC::missing_field_error(jss::public_key);
 
-    auto const requested = params[jss::public_key].asString();
+    auto const requested = params[jss::public_key.c_str()].as_string().c_str();
 
-    Json::Value ret;
-    ret[jss::requested] = requested;
+    boost::json::object ret;
+    ret[jss::requested.c_str()] = requested;
 
     auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, requested);
     if (!pk)
@@ -62,19 +62,19 @@ doManifest(RPC::JsonContext& context)
         return ret;
 
     if (auto const manifest = context.app.validatorManifests().getManifest(mk))
-        ret[jss::manifest] = base64_encode(*manifest);
-    Json::Value details;
+        ret[jss::manifest.c_str()] = base64_encode(*manifest);
+    boost::json::object details;
 
-    details[jss::master_key] = toBase58(TokenType::NodePublic, mk);
-    details[jss::ephemeral_key] = toBase58(TokenType::NodePublic, ek);
+    details[jss::master_key.c_str()] = toBase58(TokenType::NodePublic, mk);
+    details[jss::ephemeral_key.c_str()] = toBase58(TokenType::NodePublic, ek);
 
     if (auto const seq = context.app.validatorManifests().getSequence(mk))
-        details[jss::seq] = *seq;
+        details[jss::seq.c_str()] = *seq;
 
     if (auto const domain = context.app.validatorManifests().getDomain(mk))
-        details[jss::domain] = *domain;
+        details[jss::domain.c_str()] = *domain;
 
-    ret[jss::details] = details;
+    ret[jss::details.c_str()] = details;
     return ret;
 }
 }  // namespace ripple

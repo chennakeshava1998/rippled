@@ -1355,7 +1355,7 @@ InboundLedger::runData()
     });
 }
 
-boost::json::value
+boost::json::object
 InboundLedger::getJson(int)
 {
     boost::json::object ret;

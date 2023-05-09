@@ -31,7 +31,7 @@
 namespace ripple {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
-Json::Value
+boost::json::object
 doCanDelete(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -40,20 +40,25 @@ doCanDelete(RPC::JsonContext& context)
     if (!context.app.getSHAMapStore().advisoryDelete())
         return RPC::make_error(rpcNOT_ENABLED);
 
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
-    if (context.params.isMember(jss::can_delete))
+    if (context.params.contains(jss::can_delete.c_str()))
     {
-        Json::Value canDelete = context.params.get(jss::can_delete, 0);
+        boost::json::value canDelete;
+        if(context.params.contains(jss::can_delete.c_str())) {
+            canDelete = context.params[jss::can_delete.c_str()];
+        } else {
+            canDelete = 0;
+        }
         std::uint32_t canDeleteSeq = 0;
 
-        if (canDelete.isUInt())
+        if (canDelete.is_uint64())
         {
-            canDeleteSeq = canDelete.asUInt();
+            canDeleteSeq = canDelete.as_uint64();
         }
         else
         {
-            std::string canDeleteStr = canDelete.asString();
+            std::string canDeleteStr{canDelete.as_string()};
             boost::to_lower(canDeleteStr);
 
             if (canDeleteStr.find_first_not_of("0123456789") ==
@@ -90,12 +95,12 @@ doCanDelete(RPC::JsonContext& context)
             }
         }
 
-        ret[jss::can_delete] =
+        ret[jss::can_delete.c_str()] =
             context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
     }
     else
     {
-        ret[jss::can_delete] = context.app.getSHAMapStore().getCanDelete();
+        ret[jss::can_delete.c_str()] = context.app.getSHAMapStore().getCanDelete();
     }
 
     return ret;

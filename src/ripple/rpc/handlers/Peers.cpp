@@ -28,29 +28,29 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doPeers(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
         return rpcError(rpcREPORTING_UNSUPPORTED);
 
-    Json::Value jvResult(Json::objectValue);
+    boost::json::object jvResult;
 
-    jvResult[jss::peers] = context.app.overlay().json();
+    jvResult[jss::peers.c_str()] = context.app.overlay().json();
 
     // Legacy support
     if (context.apiVersion == 1)
     {
-        for (auto& p : jvResult[jss::peers])
+        for (auto& p : jvResult[jss::peers.c_str()].as_array())
         {
-            if (p.isMember(jss::track))
+            if (p.as_object().contains(jss::track.c_str()))
             {
-                auto const s = p[jss::track].asString();
+                auto const s = p.as_object()[jss::track.c_str()].as_string();
 
                 if (s == "diverged")
-                    p["sanity"] = "insane";
+                    p.as_object()["sanity"] = "insane";
                 else if (s == "unknown")
-                    p["sanity"] = "unknown";
+                    p.as_object()["sanity"] = "unknown";
             }
         }
     }
@@ -58,7 +58,7 @@ doPeers(RPC::JsonContext& context)
     auto const now = context.app.timeKeeper().now();
     auto const self = context.app.nodeIdentity().first;
 
-    Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
+    boost::json::object& cluster = jvResult[jss::cluster.c_str()].emplace_object();
     std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
 
     context.app.cluster().for_each(
@@ -66,17 +66,17 @@ doPeers(RPC::JsonContext& context)
             if (node.identity() == self)
                 return;
 
-            Json::Value& json =
-                cluster[toBase58(TokenType::NodePublic, node.identity())];
+            boost::json::object& json =
+                cluster[toBase58(TokenType::NodePublic, node.identity())].as_object();
 
             if (!node.name().empty())
-                json[jss::tag] = node.name();
+                json[jss::tag.c_str()] = node.name();
 
             if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))
-                json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
+                json[jss::fee.c_str()] = static_cast<double>(node.getLoadFee()) / ref;
 
             if (node.getReportTime() != NetClock::time_point{})
-                json[jss::age] = (node.getReportTime() >= now)
+                json[jss::age.c_str()] = (node.getReportTime() >= now)
                     ? 0
                     : (now - node.getReportTime()).count();
         });

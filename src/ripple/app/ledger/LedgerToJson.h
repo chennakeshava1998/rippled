@@ -65,7 +65,7 @@ struct LedgerFill
  */
 
 void
-addJson(boost::json::value&, LedgerFill const&);
+addJson(boost::json::object&, LedgerFill const&);
 
 /** Return a new Json::Value representing the ledger with given options.*/
 boost::json::value

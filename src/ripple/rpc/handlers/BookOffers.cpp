@@ -32,7 +32,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doBookOffers(RPC::JsonContext& context)
 {
     // VFALCO TODO Here is a terrible place for this kind of business
@@ -47,36 +47,36 @@ doBookOffers(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    if (!context.params.isMember(jss::taker_pays))
+    if (!context.params.contains(jss::taker_pays.c_str()))
         return RPC::missing_field_error(jss::taker_pays);
 
-    if (!context.params.isMember(jss::taker_gets))
+    if (!context.params.contains(jss::taker_gets.c_str()))
         return RPC::missing_field_error(jss::taker_gets);
 
-    Json::Value const& taker_pays = context.params[jss::taker_pays];
-    Json::Value const& taker_gets = context.params[jss::taker_gets];
+    boost::json::object const& taker_pays = context.params[jss::taker_pays.c_str()].as_object();
+    boost::json::object const& taker_gets = context.params[jss::taker_gets.c_str()].as_object();
 
-    if (!taker_pays.isObjectOrNull())
+    if (!taker_pays.empty()) // Keshava: Is this a good translation for Json::isObjectOrNull()
         return RPC::object_field_error(jss::taker_pays);
 
-    if (!taker_gets.isObjectOrNull())
+    if (!taker_gets.empty())
         return RPC::object_field_error(jss::taker_gets);
 
-    if (!taker_pays.isMember(jss::currency))
+    if (!taker_pays.contains(jss::currency.c_str()))
         return RPC::missing_field_error("taker_pays.currency");
 
-    if (!taker_pays[jss::currency].isString())
+    if (!taker_pays.at(jss::currency.c_str()).is_string())
         return RPC::expected_field_error("taker_pays.currency", "string");
 
-    if (!taker_gets.isMember(jss::currency))
+    if (!taker_gets.contains(jss::currency.c_str()))
         return RPC::missing_field_error("taker_gets.currency");
 
-    if (!taker_gets[jss::currency].isString())
+    if (!taker_gets.at(jss::currency.c_str()).is_string())
         return RPC::expected_field_error("taker_gets.currency", "string");
 
     Currency pay_currency;
 
-    if (!to_currency(pay_currency, taker_pays[jss::currency].asString()))
+    if (!to_currency(pay_currency, std::string{taker_pays.at(jss::currency.c_str()).as_string()}))
     {
         JLOG(context.j.info()) << "Bad taker_pays currency.";
         return RPC::make_error(
@@ -86,7 +86,7 @@ doBookOffers(RPC::JsonContext& context)
 
     Currency get_currency;
 
-    if (!to_currency(get_currency, taker_gets[jss::currency].asString()))
+    if (!to_currency(get_currency, std::string{taker_gets.at(jss::currency.c_str()).as_string()}))
     {
         JLOG(context.j.info()) << "Bad taker_gets currency.";
         return RPC::make_error(
@@ -96,12 +96,12 @@ doBookOffers(RPC::JsonContext& context)
 
     AccountID pay_issuer;
 
-    if (taker_pays.isMember(jss::issuer))
+    if (taker_pays.contains(jss::issuer.c_str()))
     {
-        if (!taker_pays[jss::issuer].isString())
+        if (!taker_pays.at(jss::issuer.c_str()).is_string())
             return RPC::expected_field_error("taker_pays.issuer", "string");
 
-        if (!to_issuer(pay_issuer, taker_pays[jss::issuer].asString()))
+        if (!to_issuer(pay_issuer, std::string{taker_pays.at(jss::issuer.c_str()).as_string()}))
             return RPC::make_error(
                 rpcSRC_ISR_MALFORMED,
                 "Invalid field 'taker_pays.issuer', bad issuer.");
@@ -129,12 +129,12 @@ doBookOffers(RPC::JsonContext& context)
 
     AccountID get_issuer;
 
-    if (taker_gets.isMember(jss::issuer))
+    if (taker_gets.contains(jss::issuer.c_str()))
     {
-        if (!taker_gets[jss::issuer].isString())
+        if (!taker_gets.at(jss::issuer.c_str()).is_string())
             return RPC::expected_field_error("taker_gets.issuer", "string");
 
-        if (!to_issuer(get_issuer, taker_gets[jss::issuer].asString()))
+        if (!to_issuer(get_issuer, std::string{taker_gets.at(jss::issuer.c_str()).as_string()}))
             return RPC::make_error(
                 rpcDST_ISR_MALFORMED,
                 "Invalid field 'taker_gets.issuer', bad issuer.");
@@ -161,12 +161,12 @@ doBookOffers(RPC::JsonContext& context)
             "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
 
     std::optional<AccountID> takerID;
-    if (context.params.isMember(jss::taker))
+    if (context.params.contains(jss::taker.c_str()))
     {
-        if (!context.params[jss::taker].isString())
+        if (!context.params[jss::taker.c_str()].is_string())
             return RPC::expected_field_error(jss::taker, "string");
 
-        takerID = parseBase58<AccountID>(context.params[jss::taker].asString());
+        takerID = parseBase58<AccountID>(std::string{context.params[jss::taker.c_str()].as_string()});
         if (!takerID)
             return RPC::invalid_field_error(jss::taker);
     }
@@ -181,11 +181,11 @@ doBookOffers(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::bookOffers, context))
         return *err;
 
-    bool const bProof(context.params.isMember(jss::proof));
+    bool const bProof(context.params.contains(jss::proof.c_str()));
 
-    Json::Value const jvMarker(
-        context.params.isMember(jss::marker) ? context.params[jss::marker]
-                                             : Json::Value(Json::nullValue));
+    boost::json::value const jvMarker(
+        context.params.contains(jss::marker.c_str()) ? context.params[jss::marker.c_str()]
+                                             : boost::json::value());
 
     context.netOps.getBookPage(
         lpLedger,
@@ -201,13 +201,13 @@ doBookOffers(RPC::JsonContext& context)
     return jvResult;
 }
 
-Json::Value
+boost::json::object
 doBookChanges(RPC::JsonContext& context)
 {
     auto res = RPC::getLedgerByContext(context);
 
-    if (std::holds_alternative<Json::Value>(res))
-        return std::get<Json::Value>(res);
+    if (std::holds_alternative<boost::json::object>(res))
+        return std::get<boost::json::object>(res);
 
     return RPC::computeBookChanges(
         std::get<std::shared_ptr<Ledger const>>(res));

@@ -31,7 +31,7 @@ namespace ripple {
 //   account: <signing account>
 //   secret: <secret of signing account>
 // }
-Json::Value
+boost::json::object
 doSignFor(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
@@ -41,7 +41,7 @@ doSignFor(RPC::JsonContext& context)
     }
 
     context.loadType = Resource::feeHighBurdenRPC;
-    auto const failHard = context.params[jss::fail_hard].asBool();
+    auto const failHard = context.params[jss::fail_hard.c_str()].as_bool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 
     auto ret = RPC::transactionSignFor(

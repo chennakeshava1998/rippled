@@ -45,7 +45,7 @@ namespace ripple {
       ]
     }
 */
-Json::Value
+boost::json::object
 doDownloadShard(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -69,10 +69,10 @@ doDownloadShard(RPC::JsonContext& context)
         return RPC::makeObjectValue(s + " " + preShards);
     }
 
-    if (!context.params.isMember(jss::shards))
+    if (!context.params.contains(jss::shards.c_str()))
         return RPC::missing_field_error(jss::shards);
-    if (!context.params[jss::shards].isArray() ||
-        context.params[jss::shards].size() == 0)
+    if (!context.params[jss::shards.c_str()].is_array() ||
+        context.params[jss::shards.c_str()].as_array().size() == 0)
     {
         return RPC::expected_field_error(std::string(jss::shards), "an array");
     }
@@ -80,23 +80,24 @@ doDownloadShard(RPC::JsonContext& context)
     // Validate shards
     static const std::string ext{".tar.lz4"};
     std::map<std::uint32_t, std::pair<parsedURL, std::string>> archives;
-    for (auto& it : context.params[jss::shards])
+    for (auto& itVal : context.params[jss::shards.c_str()].as_array())
     {
+        boost::json::object& it = itVal.as_object();
         // Validate the index
-        if (!it.isMember(jss::index))
+        if (!it.contains(jss::index.c_str()))
             return RPC::missing_field_error(jss::index);
-        auto& jv{it[jss::index]};
-        if (!(jv.isUInt() || (jv.isInt() && jv.asInt() >= 0)))
+        auto& jv{it[jss::index.c_str()]};
+        if (!(jv.is_uint64() || (jv.is_int64() && jv.as_int64() >= 0)))
         {
             return RPC::expected_field_error(
                 std::string(jss::index), "an unsigned integer");
         }
 
         // Validate the URL
-        if (!it.isMember(jss::url))
+        if (!it.contains(jss::url.c_str()))
             return RPC::missing_field_error(jss::url);
         parsedURL url;
-        auto unparsedURL = it[jss::url].asString();
+        auto unparsedURL = std::string{it[jss::url.c_str()].as_string()};
         if (!parseUrl(url, unparsedURL) || url.domain.empty() ||
             url.path.empty())
         {
@@ -124,7 +125,7 @@ doDownloadShard(RPC::JsonContext& context)
         // Check for duplicate indexes
         if (!archives
                  .emplace(
-                     jv.asUInt(), std::make_pair(std::move(url), unparsedURL))
+                     jv.as_uint64(), std::make_pair(std::move(url), unparsedURL))
                  .second)
         {
             return RPC::make_param_error(

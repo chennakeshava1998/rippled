@@ -31,7 +31,7 @@ namespace ripple {
 //   feature : <feature>
 //   vetoed : true/false
 // }
-Json::Value
+boost::json::object
 doFeature(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -45,41 +45,42 @@ doFeature(RPC::JsonContext& context)
 
     auto& table = context.app.getAmendmentTable();
 
-    if (!context.params.isMember(jss::feature))
+    if (!context.params.contains(jss::feature.c_str()))
     {
         auto features = table.getJson();
 
         for (auto const& [h, t] : majorities)
         {
-            features[to_string(h)][jss::majority] =
+            features[to_string(h)].as_object()[jss::majority.c_str()] =
                 t.time_since_epoch().count();
         }
 
-        Json::Value jvReply = Json::objectValue;
-        jvReply[jss::features] = features;
+        boost::json::object jvReply;
+        jvReply[jss::features.c_str()] = features;
         return jvReply;
     }
 
-    auto feature = table.find(context.params[jss::feature].asString());
+    // Keshava: what are the tradeoffs between the .c_str() method versus explicitly type-casting into std::string?
+    auto feature = table.find(context.params[jss::feature.c_str()].as_string().c_str());
 
     // If the feature is not found by name, try to parse the `feature` param as
     // a feature ID. If that fails, return an error.
-    if (!feature && !feature.parseHex(context.params[jss::feature].asString()))
+    if (!feature && !feature.parseHex(context.params[jss::feature.c_str()].as_string()))
         return rpcError(rpcBAD_FEATURE);
 
-    if (context.params.isMember(jss::vetoed))
+    if (context.params.contains(jss::vetoed.c_str()))
     {
-        if (context.params[jss::vetoed].asBool())
+        if (context.params[jss::vetoed.c_str()].as_bool())
             table.veto(feature);
         else
             table.unVeto(feature);
     }
 
-    Json::Value jvReply = table.getJson(feature);
+    boost::json::object jvReply = table.getJson(feature);
 
     auto m = majorities.find(feature);
     if (m != majorities.end())
-        jvReply[jss::majority] = m->second.time_since_epoch().count();
+        jvReply[jss::majority.c_str()] = m->second.time_since_epoch().count();
 
     return jvReply;
 }

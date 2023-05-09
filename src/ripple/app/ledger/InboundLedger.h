@@ -102,7 +102,7 @@ public:
         std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     /** Return a Json::objectValue. */
-    boost::json::value
+    boost::json::object
     getJson(int);
 
     void

@@ -235,7 +235,7 @@ template <class Object>
 void
 fillJsonQueue(Object& json, LedgerFill const& fill)
 {
-    boost::json::array& queueData = json.as_object()[jss::queue_data.c_str()].emplace_array();
+    boost::json::array& queueData = json[jss::queue_data.c_str()].emplace_array();
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -285,10 +285,10 @@ fillJson(Object& json, LedgerFill const& fill)
 }  // namespace
 
 void
-addJson(boost::json::value& json, LedgerFill const& fill)
+addJson(boost::json::object& json, LedgerFill const& fill)
 {
-    json.as_object()[jss::ledger.c_str()].emplace_object();
-    auto&& object = json.as_object()[jss::ledger.c_str()];
+    json[jss::ledger.c_str()].emplace_object();
+    auto&& object = json[jss::ledger.c_str()];
     fillJson(object, fill);
 
     if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())

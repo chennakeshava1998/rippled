@@ -33,46 +33,46 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 // }
 
-Json::Value
+boost::json::object
 doDepositAuthorized(RPC::JsonContext& context)
 {
-    Json::Value const& params = context.params;
+    boost::json::object const& params = context.params;
 
     // Validate source_account.
-    if (!params.isMember(jss::source_account))
+    if (!params.contains(jss::source_account.c_str()))
         return RPC::missing_field_error(jss::source_account);
-    if (!params[jss::source_account].isString())
+    if (!params.at(jss::source_account.c_str()).is_string())
         return RPC::make_error(
             rpcINVALID_PARAMS,
             RPC::expected_field_message(jss::source_account, "a string"));
 
     AccountID srcAcct;
     {
-        Json::Value const jvAccepted = RPC::accountFromString(
-            srcAcct, params[jss::source_account].asString(), true);
-        if (jvAccepted)
+        boost::json::object const jvAccepted = RPC::accountFromString(
+            srcAcct, std::string{params.at(jss::source_account.c_str()).as_string()}, true);
+        if (!jvAccepted.empty())
             return jvAccepted;
     }
 
     // Validate destination_account.
-    if (!params.isMember(jss::destination_account))
+    if (!params.contains(jss::destination_account.c_str()))
         return RPC::missing_field_error(jss::destination_account);
-    if (!params[jss::destination_account].isString())
+    if (!params.at(jss::destination_account.c_str()).is_string())
         return RPC::make_error(
             rpcINVALID_PARAMS,
             RPC::expected_field_message(jss::destination_account, "a string"));
 
     AccountID dstAcct;
     {
-        Json::Value const jvAccepted = RPC::accountFromString(
-            dstAcct, params[jss::destination_account].asString(), true);
-        if (jvAccepted)
+        boost::json::object const jvAccepted = RPC::accountFromString(
+            dstAcct, params.at(jss::destination_account.c_str()).as_string().c_str(), true);
+        if (!jvAccepted.empty())
             return jvAccepted;
     }
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
-    Json::Value result = RPC::lookupLedger(ledger, context);
+    boost::json::object result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
@@ -106,11 +106,11 @@ doDepositAuthorized(RPC::JsonContext& context)
             depositAuthorized = static_cast<bool>(sleDepositAuth);
         }
     }
-    result[jss::source_account] = params[jss::source_account].asString();
-    result[jss::destination_account] =
-        params[jss::destination_account].asString();
+    result[jss::source_account.c_str()] = params.at(jss::source_account.c_str()).as_string();
+    result[jss::destination_account.c_str()] =
+        params.at(jss::destination_account.c_str()).as_string();
 
-    result[jss::deposit_authorized] = depositAuthorized;
+    result[jss::deposit_authorized.c_str()] = depositAuthorized;
     return result;
 }
 

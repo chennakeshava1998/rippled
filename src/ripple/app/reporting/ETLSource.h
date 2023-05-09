@@ -412,7 +412,7 @@ public:
     /// Forward a JSON RPC request to a randomly selected p2p node
     /// @param context context of the request
     /// @return response received from p2p node
-    boost::json::value
+    boost::json::object
     forwardToP2p(RPC::JsonContext& context) const;
 
 private:

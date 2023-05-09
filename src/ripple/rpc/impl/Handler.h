@@ -59,7 +59,7 @@ getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
 /** Return a Json::objectValue with a single entry. */
 template <class Value>
-boost::json::value
+boost::json::object
 makeObjectValue(
     Value const& value,
     Json::StaticString const& field = jss::message)

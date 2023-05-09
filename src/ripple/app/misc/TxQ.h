@@ -356,7 +356,7 @@ public:
 
         @returns a `Json objectvalue`
     */
-    boost::json::value
+    boost::json::object
     doRPC(Application& app) const;
 
 private:

@@ -116,11 +116,11 @@ Json::Value
 doRandom(RPC::JsonContext&);
 Json::Value
 doResume(RPC::JsonContext&);
-Json::Value
+boost::json::object
 doPeerReservationsAdd(RPC::JsonContext&);
-Json::Value
+boost::json::object
 doPeerReservationsDel(RPC::JsonContext&);
-Json::Value
+boost::json::object
 doPeerReservationsList(RPC::JsonContext&);
 Json::Value
 doRipplePathFind(RPC::JsonContext&);

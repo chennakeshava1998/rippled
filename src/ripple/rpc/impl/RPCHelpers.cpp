@@ -788,7 +788,7 @@ parseRippleLibSeed(boost::json::value const& value)
 }
 
 std::optional<Seed>
-getSeedFromRPC(boost::json::object const& params, boost::json::value& error)
+getSeedFromRPC(boost::json::object const& params, boost::json::object& error)
 {
     using string_to_seed_t =
         std::function<std::optional<Seed>(std::string const&)>;
@@ -847,7 +847,7 @@ getSeedFromRPC(boost::json::object const& params, boost::json::value& error)
 }
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(boost::json::object const& params, boost::json::value& error)
+keypairForSignature(boost::json::object const& params, boost::json::object& error)
 {
     bool const has_key_type = params.contains(jss::key_type.c_str());
 
@@ -1054,7 +1054,7 @@ getAPIVersionNumber(boost::json::value const& jv, bool betaEnabled)
     return requestedVersion.as_uint64();
 }
 
-std::variant<std::shared_ptr<Ledger const>, boost::json::value>
+std::variant<std::shared_ptr<Ledger const>, boost::json::object>
 getLedgerByContext(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -1123,25 +1123,25 @@ getLedgerByContext(RPC::JsonContext& context)
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
-                    boost::json::value jvResult = RPC::make_error(
+                    boost::json::object jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND,
                         "acquiring ledger containing requested index");
-                    jvResult.as_object()[jss::acquiring.c_str()] =
+                    jvResult[jss::acquiring.c_str()] =
                         getJson(LedgerFill(*il, &context));
                     return jvResult;
                 }
 
                 if (auto il = context.app.getInboundLedgers().find(*refHash))
                 {
-                    boost::json::value jvResult = RPC::make_error(
+                    boost::json::object jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND,
                         "acquiring ledger containing requested index");
-                    jvResult.as_object()[jss::acquiring.c_str()] = il->getJson(0);
+                    jvResult[jss::acquiring.c_str()] = il->getJson(0);
                     return jvResult;
                 }
 
                 // Likely the app is shutting down
-                return boost::json::value();
+                return boost::json::object();
             }
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);

@@ -924,7 +924,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 }  // namespace detail
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSignFor(
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
@@ -970,7 +970,7 @@ transactionSignFor(
     // be passed in by the caller.
     using namespace detail;
     {
-        Json::Value err = checkMultiSignFields(jvRequest);
+        boost::json::object err = checkMultiSignFields(jvRequest);
         if (RPC::contains_error(err))
             return err;
     }

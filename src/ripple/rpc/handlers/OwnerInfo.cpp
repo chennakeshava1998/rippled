@@ -30,19 +30,19 @@ namespace ripple {
 // {
 //   'ident' : <indent>,
 // }
-Json::Value
+boost::json::object
 doOwnerInfo(RPC::JsonContext& context)
 {
-    if (!context.params.isMember(jss::account) &&
-        !context.params.isMember(jss::ident))
+    if (!context.params.contains(jss::account.c_str()) &&
+        !context.params.contains(jss::ident.c_str()))
     {
         return RPC::missing_field_error(jss::account);
     }
 
-    std::string strIdent = context.params.isMember(jss::account)
-        ? context.params[jss::account].asString()
-        : context.params[jss::ident].asString();
-    Json::Value ret;
+    std::string strIdent = context.params.contains(jss::account.c_str())
+        ? context.params[jss::account.c_str()].as_string().c_str()
+        : context.params[jss::ident.c_str()].as_string().c_str();
+    boost::json::object ret;
 
     // Get info on account.
 
@@ -50,14 +50,14 @@ doOwnerInfo(RPC::JsonContext& context)
     AccountID accountID;
     auto jAccepted = RPC::accountFromString(accountID, strIdent);
 
-    ret[jss::accepted] = !jAccepted
+    ret[jss::accepted.c_str()] = !jAccepted.empty()
         ? context.netOps.getOwnerInfo(closedLedger, accountID)
         : jAccepted;
 
     auto const& currentLedger = context.ledgerMaster.getCurrentLedger();
     auto jCurrent = RPC::accountFromString(accountID, strIdent);
 
-    ret[jss::current] = !jCurrent
+    ret[jss::current.c_str()] = !jCurrent.empty()
         ? context.netOps.getOwnerInfo(currentLedger, accountID)
         : jCurrent;
     return ret;

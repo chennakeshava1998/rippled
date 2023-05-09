@@ -29,7 +29,7 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value
+boost::json::object
 doLedgerHeader(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
@@ -40,7 +40,7 @@ doLedgerHeader(RPC::JsonContext& context)
 
     Serializer s;
     addRaw(lpLedger->info(), s);
-    jvResult[jss::ledger_data] = strHex(s.peekData());
+    jvResult[jss::ledger_data.c_str()] = strHex(s.peekData());
 
     // This information isn't verified: they should only use it if they trust
     // us.

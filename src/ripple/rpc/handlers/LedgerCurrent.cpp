@@ -26,11 +26,11 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doLedgerCurrent(RPC::JsonContext& context)
 {
-    Json::Value jvResult;
-    jvResult[jss::ledger_current_index] =
+    boost::json::object jvResult;
+    jvResult[jss::ledger_current_index.c_str()] =
         context.ledgerMaster.getCurrentLedgerIndex();
     return jvResult;
 }

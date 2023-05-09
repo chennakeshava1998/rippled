@@ -29,7 +29,7 @@
 namespace ripple {
 
 // node_to_shard [status|start|stop]
-Json::Value
+boost::json::object
 doNodeToShard(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -40,12 +40,12 @@ doNodeToShard(RPC::JsonContext& context)
     if (!shardStore)
         return RPC::make_error(rpcNOT_ENABLED);
 
-    if (!context.params.isMember(jss::action))
-        return RPC::missing_field_error(jss::action);
+    if (!context.params.contains(jss::action.c_str()))
+        return RPC::missing_field_error(jss::action.c_str());
 
     // Obtain and normalize the action to perform
     auto const action = [&context] {
-        auto value = context.params[jss::action].asString();
+        auto value = context.params[jss::action.c_str()].as_string();
         boost::to_lower(value);
 
         return value;

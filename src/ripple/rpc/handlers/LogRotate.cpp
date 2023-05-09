@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doLogRotate(RPC::JsonContext& context)
 {
     context.app.getPerfLog().rotate();

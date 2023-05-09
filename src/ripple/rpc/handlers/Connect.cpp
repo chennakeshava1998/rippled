@@ -34,7 +34,7 @@ namespace ripple {
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value
+boost::json::value
 doConnect(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
@@ -43,23 +43,23 @@ doConnect(RPC::JsonContext& context)
     if (context.app.config().standalone())
         return "cannot connect in standalone mode";
 
-    if (!context.params.isMember(jss::ip))
+    if (!context.params.contains(jss::ip.c_str()))
         return RPC::missing_field_error(jss::ip);
 
-    if (context.params.isMember(jss::port) &&
-        !context.params[jss::port].isConvertibleTo(Json::intValue))
+    if (context.params.contains(jss::port.c_str()) &&
+        !context.params[jss::port.c_str()].is_int64())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
 
     int iPort;
 
-    if (context.params.isMember(jss::port))
-        iPort = context.params[jss::port].asInt();
+    if (context.params.contains(jss::port.c_str()))
+        iPort = context.params[jss::port.c_str()].as_int64();
     else
         iPort = DEFAULT_PEER_PORT;
 
-    auto const ip_str = context.params[jss::ip].asString();
+    std::string const ip_str{context.params[jss::ip.c_str()].as_string()}; // Keshava: try using std::string_view instead
     auto ip = beast::IP::Endpoint::from_string(ip_str);
 
     if (!is_unspecified(ip))

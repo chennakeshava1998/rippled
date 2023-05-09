@@ -29,24 +29,24 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doServerInfo(RPC::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    boost::json::object ret;
 
-    ret[jss::info] = context.netOps.getServerInfo(
+    ret[jss::info.c_str()] = context.netOps.getServerInfo(
         true,
         context.role == Role::ADMIN,
-        context.params.isMember(jss::counters) &&
-            context.params[jss::counters].asBool());
+        context.params.contains(jss::counters.c_str()) &&
+            context.params[jss::counters.c_str()].as_bool());
 
     if (context.app.config().reporting())
     {
-        Json::Value const proxied = forwardToP2p(context);
-        auto const lf = proxied[jss::result][jss::info][jss::load_factor];
-        auto const vq = proxied[jss::result][jss::info][jss::validation_quorum];
-        ret[jss::info][jss::validation_quorum] = vq.isNull() ? 1 : vq;
-        ret[jss::info][jss::load_factor] = lf.isNull() ? 1 : lf;
+        boost::json::value const proxied = forwardToP2p(context);
+        auto const lf = proxied.as_object().at(jss::result.c_str()).at(jss::info.c_str()).at(jss::load_factor.c_str());
+        auto const vq = proxied.as_object().at(jss::result.c_str()).at(jss::info.c_str()).at(jss::validation_quorum.c_str());
+        ret[jss::info.c_str()].as_object()[jss::validation_quorum.c_str()] = vq.is_null() ? 1 : vq;
+        ret[jss::info.c_str()].as_object()[jss::load_factor.c_str()] = lf.is_null() ? 1 : lf;
     }
     return ret;
 }
