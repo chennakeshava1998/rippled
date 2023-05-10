@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doValidatorListSites(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())

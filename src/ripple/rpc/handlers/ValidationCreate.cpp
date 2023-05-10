@@ -27,12 +27,12 @@
 namespace ripple {
 
 static std::optional<Seed>
-validationSeed(Json::Value const& params)
+validationSeed(boost::json::object const& params)
 {
-    if (!params.isMember(jss::secret))
+    if (!params.contains(jss::secret.c_str()))
         return randomSeed();
 
-    return parseGenericSeed(params[jss::secret].asString());
+    return parseGenericSeed(params.at(jss::secret.c_str()).as_string().c_str());
 }
 
 // {
@@ -41,10 +41,10 @@ validationSeed(Json::Value const& params)
 //
 // This command requires Role::ADMIN access because it makes
 // no sense to ask an untrusted server for this.
-Json::Value
+boost::json::object
 doValidationCreate(RPC::JsonContext& context)
 {
-    Json::Value obj(Json::objectValue);
+    boost::json::object obj;
 
     auto seed = validationSeed(context.params);
 
@@ -53,15 +53,15 @@ doValidationCreate(RPC::JsonContext& context)
 
     auto const private_key = generateSecretKey(KeyType::secp256k1, *seed);
 
-    obj[jss::validation_public_key] = toBase58(
+    obj[jss::validation_public_key.c_str()] = toBase58(
         TokenType::NodePublic,
         derivePublicKey(KeyType::secp256k1, private_key));
 
-    obj[jss::validation_private_key] =
+    obj[jss::validation_private_key.c_str()] =
         toBase58(TokenType::NodePrivate, private_key);
 
-    obj[jss::validation_seed] = toBase58(*seed);
-    obj[jss::validation_key] = seedAs1751(*seed);
+    obj[jss::validation_seed.c_str()] = toBase58(*seed);
+    obj[jss::validation_key.c_str()] = seedAs1751(*seed);
 
     return obj;
 }

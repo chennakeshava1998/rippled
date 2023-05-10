@@ -201,7 +201,7 @@ readLimitField(
     JsonContext const&);
 
 std::optional<Seed>
-getSeedFromRPC(boost::json::value const& params, Json::Value& error);
+getSeedFromRPC(boost::json::value const& params, boost::json::object& error);
 
 std::optional<Seed>
 parseRippleLibSeed(boost::json::value const& params);
