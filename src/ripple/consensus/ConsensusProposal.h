@@ -26,6 +26,7 @@
 #include <ripple/protocol/jss.h>
 #include <cstdint>
 #include <optional>
+#include <boost/json.hpp>
 
 namespace ripple {
 /** Represents a proposed position taken during a round of consensus.

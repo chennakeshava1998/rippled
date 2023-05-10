@@ -248,7 +248,7 @@ public:
     std::string
     getText() const override;
 
-    boost::json::value getJson(JsonOptions) const override;
+    boost::json::object getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;

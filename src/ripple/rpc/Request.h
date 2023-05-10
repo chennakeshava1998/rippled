@@ -24,6 +24,7 @@
 #include <ripple/resource/Charge.h>
 #include <ripple/resource/Fees.h>
 #include <beast/utility/Journal.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 
@@ -36,7 +37,7 @@ struct Request
     explicit Request(
         beast::Journal journal_,
         std::string const& method_,
-        Json::Value& params_,
+        boost::json::object& params_,
         Application& app_)
         : journal(journal_)
         , method(method_)
@@ -53,13 +54,13 @@ struct Request
     std::string method;
 
     // [in] The Ripple-specific "params" object
-    Json::Value params;
+    boost::json::object params;
 
     // [in, out] The resource cost for the command
     Resource::Charge fee;
 
     // [out] The JSON-RPC response
-    Json::Value result;
+    boost::json::object result;
 
     // [in] The Application instance
     Application& app;

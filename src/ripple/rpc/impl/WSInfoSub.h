@@ -68,7 +68,7 @@ public:
     }
 
     void
-    send(boost::json::value const& jv, bool) override
+    send(boost::json::object const& jv, bool) override
     {
         auto sp = ws_.lock();
         if (!sp)

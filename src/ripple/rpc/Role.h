@@ -54,7 +54,7 @@ Role
 requestRole(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    boost::json::object const& params,
     beast::IP::Endpoint const& remoteIp,
     boost::string_view const& user);
 

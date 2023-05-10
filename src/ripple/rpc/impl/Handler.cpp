@@ -28,16 +28,11 @@ namespace {
 
 /** Adjust an old-style handler to be call-by-reference. */
 template <typename Function>
-Handler::Method<Json::Value>
+Handler::Method<boost::json::object>
 byRef(Function const& f)
 {
-    return [f](JsonContext& context, Json::Value& result) {
+    return [f](JsonContext& context, boost::json::object& result) {
         result = f(context);
-        if (result.type() != Json::objectValue)
-        {
-            assert(false);
-            result = RPC::makeObjectValue(result);
-        }
 
         return Status();
     };
@@ -229,7 +224,7 @@ private:
 
         Handler h;
         h.name_ = HandlerImpl::name();
-        h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
+        h.valueMethod_ = &handle<boost::json::object, HandlerImpl>;
         h.role_ = HandlerImpl::role();
         h.condition_ = HandlerImpl::condition();
 

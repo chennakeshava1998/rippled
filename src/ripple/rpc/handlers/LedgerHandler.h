@@ -80,7 +80,7 @@ private:
     JsonContext& context_;
     std::shared_ptr<ReadView const> ledger_;
     std::vector<TxQ::TxDetails> queueTxs_;
-    Json::Value result_;
+    boost::json::object result_;
     int options_ = 0;
     LedgerEntryType type_;
 };
@@ -96,18 +96,20 @@ LedgerHandler::writeResult(Object& value)
 {
     if (ledger_)
     {
-        Json::copyFrom(value, result_);
+        for(auto const& i: result_) {
+            value[i.key()] = i.value();
+        }
         addJson(value, {*ledger_, &context_, options_, queueTxs_, type_});
     }
     else
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto&& closed = Json::addObject(value, jss::closed);
+            auto&& closed = value[jss::closed.c_str()].emplace_object();
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto&& open = Json::addObject(value, jss::open);
+            auto&& open = value[jss::open.c_str()].emplace_object();
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }

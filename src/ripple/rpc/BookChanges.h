@@ -173,7 +173,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::type.c_str()] = "bookChanges";
     jvObj[jss::ledger_index.c_str()] = lpAccepted->info().seq;
     jvObj[jss::ledger_hash.c_str()] = to_string(lpAccepted->info().hash);
-    jvObj[jss::ledger_time.c_str()] = Json::Value::UInt(
+    jvObj[jss::ledger_time.c_str()] = static_cast<unsigned int>(
         lpAccepted->info().closeTime.time_since_epoch().count());
 
     jvObj[jss::changes.c_str()] = Json::arrayValue;

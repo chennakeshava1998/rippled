@@ -121,7 +121,7 @@ public:
     std::string
     getText() const override;
 
-    boost::json::value
+    boost::json::object
     getJson(JsonOptions index) const override;
 
     void

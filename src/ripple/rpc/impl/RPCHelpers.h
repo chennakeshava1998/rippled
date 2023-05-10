@@ -153,7 +153,7 @@ Status
 lookupLedger(
     std::shared_ptr<ReadView const>&,
     JsonContext&,
-    boost::json::value& result);
+    boost::json::object& result);
 
 template <class T, class R>
 Status
@@ -253,17 +253,17 @@ void
 setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
 {
     assert(apiVersion != apiInvalidVersion);
-    auto&& object = addObject(parent, jss::version);
+    auto&& object = parent[jss::version.c_str()].emplace_object();
     if (apiVersion == apiVersionIfUnspecified)
     {
-        object[jss::first] = firstVersion.print();
-        object[jss::good] = goodVersion.print();
-        object[jss::last] = lastVersion.print();
+        object[jss::first.c_str()] = firstVersion.print();
+        object[jss::good.c_str()] = goodVersion.print();
+        object[jss::last.c_str()] = lastVersion.print();
     }
     else
     {
-        object[jss::first] = apiMinimumSupportedVersion;
-        object[jss::last] =
+        object[jss::first.c_str()] = apiMinimumSupportedVersion;
+        object[jss::last.c_str()] =
             betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
     }
 }

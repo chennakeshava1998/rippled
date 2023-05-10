@@ -26,6 +26,7 @@
 #include <ripple/json/json_value.h>
 #include <boost/asio/buffer.hpp>
 #include <stack>
+#include <boost/json.hpp>
 
 namespace Json {
 
@@ -247,5 +248,17 @@ std::istream&
 operator>>(std::istream&, Value&);
 
 }  // namespace Json
+
+template <class BufferSequence>
+void
+parse(boost::json::value& root, BufferSequence const& bs)
+{
+    using namespace boost::asio;
+    std::string s;
+    s.reserve(buffer_size(bs));
+    for (auto const& b : bs)
+        s.append(buffer_cast<char const*>(b), buffer_size(b));
+    root = boost::json::parse(s);
+}
 
 #endif  // CPPTL_JSON_READER_H_INCLUDED

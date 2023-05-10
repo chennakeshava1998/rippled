@@ -40,22 +40,22 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
-    bool needsLedger = params.isMember(jss::ledger) ||
-        params.isMember(jss::ledger_hash) ||
-        params.isMember(jss::ledger_index) || context_.app.config().reporting();
+    bool needsLedger = params.contains(jss::ledger.c_str()) ||
+        params.contains(jss::ledger_hash.c_str()) ||
+        params.contains(jss::ledger_index.c_str()) || context_.app.config().reporting();
     if (!needsLedger)
         return Status::OK;
 
     if (auto s = lookupLedger(ledger_, context_, result_))
         return s;
 
-    bool const full = params[jss::full].asBool();
-    bool const transactions = params[jss::transactions].asBool();
-    bool const accounts = params[jss::accounts].asBool();
-    bool const expand = params[jss::expand].asBool();
-    bool const binary = params[jss::binary].asBool();
-    bool const owner_funds = params[jss::owner_funds].asBool();
-    bool const queue = params[jss::queue].asBool();
+    bool const full = params.at(jss::full.c_str()).as_bool();
+    bool const transactions = params.at(jss::transactions.c_str()).as_bool();
+    bool const accounts = params.at(jss::accounts.c_str()).as_bool();
+    bool const expand = params.at(jss::expand.c_str()).as_bool();
+    bool const binary = params.at(jss::binary.c_str()).as_bool();
+    bool const owner_funds = params.at(jss::owner_funds.c_str()).as_bool();
+    bool const queue = params.at(jss::queue.c_str()).as_bool();
     auto type = chooseLedgerEntryType(params);
     if (type.first)
         return type.first;

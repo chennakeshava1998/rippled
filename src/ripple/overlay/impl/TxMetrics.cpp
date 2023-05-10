@@ -120,28 +120,28 @@ TxMetrics::json() const
 
     boost::json::object ret;
 
-    ret[jss::txr_tx_cnt] = std::to_string(tx.m1.rollingAvg);
-    ret[jss::txr_tx_sz] = std::to_string(tx.m2.rollingAvg);
+    ret[jss::txr_tx_cnt.c_str()] = std::to_string(tx.m1.rollingAvg);
+    ret[jss::txr_tx_sz.c_str()] = std::to_string(tx.m2.rollingAvg);
 
-    ret[jss::txr_have_txs_cnt] = std::to_string(haveTx.m1.rollingAvg);
-    ret[jss::txr_have_txs_sz] = std::to_string(haveTx.m2.rollingAvg);
+    ret[jss::txr_have_txs_cnt.c_str()] = std::to_string(haveTx.m1.rollingAvg);
+    ret[jss::txr_have_txs_sz.c_str()] = std::to_string(haveTx.m2.rollingAvg);
 
-    ret[jss::txr_get_ledger_cnt] = std::to_string(getLedger.m1.rollingAvg);
-    ret[jss::txr_get_ledger_sz] = std::to_string(getLedger.m2.rollingAvg);
+    ret[jss::txr_get_ledger_cnt.c_str()] = std::to_string(getLedger.m1.rollingAvg);
+    ret[jss::txr_get_ledger_sz.c_str()] = std::to_string(getLedger.m2.rollingAvg);
 
-    ret[jss::txr_ledger_data_cnt] = std::to_string(ledgerData.m1.rollingAvg);
-    ret[jss::txr_ledger_data_sz] = std::to_string(ledgerData.m2.rollingAvg);
+    ret[jss::txr_ledger_data_cnt.c_str()] = std::to_string(ledgerData.m1.rollingAvg);
+    ret[jss::txr_ledger_data_sz.c_str()] = std::to_string(ledgerData.m2.rollingAvg);
 
-    ret[jss::txr_transactions_cnt] = std::to_string(transactions.m1.rollingAvg);
-    ret[jss::txr_transactions_sz] = std::to_string(transactions.m2.rollingAvg);
+    ret[jss::txr_transactions_cnt.c_str()] = std::to_string(transactions.m1.rollingAvg);
+    ret[jss::txr_transactions_sz.c_str()] = std::to_string(transactions.m2.rollingAvg);
 
-    ret[jss::txr_selected_cnt] = std::to_string(selectedPeers.rollingAvg);
+    ret[jss::txr_selected_cnt.c_str()] = std::to_string(selectedPeers.rollingAvg);
 
-    ret[jss::txr_suppressed_cnt] = std::to_string(suppressedPeers.rollingAvg);
+    ret[jss::txr_suppressed_cnt.c_str()] = std::to_string(suppressedPeers.rollingAvg);
 
-    ret[jss::txr_not_enabled_cnt] = std::to_string(notEnabled.rollingAvg);
+    ret[jss::txr_not_enabled_cnt.c_str()] = std::to_string(notEnabled.rollingAvg);
 
-    ret[jss::txr_missing_tx_freq] = std::to_string(missingTx.rollingAvg);
+    ret[jss::txr_missing_tx_freq.c_str()] = std::to_string(missingTx.rollingAvg);
 
     return ret;
 }

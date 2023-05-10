@@ -56,21 +56,21 @@ Status::codeString() const
 }
 
 void
-Status::fillJson(Json::Value& value)
+Status::fillJson(boost::json::object& value)
 {
     if (!*this)
         return;
 
-    auto& error = value[jss::error];
-    error[jss::code] = code_;
-    error[jss::message] = codeString();
+    auto& error = value[jss::error.c_str()].as_object();
+    error[jss::code.c_str()] = code_;
+    error[jss::message.c_str()] = codeString();
 
     // Are there any more messages?
     if (!messages_.empty())
     {
-        auto& messages = error[jss::data];
+        auto& messages = error[jss::data.c_str()].as_array();
         for (auto& i : messages_)
-            messages.append(i);
+            messages.emplace_back(i);
     }
 }
 

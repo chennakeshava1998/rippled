@@ -147,7 +147,7 @@ public:
         If the Status is OK, fillJson has no effect.
         Not currently used. */
     void
-    fillJson(boost::json::value&);
+    fillJson(boost::json::object&);
 
 private:
     Type type_ = Type::none;

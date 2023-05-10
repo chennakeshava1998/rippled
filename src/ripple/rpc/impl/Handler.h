@@ -49,7 +49,7 @@ struct Handler
     using Method = std::function<Status(JsonContext&, JsonValue&)>;
 
     const char* name_;
-    Method<boost::json::value> valueMethod_;
+    Method<boost::json::object> valueMethod_;
     Role role_;
     RPC::Condition condition_;
 };

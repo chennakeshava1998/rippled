@@ -27,7 +27,7 @@
 
 #include <chrono>
 #include <mutex>
-
+#include <boost/json.hpp>
 namespace ripple {
 
 namespace metrics {

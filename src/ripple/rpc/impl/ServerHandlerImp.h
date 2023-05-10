@@ -171,11 +171,11 @@ public:
     onStopped(Server&);
 
 private:
-    Json::Value
+    boost::json::object
     processSession(
         std::shared_ptr<WSSession> const& session,
         std::shared_ptr<JobQueue::Coro> const& coro,
-        Json::Value const& jv);
+        boost::json::object const& jv);
 
     void
     processSession(

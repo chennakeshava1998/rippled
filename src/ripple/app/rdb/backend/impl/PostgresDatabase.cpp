@@ -995,25 +995,23 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
     JLOG(app_.journal("Transaction").debug())
         << "postgres result = " << resultStr;
 
-    Json::Value v;
-    Json::Reader reader;
-    bool success = reader.parse(resultStr, resultStr + strlen(resultStr), v);
-    if (success)
+    boost::json::value v = boost::json::parse(resultStr);
+    if (!v.is_null())
     {
-        if (v.contains("nodestore_hash") && v.contains("ledger_seq"))
+        if (v.as_object().contains("nodestore_hash") && v.as_object().contains("ledger_seq"))
         {
             uint256 nodestoreHash;
             if (!nodestoreHash.parseHex(
-                    v["nodestore_hash"].asString().substr(2)))
+                    std::string{v.as_object()["nodestore_hash"].as_string()}.substr(2)))
                 assert(false);
-            uint32_t ledgerSeq = v["ledger_seq"].asUInt();
+            uint32_t ledgerSeq = v.as_object()["ledger_seq"].as_uint64();
             if (nodestoreHash.isNonZero())
                 return {std::make_pair(nodestoreHash, ledgerSeq)};
         }
-        if (v.contains("min_seq") && v.contains("max_seq"))
+        if (v.as_object().contains("min_seq") && v.as_object().contains("max_seq"))
         {
             return {ClosedInterval<uint32_t>(
-                v["min_seq"].asUInt(), v["max_seq"].asUInt())};
+                v.as_object()["min_seq"].as_uint64(), v.as_object()["max_seq"].as_uint64())};
         }
     }
 #endif

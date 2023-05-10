@@ -3450,7 +3450,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             << toBase58(subInfo.index_->accountId_) << " no database";
         if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
         {
-            sptr->send(rpcError(rpcINTERNAL).as_object(), true);
+            sptr->send(rpcError(rpcINTERNAL), true);
             unsubAccountHistory(sptr, subInfo.index_->accountId_, false);
         }
         return;
@@ -3635,7 +3635,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         JLOG(m_journal.debug())
                             << "AccountHistory job for account "
                             << toBase58(accountId) << " getMoreTxns failed.";
-                        send(rpcError(rpcINTERNAL).as_object(), true);
+                        send(rpcError(rpcINTERNAL), true);
                         return;
                     }
 
@@ -3648,7 +3648,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " empty tx or meta.";
-                            send(rpcError(rpcINTERNAL).as_object(), true);
+                            send(rpcError(rpcINTERNAL), true);
                             return;
                         }
                         auto curTxLedger =
@@ -3659,7 +3659,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " no ledger.";
-                            send(rpcError(rpcINTERNAL).as_object(), true);
+                            send(rpcError(rpcINTERNAL), true);
                             return;
                         }
                         std::shared_ptr<STTx const> stTxn =
@@ -3670,7 +3670,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 << "AccountHistory job for account "
                                 << toBase58(accountId)
                                 << " getSTransaction failed.";
-                            send(rpcError(rpcINTERNAL).as_object(), true);
+                            send(rpcError(rpcINTERNAL), true);
                             return;
                         }
                         boost::json::object jvTx = transJson(
@@ -4282,7 +4282,7 @@ NetworkOPsImp::getBookPage(
                     }
                 }
 
-                boost::json::object jvOffer = sleOffer->getJson(JsonOptions::none).as_object();
+                boost::json::object jvOffer = sleOffer->getJson(JsonOptions::none);
 
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;

@@ -22,6 +22,7 @@
 
 #include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/json/json_value.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 

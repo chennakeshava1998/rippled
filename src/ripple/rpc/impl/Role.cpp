@@ -28,17 +28,17 @@
 namespace ripple {
 
 bool
-passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
+passwordUnrequiredOrSentCorrect(Port const& port, boost::json::object const& params)
 {
     assert(!(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()));
     bool const passwordRequired =
         (!port.admin_user.empty() || !port.admin_password.empty());
 
     return !passwordRequired ||
-        ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.admin_password) &&
-         (params["admin_user"].isString() &&
-          params["admin_user"].asString() == port.admin_user));
+        ((params.at("admin_password").is_string() &&
+          params.at("admin_password").as_string() == port.admin_password) &&
+         (params.at("admin_user").is_string() &&
+          params.at("admin_user").as_string() == port.admin_user));
 }
 
 bool
@@ -83,7 +83,7 @@ ipAllowed(
 bool
 isAdmin(
     Port const& port,
-    Json::Value const& params,
+    boost::json::object const& params,
     beast::IP::Address const& remoteIp)
 {
     return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
@@ -94,7 +94,7 @@ Role
 requestRole(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    boost::json::object const& params,
     beast::IP::Endpoint const& remoteIp,
     boost::string_view const& user)
 {
@@ -130,7 +130,7 @@ bool
 isUnlimited(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    boost::json::object const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string const& user)
 {
