@@ -21,6 +21,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
@@ -59,35 +60,35 @@ public:
         env.fund(XRP(10000), "alice");
         auto USD = Account("alice")["USD"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()].emplace_array();
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::offers) &&
-                jv[jss::result][jss::offers].size() == 0);
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array().size() == 0);
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()));
         }
 
         {
@@ -97,12 +98,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](boost::json::value & jv) {
+                auto & t = jv.as_object().at(jss::transaction.c_str()).as_object();
+                return t.at(jss::TransactionType.c_str()) == jss::OfferCreate.c_str() &&
+                    t.at(jss::TakerGets.c_str()) ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t.at(jss::TakerPays.c_str()) ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -116,14 +117,14 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -137,7 +138,7 @@ public:
         env.fund(XRP(10000), "alice");
         auto USD = Account("alice")["USD"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
         env(offer("alice", XRP(500), USD(100)), require(owners("alice", 1)));
@@ -148,37 +149,37 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::offers) &&
-                jv[jss::result][jss::offers].size() == 1);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array().size() == 1);
             BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array()[0u].as_object()[jss::TakerGets.c_str()] ==
                 XRP(200).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array()[0u].as_object()[jss::TakerPays.c_str()] ==
                 USD(100).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()));
         }
 
         {
@@ -188,12 +189,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -207,14 +208,14 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -228,38 +229,38 @@ public:
         env.fund(XRP(10000), "alice");
         auto USD = Account("alice")["USD"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::both] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::both.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::asks) &&
-                jv[jss::result][jss::asks].size() == 0);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array().size() == 0);
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::bids) &&
-                jv[jss::result][jss::bids].size() == 0);
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array().size() == 0);
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()));
         }
 
         {
@@ -269,12 +270,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -285,26 +286,26 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none);
             }));
         }
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -318,7 +319,7 @@ public:
         env.fund(XRP(10000), "alice");
         auto USD = Account("alice")["USD"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
         env(offer("alice", XRP(500), USD(100)), require(owners("alice", 1)));
@@ -329,46 +330,46 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::both] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::both.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::asks) &&
-                jv[jss::result][jss::asks].size() == 1);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array().size() == 1);
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::bids) &&
-                jv[jss::result][jss::bids].size() == 1);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array().size() == 1);
             BEAST_EXPECT(
-                jv[jss::result][jss::asks][0u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array()[0u].as_object()[jss::TakerGets.c_str()] ==
                 USD(100).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::asks][0u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array()[0u].as_object()[jss::TakerPays.c_str()] ==
                 XRP(500).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::bids][0u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array()[0u].as_object()[jss::TakerGets.c_str()] ==
                 XRP(200).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::bids][0u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array()[0u].as_object()[jss::TakerPays.c_str()] ==
                 USD(100).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()));
         }
 
         {
@@ -378,12 +379,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -394,26 +395,26 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none);
             }));
         }
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -429,43 +430,43 @@ public:
         auto CNY = Account("alice")["CNY"];
         auto JPY = Account("alice")["JPY"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "CNY";
-                j[jss::taker_gets][jss::issuer] = Account("alice").human();
-                j[jss::taker_pays][jss::currency] = "JPY";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "CNY";
+                j[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "JPY";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::offers) &&
-                jv[jss::result][jss::offers].size() == 0);
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array().size() == 0);
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()));
         }
 
         {
@@ -475,12 +476,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -499,12 +500,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     JPY(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     CNY(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -518,14 +519,14 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -541,7 +542,7 @@ public:
         auto CNY = Account("alice")["CNY"];
         auto JPY = Account("alice")["JPY"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
         env(offer("alice", XRP(500), USD(100)), require(owners("alice", 1)));
@@ -558,51 +559,51 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "CNY";
-                j[jss::taker_gets][jss::issuer] = Account("alice").human();
-                j[jss::taker_pays][jss::currency] = "JPY";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "CNY";
+                j[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "JPY";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::offers) &&
-                jv[jss::result][jss::offers].size() == 2);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array().size() == 2);
             BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array()[0u].as_object()[jss::TakerGets.c_str()] ==
                 XRP(200).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array()[0u].as_object()[jss::TakerPays.c_str()] ==
                 USD(100).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::offers][1u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array()[1u].as_object()[jss::TakerGets.c_str()] ==
                 CNY(200).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::offers][1u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array()[1u].as_object()[jss::TakerPays.c_str()] ==
                 JPY(100).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()));
         }
 
         {
@@ -612,12 +613,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -636,12 +637,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     JPY(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     CNY(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -655,14 +656,14 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -678,47 +679,47 @@ public:
         auto CNY = Account("alice")["CNY"];
         auto JPY = Account("alice")["JPY"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::both] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::both.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::both] = true;
-                j[jss::taker_gets][jss::currency] = "CNY";
-                j[jss::taker_gets][jss::issuer] = Account("alice").human();
-                j[jss::taker_pays][jss::currency] = "JPY";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::both.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "CNY";
+                j[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "JPY";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::asks) &&
-                jv[jss::result][jss::asks].size() == 0);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array().size() == 0);
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::bids) &&
-                jv[jss::result][jss::bids].size() == 0);
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array().size() == 0);
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()));
         }
 
         {
@@ -728,12 +729,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -744,12 +745,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none);
             }));
         }
@@ -761,12 +762,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     JPY(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     CNY(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -777,26 +778,26 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     CNY(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     JPY(100).value().getJson(JsonOptions::none);
             }));
         }
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -812,7 +813,7 @@ public:
         auto CNY = Account("alice")["CNY"];
         auto JPY = Account("alice")["JPY"];
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
         env(offer("alice", XRP(500), USD(100)), require(owners("alice", 1)));
@@ -829,68 +830,68 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::both] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::both.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
             // RPC subscribe to books stream
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::both] = true;
-                j[jss::taker_gets][jss::currency] = "CNY";
-                j[jss::taker_gets][jss::issuer] = Account("alice").human();
-                j[jss::taker_pays][jss::currency] = "JPY";
-                j[jss::taker_pays][jss::issuer] = Account("alice").human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::both.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "CNY";
+                j[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "JPY";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = Account("alice").human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::asks) &&
-                jv[jss::result][jss::asks].size() == 2);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array().size() == 2);
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::bids) &&
-                jv[jss::result][jss::bids].size() == 2);
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array().size() == 2);
             BEAST_EXPECT(
-                jv[jss::result][jss::asks][0u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array()[0u].as_object()[jss::TakerGets.c_str()] ==
                 USD(100).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::asks][0u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array()[0u].as_object()[jss::TakerPays.c_str()] ==
                 XRP(500).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::asks][1u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array()[1u].as_object()[jss::TakerGets.c_str()] ==
                 JPY(100).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::asks][1u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::asks.c_str()].as_array()[1u].as_object()[jss::TakerPays.c_str()] ==
                 CNY(500).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::bids][0u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array()[0u].as_object()[jss::TakerGets.c_str()] ==
                 XRP(200).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::bids][0u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array()[0u].as_object()[jss::TakerPays.c_str()] ==
                 USD(100).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::bids][1u][jss::TakerGets] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array()[1u].as_object()[jss::TakerGets.c_str()] ==
                 CNY(200).value().getJson(JsonOptions::none));
             BEAST_EXPECT(
-                jv[jss::result][jss::bids][1u][jss::TakerPays] ==
+                jv.as_object()[jss::result.c_str()].as_object()[jss::bids.c_str()].as_array()[1u].as_object()[jss::TakerPays.c_str()] ==
                 JPY(100).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()));
         }
 
         {
@@ -900,12 +901,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     XRP(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -916,12 +917,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     USD(100).value().getJson(JsonOptions::none);
             }));
         }
@@ -933,12 +934,12 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     JPY(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     CNY(700).value().getJson(JsonOptions::none);
             }));
         }
@@ -949,26 +950,26 @@ public:
             env.close();
 
             // Check stream update
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                auto const& t = jv[jss::transaction];
-                return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] ==
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jv) {
+                auto & t = jv.as_object()[jss::transaction.c_str()].as_object();
+                return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                    t[jss::TakerGets.c_str()] ==
                     CNY(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] ==
+                    t[jss::TakerPays.c_str()] ==
                     JPY(100).value().getJson(JsonOptions::none);
             }));
         }
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
     }
 
@@ -986,33 +987,33 @@ public:
         env.close();
         auto USD = gw["USD"];
 
-        Json::Value books;
+        boost::json::object books;
         {
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = true;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = gw.human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = true;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                    jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
                 BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                    jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+                BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
             }
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
             BEAST_EXPECT(
-                jv[jss::result].isMember(jss::offers) &&
-                jv[jss::result][jss::offers].size() == 0);
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
-            BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
+                jv.as_object()[jss::result.c_str()].as_object().contains(jss::offers.c_str()) &&
+                jv.as_object()[jss::result.c_str()].as_object()[jss::offers.c_str()].as_array().size() == 0);
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::asks.c_str()));
+            BEAST_EXPECT(!jv.as_object()[jss::result.c_str()].as_object().contains(jss::bids.c_str()));
         }
 
         env(rate(gw, 1.1));
@@ -1024,66 +1025,66 @@ public:
         env(offer(alice, XRP(4000), USD(10)));
         env.close();
 
-        Json::Value jvParams;
-        jvParams[jss::taker] = env.master.human();
-        jvParams[jss::taker_pays][jss::currency] = "XRP";
-        jvParams[jss::ledger_index] = "validated";
-        jvParams[jss::taker_gets][jss::currency] = "USD";
-        jvParams[jss::taker_gets][jss::issuer] = gw.human();
+        boost::json::object jvParams;
+        jvParams[jss::taker.c_str()] = env.master.human();
+        jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+        jvParams[jss::ledger_index.c_str()] = "validated";
+        jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+        jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
 
         auto jv = wsc->invoke("book_offers", jvParams);
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
-        auto jrr = jv[jss::result];
+        auto jrr = jv.as_object()[jss::result.c_str()];
 
-        BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == 1);
-        auto const jrOffer = jrr[jss::offers][0u];
-        BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].is_array());
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].as_array().size() == 1);
+        auto jrOffer = jrr.as_object()[jss::offers.c_str()].as_array()[0u];
+        BEAST_EXPECT(jrOffer.as_object()[sfAccount.fieldName.c_str()].as_string() == alice.human());
         BEAST_EXPECT(
-            jrOffer[sfBookDirectory.fieldName] ==
+            jrOffer.as_object()[sfBookDirectory.fieldName.c_str()].as_string() ==
             getBookDir(env, XRP, USD.issue()));
-        BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0");
-        BEAST_EXPECT(jrOffer[jss::Flags] == 0);
-        BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
-        BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
-        BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 5);
+        BEAST_EXPECT(jrOffer.as_object()[sfBookNode.fieldName.c_str()] == "0");
+        BEAST_EXPECT(jrOffer.as_object()[jss::Flags.c_str()] == 0);
+        BEAST_EXPECT(jrOffer.as_object()[sfLedgerEntryType.fieldName.c_str()].as_string() == jss::Offer.c_str());
+        BEAST_EXPECT(jrOffer.as_object()[sfOwnerNode.fieldName.c_str()] == "0");
+        BEAST_EXPECT(jrOffer.as_object()[sfSequence.fieldName.c_str()] == 5);
         BEAST_EXPECT(
-            jrOffer[jss::TakerGets] ==
+            jrOffer.as_object()[jss::TakerGets.c_str()] ==
             USD(10).value().getJson(JsonOptions::none));
         BEAST_EXPECT(
-            jrOffer[jss::TakerPays] ==
+            jrOffer.as_object()[jss::TakerPays.c_str()] ==
             XRP(4000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
-        BEAST_EXPECT(jrOffer[jss::quality] == "400000000");
+        BEAST_EXPECT(jrOffer.as_object()[jss::owner_funds.c_str()] == "100");
+        BEAST_EXPECT(jrOffer.as_object()[jss::quality.c_str()] == "400000000");
 
         using namespace std::chrono_literals;
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) {
-            auto const& t = jval[jss::transaction];
-            return t[jss::TransactionType] == jss::OfferCreate &&
-                t[jss::TakerGets] ==
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jval) {
+            auto & t = jval.as_object()[jss::transaction.c_str()].as_object();
+            return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                t[jss::TakerGets.c_str()] ==
                 USD(10).value().getJson(JsonOptions::none) &&
-                t[jss::owner_funds] == "100" &&
-                t[jss::TakerPays] ==
+                t[jss::owner_funds.c_str()] == "100" &&
+                t[jss::TakerPays.c_str()] ==
                 XRP(4000).value().getJson(JsonOptions::none);
         }));
 
         env(offer(bob, XRP(2000), USD(5)));
         env.close();
 
-        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) {
-            auto const& t = jval[jss::transaction];
-            return t[jss::TransactionType] == jss::OfferCreate &&
-                t[jss::TakerGets] ==
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto & jval) {
+            auto & t = jval.as_object()[jss::transaction.c_str()].as_object();
+            return t[jss::TransactionType.c_str()] == jss::OfferCreate.c_str() &&
+                t[jss::TakerGets.c_str()] ==
                 USD(5).value().getJson(JsonOptions::none) &&
-                t[jss::owner_funds] == "50" &&
-                t[jss::TakerPays] ==
+                t[jss::owner_funds.c_str()] == "50" &&
+                t[jss::TakerPays.c_str()] ==
                 XRP(2000).value().getJson(JsonOptions::none);
         }));
 
@@ -1091,44 +1092,44 @@ public:
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
-        jrr = jv[jss::result];
+        jrr = jv.as_object()[jss::result.c_str()];
 
-        BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == 2);
-        auto const jrNextOffer = jrr[jss::offers][1u];
-        BEAST_EXPECT(jrNextOffer[sfAccount.fieldName] == bob.human());
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].is_array());
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].as_array().size() == 2);
+        auto jrNextOffer = jrr.as_object()[jss::offers.c_str()].as_array()[1u].as_object();
+        BEAST_EXPECT(jrNextOffer[sfAccount.fieldName.c_str()].as_string() == bob.human());
         BEAST_EXPECT(
-            jrNextOffer[sfBookDirectory.fieldName] ==
+            jrNextOffer[sfBookDirectory.fieldName.c_str()].as_string() ==
             getBookDir(env, XRP, USD.issue()));
-        BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0");
-        BEAST_EXPECT(jrNextOffer[jss::Flags] == 0);
-        BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);
-        BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0");
-        BEAST_EXPECT(jrNextOffer[sfSequence.fieldName] == 5);
+        BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName.c_str()] == "0");
+        BEAST_EXPECT(jrNextOffer[jss::Flags.c_str()] == 0);
+        BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName.c_str()].as_string() == jss::Offer.c_str());
+        BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName.c_str()] == "0");
+        BEAST_EXPECT(jrNextOffer[sfSequence.fieldName.c_str()] == 5);
         BEAST_EXPECT(
-            jrNextOffer[jss::TakerGets] ==
+            jrNextOffer[jss::TakerGets.c_str()] ==
             USD(5).value().getJson(JsonOptions::none));
         BEAST_EXPECT(
-            jrNextOffer[jss::TakerPays] ==
+            jrNextOffer[jss::TakerPays.c_str()] ==
             XRP(2000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT(jrNextOffer[jss::owner_funds] == "50");
-        BEAST_EXPECT(jrNextOffer[jss::quality] == "400000000");
+        BEAST_EXPECT(jrNextOffer[jss::owner_funds.c_str()] == "50");
+        BEAST_EXPECT(jrNextOffer[jss::quality.c_str()] == "400000000");
 
         jv = wsc->invoke("unsubscribe", books);
         if (wsc->version() == 2)
         {
             BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                jv.as_object().contains(jss::jsonrpc.c_str()) && jv.as_object()[jss::jsonrpc.c_str()] == "2.0");
             BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+                jv.as_object().contains(jss::ripplerpc.c_str()) && jv.as_object()[jss::ripplerpc.c_str()] == "2.0");
+            BEAST_EXPECT(jv.as_object().contains(jss::id.c_str()) && jv.as_object()[jss::id.c_str()] == 5);
         }
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
     }
 
     // Check that a stream only sees the given OfferCreate once
@@ -1144,12 +1145,12 @@ public:
         if (!maybeJv)
             return false;
         // wrong message
-        if (!(*maybeJv).isMember(jss::transaction))
+        if (!(*maybeJv).as_object().contains(jss::transaction.c_str()))
             return false;
-        auto const& t = (*maybeJv)[jss::transaction];
-        if (t[jss::TransactionType] != jss::OfferCreate ||
-            t[jss::TakerGets] != takerGets.value().getJson(JsonOptions::none) ||
-            t[jss::TakerPays] != takerPays.value().getJson(JsonOptions::none))
+        auto & t = (*maybeJv).as_object()[jss::transaction.c_str()].as_object();
+        if (t[jss::TransactionType.c_str()] != jss::OfferCreate.c_str() ||
+            t[jss::TakerGets.c_str()] != takerGets.value().getJson(JsonOptions::none) ||
+            t[jss::TakerPays.c_str()] != takerPays.value().getJson(JsonOptions::none))
             return false;
         // Make sure no other message is waiting
         return wsc->getMsg(timeout) == std::nullopt;
@@ -1194,20 +1195,20 @@ public:
         env.close();
 
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
         {
             // RPC subscribe to books stream
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = false;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = gw.human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = false;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
         }
 
@@ -1220,7 +1221,7 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
     }
 
     void
@@ -1269,29 +1270,29 @@ public:
         env.close();
 
         auto wsc = makeWSClient(env.app().config());
-        Json::Value books;
+        boost::json::object books;
 
         {
             // RPC subscribe to multiple book streams
-            books[jss::books] = Json::arrayValue;
+            books[jss::books.c_str()] = Json::arrayValue;
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = false;
-                j[jss::taker_gets][jss::currency] = "XRP";
-                j[jss::taker_pays][jss::currency] = "USD";
-                j[jss::taker_pays][jss::issuer] = gw.human();
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = false;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+                j[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
             }
 
             {
-                auto& j = books[jss::books].append(Json::objectValue);
-                j[jss::snapshot] = false;
-                j[jss::taker_gets][jss::currency] = "EUR";
-                j[jss::taker_gets][jss::issuer] = gw.human();
-                j[jss::taker_pays][jss::currency] = "XRP";
+                auto& j = books[jss::books.c_str()].as_array().emplace_back(boost::json::object()).as_object();
+                j[jss::snapshot.c_str()] = false;
+                j[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "EUR";
+                j[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+                j[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            if (!BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success"))
                 return;
         }
 
@@ -1303,7 +1304,7 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", books);
-        BEAST_EXPECT(jv[jss::status] == "success");
+        BEAST_EXPECT(jv.as_object()[jss::status.c_str()] == "success");
     }
 
     void
@@ -1319,339 +1320,339 @@ public:
         auto USD = gw["USD"];
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = 10u;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
-            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = 10u;
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "lgrNotFound");
+            BEAST_EXPECT(jrr.as_object()[jss::error_message.c_str()] == "ledgerNotFound");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] == "Missing field 'taker_pays'.");
+                jrr.as_object()[jss::error_message.c_str()] == "Missing field 'taker_pays'.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = Json::objectValue;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()] = boost::json::object();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] == "Missing field 'taker_gets'.");
+                jrr.as_object()[jss::error_message.c_str()] == "Missing field 'taker_gets'.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = "not an object";
-            jvParams[jss::taker_gets] = Json::objectValue;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()] = "not an object";
+            jvParams[jss::taker_gets.c_str()] = boost::json::object();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays', not object.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = Json::objectValue;
-            jvParams[jss::taker_gets] = "not an object";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()] = boost::json::object();
+            jvParams[jss::taker_gets.c_str()] = "not an object";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets', not object.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = Json::objectValue;
-            jvParams[jss::taker_gets] = Json::objectValue;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()] = boost::json::object();
+            jvParams[jss::taker_gets.c_str()] = boost::json::object();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Missing field 'taker_pays.currency'.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = 1;
-            jvParams[jss::taker_gets] = Json::objectValue;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = 1;
+            jvParams[jss::taker_gets.c_str()] = boost::json::object();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays.currency', not string.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets] = Json::objectValue;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()] = boost::json::object();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Missing field 'taker_gets.currency'.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = 1;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = 1;
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets.currency', not string.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "NOT_VALID";
-            jvParams[jss::taker_gets][jss::currency] = "XRP";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "srcCurMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "NOT_VALID";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "srcCurMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays.currency', bad currency.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "NOT_VALID";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "dstAmtMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "NOT_VALID";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "dstAmtMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets.currency', bad currency.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = 1;
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = 1;
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets.issuer', not string.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_pays][jss::issuer] = 1;
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = 1;
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays.issuer', not string.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_pays][jss::issuer] = gw.human() + "DEAD";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human() + "DEAD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "srcIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays.issuer', bad issuer.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_pays][jss::issuer] = toBase58(noAccount());
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = toBase58(noAccount());
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "srcIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays.issuer', bad issuer account one.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human() + "DEAD";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human() + "DEAD";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "dstIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets.issuer', bad issuer.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = toBase58(noAccount());
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = toBase58(noAccount());
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "dstIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets.issuer', bad issuer account one.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_pays][jss::issuer] = alice.human();
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = alice.human();
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "srcIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Unneeded field 'taker_pays.issuer' "
                 "for XRP currency specification.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "USD";
-            jvParams[jss::taker_pays][jss::issuer] = toBase58(xrpAccount());
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = toBase58(xrpAccount());
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "srcIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker] = 1;
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker.c_str()] = 1;
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker', not string.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker] = env.master.human() + "DEAD";
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'taker'.");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker.c_str()] = env.master.human() + "DEAD";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
+            BEAST_EXPECT(jrr.as_object()[jss::error_message.c_str()] == "Invalid field 'taker'.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker] = env.master.human();
-            jvParams[jss::taker_pays][jss::currency] = "USD";
-            jvParams[jss::taker_pays][jss::issuer] = gw.human();
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "badMarket");
-            BEAST_EXPECT(jrr[jss::error_message] == "No such market.");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker.c_str()] = env.master.human();
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "badMarket");
+            BEAST_EXPECT(jrr.as_object()[jss::error_message.c_str()] == "No such market.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker] = env.master.human();
-            jvParams[jss::limit] = "0";  // NOT an integer
-            jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker.c_str()] = env.master.human();
+            jvParams[jss::limit.c_str()] = "0";  // NOT an integer
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'limit', not unsigned integer.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "USD";
-            jvParams[jss::taker_pays][jss::issuer] = gw.human();
-            jvParams[jss::taker_gets][jss::currency] = "USD";
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "dstIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Invalid field 'taker_gets.issuer', "
                 "expected non-XRP issuer.");
         }
 
         {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays][jss::currency] = "USD";
-            jvParams[jss::taker_pays][jss::issuer] = gw.human();
-            jvParams[jss::taker_gets][jss::currency] = "XRP";
-            jvParams[jss::taker_gets][jss::issuer] = gw.human();
-            auto const jrr = env.rpc(
-                "json", "book_offers", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
+            boost::json::object jvParams;
+            jvParams[jss::ledger_index.c_str()] = "validated";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "USD";
+            jvParams[jss::taker_pays.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+            jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
+            auto jrr = env.rpc(
+                "json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+            BEAST_EXPECT(jrr.as_object()[jss::error.c_str()] == "dstIsrMalformed");
             BEAST_EXPECT(
-                jrr[jss::error_message] ==
+                jrr.as_object()[jss::error_message.c_str()] ==
                 "Unneeded field 'taker_gets.issuer' "
                 "for XRP currency specification.");
         }
@@ -1677,35 +1678,35 @@ public:
         if (asAdmin)
             env.close();
 
-        Json::Value jvParams;
-        jvParams[jss::limit] = 1;
-        jvParams[jss::ledger_index] = "validated";
-        jvParams[jss::taker_pays][jss::currency] = "XRP";
-        jvParams[jss::taker_gets][jss::currency] = "USD";
-        jvParams[jss::taker_gets][jss::issuer] = gw.human();
+        boost::json::object jvParams;
+        jvParams[jss::limit.c_str()] = 1;
+        jvParams[jss::ledger_index.c_str()] = "validated";
+        jvParams[jss::taker_pays.c_str()].as_object()[jss::currency.c_str()] = "XRP";
+        jvParams[jss::taker_gets.c_str()].as_object()[jss::currency.c_str()] = "USD";
+        jvParams[jss::taker_gets.c_str()].as_object()[jss::issuer.c_str()] = gw.human();
         auto jrr =
-            env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
+            env.rpc("json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].is_array());
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].as_array().size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
 
-        jvParams[jss::limit] = 0u;
-        jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == 0u);
+        jvParams[jss::limit.c_str()] = 0u;
+        jrr = env.rpc("json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].is_array());
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].as_array().size() == 0u);
 
-        jvParams[jss::limit] = RPC::Tuning::bookOffers.rmax + 1;
-        jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArray());
+        jvParams[jss::limit.c_str()] = RPC::Tuning::bookOffers.rmax + 1;
+        jrr = env.rpc("json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].is_array());
         BEAST_EXPECT(
-            jrr[jss::offers].size() ==
+            jrr.as_object()[jss::offers.c_str()].as_array().size() ==
             (asAdmin ? RPC::Tuning::bookOffers.rmax + 1 : 0u));
 
-        jvParams[jss::limit] = Json::nullValue;
-        jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArray());
+        jvParams[jss::limit.c_str()] = Json::nullValue;
+        jrr = env.rpc("json", "book_offers", serialize(jvParams)).as_object()[jss::result.c_str()];
+        BEAST_EXPECT(jrr.as_object()[jss::offers.c_str()].is_array());
         BEAST_EXPECT(
-            jrr[jss::offers].size() ==
+            jrr.as_object()[jss::offers.c_str()].as_array().size() ==
             (asAdmin ? RPC::Tuning::bookOffers.rdefault : 0u));
     }
 
@@ -1731,5 +1732,12 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(Book, app, ripple, 1);
 
+bool fg(boost::json::value const& jv) {
+    auto & t = jv.as_object().at(jss::transaction.c_str()).as_object();
+    return t.at(jss::TransactionType.c_str()) == jss::OfferCreate.c_str();
+
+}
 }  // namespace test
 }  // namespace ripple
+
+

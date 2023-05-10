@@ -43,7 +43,7 @@ public:
     virtual std::optional<boost::json::value>
     findMsg(
         std::chrono::milliseconds const& timeout,
-        std::function<bool(boost::json::value const&)> pred) = 0;
+        std::function<bool(boost::json::value &)> pred) = 0;
 };
 
 /** Returns a client operating through WebSockets/S. */
