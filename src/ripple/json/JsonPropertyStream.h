@@ -29,12 +29,12 @@ namespace ripple {
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
-    Json::Value m_top;
-    std::vector<Json::Value*> m_stack;
+    boost::json::object m_top;
+    std::vector<boost::json::object*> m_stack;
 
 public:
     JsonPropertyStream();
-    Json::Value const&
+    boost::json::object const&
     top() const;
 
 protected:

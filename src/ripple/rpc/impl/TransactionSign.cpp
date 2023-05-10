@@ -154,52 +154,52 @@ acctMatchesPubKey(
     return rpcBAD_SECRET;
 }
 
-static Json::Value
+static boost::json::object
 checkPayment(
-    Json::Value const& params,
-    Json::Value& tx_json,
+    boost::json::object const& params,
+    boost::json::object& tx_json,
     AccountID const& srcAddressID,
     Role const role,
     Application& app,
     bool doPath)
 {
     // Only path find for Payments.
-    if (tx_json[jss::TransactionType].asString() != jss::Payment)
-        return Json::Value();
+    if (tx_json[jss::TransactionType.c_str()].as_string() != jss::Payment.c_str())
+        return boost::json::object();
 
-    if (!tx_json.isMember(jss::Amount))
+    if (!tx_json.contains(jss::Amount.c_str()))
         return RPC::missing_field_error("tx_json.Amount");
 
     STAmount amount;
 
-    if (!amountFromJsonNoThrow(amount, tx_json[jss::Amount]))
+    if (!amountFromJsonNoThrow(amount, tx_json[jss::Amount.c_str()]))
         return RPC::invalid_field_error("tx_json.Amount");
 
-    if (!tx_json.isMember(jss::Destination))
+    if (!tx_json.contains(jss::Destination.c_str()))
         return RPC::missing_field_error("tx_json.Destination");
 
     auto const dstAccountID =
-        parseBase58<AccountID>(tx_json[jss::Destination].asString());
+        parseBase58<AccountID>(tx_json[jss::Destination.c_str()].as_string().c_str());
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if ((doPath == false) && params.isMember(jss::build_path))
+    if ((doPath == false) && params.contains(jss::build_path.c_str()))
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
 
-    if (tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
+    if (tx_json.contains(jss::Paths.c_str()) && params.contains(jss::build_path.c_str()))
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
-    if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
+    if (!tx_json.contains(jss::Paths.c_str()) && params.contains(jss::build_path.c_str()))
     {
         STAmount sendMax;
 
-        if (tx_json.isMember(jss::SendMax))
+        if (tx_json.contains(jss::SendMax.c_str()))
         {
-            if (!amountFromJsonNoThrow(sendMax, tx_json[jss::SendMax]))
+            if (!amountFromJsonNoThrow(sendMax, tx_json[jss::SendMax.c_str()]))
                 return RPC::invalid_field_error("tx_json.SendMax");
         }
         else
@@ -248,10 +248,10 @@ checkPayment(
                             << result.getJson(JsonOptions::none);
 
             if (!result.empty())
-                tx_json[jss::Paths] = result.getJson(JsonOptions::none);
+                tx_json[jss::Paths.c_str()] = result.getJson(JsonOptions::none);
         }
     }
-    return Json::Value();
+    return boost::json::object();
 }
 
 //------------------------------------------------------------------------------
@@ -264,9 +264,9 @@ checkPayment(
 //
 // This code does not check the "Sequence" field, since the expectations
 // for that field are particularly context sensitive.
-static std::pair<Json::Value, AccountID>
+static std::pair<boost::json::object, AccountID>
 checkTxJsonFields(
-    Json::Value const& tx_json,
+    boost::json::value const& tx_json,
     Role const role,
     bool const verify,
     std::chrono::seconds validatedLedgerAge,
@@ -274,21 +274,21 @@ checkTxJsonFields(
     LoadFeeTrack const& feeTrack,
     unsigned apiVersion)
 {
-    std::pair<Json::Value, AccountID> ret;
+    std::pair<boost::json::object, AccountID> ret;
 
-    if (!tx_json.isObject())
+    if (!tx_json.is_object())
     {
         ret.first = RPC::object_field_error(jss::tx_json);
         return ret;
     }
 
-    if (!tx_json.isMember(jss::TransactionType))
+    if (!tx_json.as_object().contains(jss::TransactionType.c_str()))
     {
         ret.first = RPC::missing_field_error("tx_json.TransactionType");
         return ret;
     }
 
-    if (!tx_json.isMember(jss::Account))
+    if (!tx_json.as_object().contains(jss::Account.c_str()))
     {
         ret.first = RPC::make_error(
             rpcSRC_ACT_MISSING, RPC::missing_field_message("tx_json.Account"));
@@ -296,7 +296,7 @@ checkTxJsonFields(
     }
 
     auto const srcAddressID =
-        parseBase58<AccountID>(tx_json[jss::Account].asString());
+        parseBase58<AccountID>(tx_json.as_object().at(jss::Account.c_str()).as_string().c_str());
 
     if (!srcAddressID)
     {
@@ -335,7 +335,7 @@ checkTxJsonFields(
 // std::shared_ptr<STTx const> from transactionPreProcessImpl ().
 struct transactionPreProcessResult
 {
-    Json::Value const first;
+    boost::json::object const first;
     std::shared_ptr<STTx> const second;
 
     transactionPreProcessResult() = delete;
@@ -347,7 +347,7 @@ struct transactionPreProcessResult
     transactionPreProcessResult&
     operator=(transactionPreProcessResult&&) = delete;
 
-    transactionPreProcessResult(Json::Value&& json)
+    transactionPreProcessResult(boost::json::object&& json)
         : first(std::move(json)), second()
     {
     }
@@ -360,7 +360,7 @@ struct transactionPreProcessResult
 
 static transactionPreProcessResult
 transactionPreProcessImpl(
-    Json::Value& params,
+    boost::json::object& params,
     Role role,
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
@@ -368,18 +368,18 @@ transactionPreProcessImpl(
 {
     auto j = app.journal("RPCHandler");
 
-    Json::Value jvResult;
+    boost::json::object jvResult;
     auto const [pk, sk] = keypairForSignature(params, jvResult);
     if (contains_error(jvResult))
         return jvResult;
 
     bool const verify =
-        !(params.isMember(jss::offline) && params[jss::offline].asBool());
+        !(params.contains(jss::offline.c_str()) && params[jss::offline.c_str()].as_bool());
 
-    if (!params.isMember(jss::tx_json))
+    if (!params.contains(jss::tx_json.c_str()))
         return RPC::missing_field_error(jss::tx_json);
 
-    Json::Value& tx_json(params[jss::tx_json]);
+    boost::json::object& tx_json(params[jss::tx_json.c_str()].as_object());
 
     // Check tx_json fields, but don't add any.
     auto [txJsonResult, srcAddressID] = checkTxJsonFields(
@@ -397,7 +397,7 @@ transactionPreProcessImpl(
     // This test covers the case where we're offline so the sequence number
     // cannot be determined locally.  If we're offline then the caller must
     // provide the sequence number.
-    if (!verify && !tx_json.isMember(jss::Sequence))
+    if (!verify && !tx_json.contains(jss::Sequence.c_str()))
         return RPC::missing_field_error("tx_json.Sequence");
 
     std::shared_ptr<SLE const> sle;
@@ -414,7 +414,7 @@ transactionPreProcessImpl(
     }
 
     {
-        Json::Value err = checkFee(
+        boost::json::object err = checkFee(
             params,
             role,
             verify && signingArgs.editFields(),
@@ -440,10 +440,10 @@ transactionPreProcessImpl(
 
     if (signingArgs.editFields())
     {
-        if (!tx_json.isMember(jss::Sequence))
+        if (!tx_json.contains(jss::Sequence.c_str()))
         {
             bool const hasTicketSeq =
-                tx_json.isMember(sfTicketSequence.jsonName);
+                tx_json.contains(sfTicketSequence.jsonName.c_str());
             if (!hasTicketSeq && !sle)
             {
                 JLOG(j.debug())
@@ -452,18 +452,18 @@ transactionPreProcessImpl(
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] =
+            tx_json[jss::Sequence.c_str()] =
                 hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
 
-        if (!tx_json.isMember(jss::Flags))
-            tx_json[jss::Flags] = tfFullyCanonicalSig;
+        if (!tx_json.contains(jss::Flags.c_str()))
+            tx_json[jss::Flags.c_str()] = tfFullyCanonicalSig;
     }
 
     // If multisigning there should not be a single signature and vice versa.
     if (signingArgs.isMultiSigning())
     {
-        if (tx_json.isMember(sfTxnSignature.jsonName))
+        if (tx_json.contains(sfTxnSignature.jsonName.c_str()))
             return rpcError(rpcALREADY_SINGLE_SIG);
 
         // If multisigning then we need to return the public key.
@@ -471,7 +471,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        if (tx_json.isMember(sfSigners.jsonName))
+        if (tx_json.contains(sfSigners.jsonName.c_str()))
             return rpcError(rpcALREADY_MULTISIG);
     }
 
@@ -499,10 +499,10 @@ transactionPreProcessImpl(
     STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
     if (!parsed.object.has_value())
     {
-        Json::Value err;
-        err[jss::error] = parsed.error[jss::error];
-        err[jss::error_code] = parsed.error[jss::error_code];
-        err[jss::error_message] = parsed.error[jss::error_message];
+        boost::json::object err;
+        err[jss::error.c_str()] = parsed.error.as_object()[jss::error.c_str()];
+        err[jss::error_code.c_str()] = parsed.error.as_object()[jss::error_code.c_str()];
+        err[jss::error_message.c_str()] = parsed.error.as_object()[jss::error_message.c_str()];
         return err;
     }
 
@@ -550,13 +550,13 @@ transactionPreProcessImpl(
     return transactionPreProcessResult{std::move(stpTrans)};
 }
 
-static std::pair<Json::Value, Transaction::pointer>
+static std::pair<boost::json::object, Transaction::pointer>
 transactionConstructImpl(
     std::shared_ptr<STTx const> const& stpTrans,
     Rules const& rules,
     Application& app)
 {
-    std::pair<Json::Value, Transaction::pointer> ret;
+    std::pair<boost::json::object, Transaction::pointer> ret;
 
     // Turn the passed in STTx into a Transaction.
     Transaction::pointer tpTrans;
@@ -628,14 +628,14 @@ transactionConstructImpl(
     return ret;
 }
 
-static Json::Value
+static boost::json::object
 transactionFormatResultImpl(Transaction::pointer tpTrans)
 {
-    Json::Value jvResult;
+    boost::json::object jvResult;
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
-        jvResult[jss::tx_blob] =
+        jvResult[jss::tx_json.c_str()] = tpTrans->getJson(JsonOptions::none);
+        jvResult[jss::tx_blob.c_str()] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != tpTrans->getResult())
@@ -645,9 +645,9 @@ transactionFormatResultImpl(Transaction::pointer tpTrans)
 
             transResultInfo(tpTrans->getResult(), sToken, sHuman);
 
-            jvResult[jss::engine_result] = sToken;
-            jvResult[jss::engine_result_code] = tpTrans->getResult();
-            jvResult[jss::engine_result_message] = sHuman;
+            jvResult[jss::engine_result.c_str()] = sToken;
+            jvResult[jss::engine_result_code.c_str()] = tpTrans->getResult();
+            jvResult[jss::engine_result_message.c_str()] = sHuman;
         }
     }
     catch (std::exception&)
@@ -662,9 +662,9 @@ transactionFormatResultImpl(Transaction::pointer tpTrans)
 
 //------------------------------------------------------------------------------
 
-Json::Value
+boost::json::object
 checkFee(
-    Json::Value& request,
+    boost::json::object& request,
     Role const role,
     bool doAutoFill,
     Config const& config,
@@ -672,20 +672,20 @@ checkFee(
     TxQ const& txQ,
     Application const& app)
 {
-    Json::Value& tx(request[jss::tx_json]);
-    if (tx.isMember(jss::Fee))
-        return Json::Value();
+    boost::json::object& tx(request[jss::tx_json.c_str()].as_object());
+    if (tx.contains(jss::Fee.c_str()))
+        return boost::json::object();
 
     if (!doAutoFill)
         return RPC::missing_field_error("tx_json.Fee");
 
     int mult = Tuning::defaultAutoFillFeeMultiplier;
     int div = Tuning::defaultAutoFillFeeDivisor;
-    if (request.isMember(jss::fee_mult_max))
+    if (request.contains(jss::fee_mult_max.c_str()))
     {
-        if (request[jss::fee_mult_max].isInt())
+        if (request[jss::fee_mult_max.c_str()].is_int64())
         {
-            mult = request[jss::fee_mult_max].asInt();
+            mult = request[jss::fee_mult_max.c_str()].as_int64();
             if (mult < 0)
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
@@ -700,11 +700,11 @@ checkFee(
                     jss::fee_mult_max, "a positive integer"));
         }
     }
-    if (request.isMember(jss::fee_div_max))
+    if (request.contains(jss::fee_div_max.c_str()))
     {
-        if (request[jss::fee_div_max].isInt())
+        if (request[jss::fee_div_max.c_str()].is_int64())
         {
-            div = request[jss::fee_div_max].asInt();
+            div = request[jss::fee_div_max.c_str()].as_int64();
             if (div <= 0)
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
@@ -751,16 +751,16 @@ checkFee(
         return RPC::make_error(rpcHIGH_FEE, ss.str());
     }
 
-    tx[jss::Fee] = fee.jsonClipped();
-    return Json::Value();
+    tx[jss::Fee.c_str()] = fee.jsonClipped();
+    return boost::json::object();
 }
 
 //------------------------------------------------------------------------------
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSign(
-    Json::Value jvRequest,
+    boost::json::object jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -785,7 +785,7 @@ transactionSign(
     else
         ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<boost::json::object, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -795,9 +795,9 @@ transactionSign(
 }
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSubmit(
-    Json::Value jvRequest,
+    boost::json::object jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -819,7 +819,7 @@ transactionSubmit(
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<boost::json::object, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -843,38 +843,39 @@ transactionSubmit(
 namespace detail {
 // There are a some field checks shared by transactionSignFor
 // and transactionSubmitMultiSigned.  Gather them together here.
-static Json::Value
-checkMultiSignFields(Json::Value const& jvRequest)
+static boost::json::object
+checkMultiSignFields(boost::json::object const& jvRequest)
 {
-    if (!jvRequest.isMember(jss::tx_json))
+    if (!jvRequest.contains(jss::tx_json.c_str()))
         return RPC::missing_field_error(jss::tx_json);
 
-    Json::Value const& tx_json(jvRequest[jss::tx_json]);
+    boost::json::value const& tx_json(jvRequest.at(jss::tx_json.c_str()));
 
-    if (!tx_json.isObject())
-        return RPC::invalid_field_message(jss::tx_json);
+    // Keshava: need to bring uniform-ness in error handling. mixed types of string and object is causing confusion
+//    if (!tx_json.is_object())
+//        return boost::json::string{RPC::invalid_field_message(jss::tx_json)};
 
     // There are a couple of additional fields we need to check before
     // we serialize.  If we serialize first then we generate less useful
     // error messages.
-    if (!tx_json.isMember(jss::Sequence))
+    if (!tx_json.as_object().contains(jss::Sequence.c_str()))
         return RPC::missing_field_error("tx_json.Sequence");
 
-    if (!tx_json.isMember(sfSigningPubKey.getJsonName()))
+    if (!tx_json.as_object().contains(sfSigningPubKey.getJsonName().c_str()))
         return RPC::missing_field_error("tx_json.SigningPubKey");
 
-    if (!tx_json[sfSigningPubKey.getJsonName()].asString().empty())
+    if (!tx_json.as_object().at(sfSigningPubKey.getJsonName().c_str()).as_string().empty())
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "When multi-signing 'tx_json.SigningPubKey' must be empty.");
 
-    return Json::Value();
+    return boost::json::object();
 }
 
 // Sort and validate an stSigners array.
 //
 // Returns a null Json::Value if there are no errors.
-static Json::Value
+static boost::json::object
 sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 {
     if (signers.empty())
@@ -926,7 +927,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 /** Returns a Json::objectValue. */
 boost::json::object
 transactionSignFor(
-    Json::Value jvRequest,
+    boost::json::object jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -939,31 +940,31 @@ transactionSignFor(
     // Verify presence of the signer's account field.
     const char accountField[] = "account";
 
-    if (!jvRequest.isMember(accountField))
+    if (!jvRequest.contains(accountField))
         return RPC::missing_field_error(accountField);
 
     // Turn the signer's account into an AccountID for multi-sign.
     auto const signerAccountID =
-        parseBase58<AccountID>(jvRequest[accountField].asString());
+        parseBase58<AccountID>(jvRequest[accountField].as_string().c_str());
     if (!signerAccountID)
     {
         return RPC::make_error(
             rpcSRC_ACT_MALFORMED, RPC::invalid_field_message(accountField));
     }
 
-    if (!jvRequest.isMember(jss::tx_json))
+    if (!jvRequest.contains(jss::tx_json.c_str()))
         return RPC::missing_field_error(jss::tx_json);
 
     {
-        Json::Value& tx_json(jvRequest[jss::tx_json]);
+        boost::json::value& tx_json(jvRequest[jss::tx_json.c_str()]);
 
-        if (!tx_json.isObject())
+        if (!tx_json.is_object())
             return RPC::object_field_error(jss::tx_json);
 
         // If the tx_json.SigningPubKey field is missing,
         // insert an empty one.
-        if (!tx_json.isMember(sfSigningPubKey.getJsonName()))
-            tx_json[sfSigningPubKey.getJsonName()] = "";
+        if (!tx_json.as_object().contains(sfSigningPubKey.getJsonName().c_str()))
+            tx_json.as_object()[sfSigningPubKey.getJsonName().c_str()] = "";
     }
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
@@ -1021,7 +1022,7 @@ transactionSignFor(
     }
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<boost::json::object, Transaction::pointer> txn =
         transactionConstructImpl(sttx, ledger->rules(), app);
 
     if (!txn.second)
@@ -1031,9 +1032,9 @@ transactionSignFor(
 }
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSubmitMultiSigned(
-    Json::Value jvRequest,
+    boost::json::object jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -1048,12 +1049,12 @@ transactionSubmitMultiSigned(
     // be passed in by the caller.
     using namespace detail;
     {
-        Json::Value err = checkMultiSignFields(jvRequest);
+        boost::json::object err = checkMultiSignFields(jvRequest);
         if (RPC::contains_error(err))
             return err;
     }
 
-    Json::Value& tx_json(jvRequest["tx_json"]);
+    boost::json::value& tx_json(jvRequest["tx_json"]);
 
     auto [txJsonResult, srcAddressID] = checkTxJsonFields(
         tx_json,
@@ -1081,7 +1082,7 @@ transactionSubmitMultiSigned(
     }
 
     {
-        Json::Value err = checkFee(
+        boost::json::object err = checkFee(
             jvRequest,
             role,
             false,
@@ -1093,7 +1094,7 @@ transactionSubmitMultiSigned(
         if (RPC::contains_error(err))
             return err;
 
-        err = checkPayment(jvRequest, tx_json, srcAddressID, role, app, false);
+        err = checkPayment(jvRequest, tx_json.as_object(), srcAddressID, role, app, false);
 
         if (RPC::contains_error(err))
             return err;
@@ -1105,10 +1106,10 @@ transactionSubmitMultiSigned(
         STParsedJSONObject parsedTx_json("tx_json", tx_json);
         if (!parsedTx_json.object)
         {
-            Json::Value jvResult;
-            jvResult["error"] = parsedTx_json.error["error"];
-            jvResult["error_code"] = parsedTx_json.error["error_code"];
-            jvResult["error_message"] = parsedTx_json.error["error_message"];
+            boost::json::object jvResult;
+            jvResult["error"] = parsedTx_json.error.as_object()["error"];
+            jvResult["error_code"] = parsedTx_json.error.as_object()["error_code"];
+            jvResult["error_message"] = parsedTx_json.error.as_object()["error_message"];
             return jvResult;
         }
         try
@@ -1201,7 +1202,7 @@ transactionSubmitMultiSigned(
         return err;
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<boost::json::object, Transaction::pointer> txn =
         transactionConstructImpl(stpTrans, ledger->rules(), app);
 
     if (!txn.second)

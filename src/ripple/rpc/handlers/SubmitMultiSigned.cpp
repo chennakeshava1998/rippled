@@ -30,11 +30,11 @@ namespace ripple {
 //   SigningAccounts <array>,
 //   tx_json: <object>,
 // }
-Json::Value
+boost::json::object
 doSubmitMultiSigned(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeHighBurdenRPC;
-    auto const failHard = context.params[jss::fail_hard].asBool();
+    auto const failHard = context.params[jss::fail_hard.c_str()].as_bool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 
     return RPC::transactionSubmitMultiSigned(

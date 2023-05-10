@@ -305,7 +305,7 @@ public:
             validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    boost::json::value
+    boost::json::object
     getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.

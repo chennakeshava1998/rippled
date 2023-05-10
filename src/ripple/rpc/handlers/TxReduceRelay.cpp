@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doTxReduceRelay(RPC::JsonContext& context)
 {
     return context.app.overlay().txMetrics();

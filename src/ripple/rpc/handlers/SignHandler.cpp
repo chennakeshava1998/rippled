@@ -29,7 +29,7 @@ namespace ripple {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value
+boost::json::object
 doSign(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
@@ -40,8 +40,8 @@ doSign(RPC::JsonContext& context)
 
     context.loadType = Resource::feeHighBurdenRPC;
     NetworkOPs::FailHard const failType = NetworkOPs::doFailHard(
-        context.params.isMember(jss::fail_hard) &&
-        context.params[jss::fail_hard].asBool());
+        context.params.contains(jss::fail_hard.c_str()) &&
+        context.params[jss::fail_hard.c_str()].as_bool());
 
     auto ret = RPC::transactionSign(
         context.params,
@@ -50,7 +50,7 @@ doSign(RPC::JsonContext& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app);
 
-    ret[jss::deprecated] =
+    ret[jss::deprecated.c_str()] =
         "This command has been deprecated and will be "
         "removed in a future version of the server. Please "
         "migrate to a standalone signing tool.";

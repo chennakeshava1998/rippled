@@ -35,20 +35,20 @@ static NetworkOPs::FailHard
 getFailHard(RPC::JsonContext const& context)
 {
     return NetworkOPs::doFailHard(
-        context.params.isMember("fail_hard") &&
-        context.params["fail_hard"].asBool());
+        context.params.contains("fail_hard") &&
+        context.params.at("fail_hard").as_bool());
 }
 
 // {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value
+boost::json::object
 doSubmit(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params.isMember(jss::tx_blob))
+    if (!context.params.contains(jss::tx_blob.c_str()))
     {
         auto const failType = getFailHard(context);
 
@@ -64,7 +64,7 @@ doSubmit(RPC::JsonContext& context)
             context.app,
             RPC::getProcessTxnFn(context.netOps));
 
-        ret[jss::deprecated] =
+        ret[jss::deprecated.c_str()] =
             "Signing support in the 'submit' command has been "
             "deprecated and will be removed in a future version "
             "of the server. Please migrate to a standalone "
@@ -73,9 +73,9 @@ doSubmit(RPC::JsonContext& context)
         return ret;
     }
 
-    Json::Value jvResult;
+    boost::json::object jvResult;
 
-    auto ret = strUnHex(context.params[jss::tx_blob].asString());
+    auto ret = strUnHex(context.params[jss::tx_blob.c_str()].as_string().c_str());
 
     if (!ret || !ret->size())
         return rpcError(rpcINVALID_PARAMS);
@@ -90,8 +90,8 @@ doSubmit(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error] = "invalidTransaction";
-        jvResult[jss::error_exception] = e.what();
+        jvResult[jss::error.c_str()] = "invalidTransaction";
+        jvResult[jss::error_exception.c_str()] = e.what();
 
         return jvResult;
     }
@@ -109,8 +109,8 @@ doSubmit(RPC::JsonContext& context)
             context.app.config());
         if (validity != Validity::Valid)
         {
-            jvResult[jss::error] = "invalidTransaction";
-            jvResult[jss::error_exception] = "fails local checks: " + reason;
+            jvResult[jss::error.c_str()] = "invalidTransaction";
+            jvResult[jss::error_exception.c_str()] = "fails local checks: " + reason;
 
             return jvResult;
         }
@@ -120,8 +120,8 @@ doSubmit(RPC::JsonContext& context)
     auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {
-        jvResult[jss::error] = "invalidTransaction";
-        jvResult[jss::error_exception] = "fails local checks: " + reason;
+        jvResult[jss::error.c_str()] = "invalidTransaction";
+        jvResult[jss::error_exception.c_str()] = "fails local checks: " + reason;
 
         return jvResult;
     }
@@ -135,16 +135,16 @@ doSubmit(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error] = "internalSubmit";
-        jvResult[jss::error_exception] = e.what();
+        jvResult[jss::error.c_str()] = "internalSubmit";
+        jvResult[jss::error_exception.c_str()] = e.what();
 
         return jvResult;
     }
 
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
-        jvResult[jss::tx_blob] =
+        jvResult[jss::tx_json.c_str()] = tpTrans->getJson(JsonOptions::none);
+        jvResult[jss::tx_blob.c_str()] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != tpTrans->getResult())
@@ -154,30 +154,30 @@ doSubmit(RPC::JsonContext& context)
 
             transResultInfo(tpTrans->getResult(), sToken, sHuman);
 
-            jvResult[jss::engine_result] = sToken;
-            jvResult[jss::engine_result_code] = tpTrans->getResult();
-            jvResult[jss::engine_result_message] = sHuman;
+            jvResult[jss::engine_result.c_str()] = sToken;
+            jvResult[jss::engine_result_code.c_str()] = tpTrans->getResult();
+            jvResult[jss::engine_result_message.c_str()] = sHuman;
 
             auto const submitResult = tpTrans->getSubmitResult();
 
-            jvResult[jss::accepted] = submitResult.any();
-            jvResult[jss::applied] = submitResult.applied;
-            jvResult[jss::broadcast] = submitResult.broadcast;
-            jvResult[jss::queued] = submitResult.queued;
-            jvResult[jss::kept] = submitResult.kept;
+            jvResult[jss::accepted.c_str()] = submitResult.any();
+            jvResult[jss::applied.c_str()] = submitResult.applied;
+            jvResult[jss::broadcast.c_str()] = submitResult.broadcast;
+            jvResult[jss::queued.c_str()] = submitResult.queued;
+            jvResult[jss::kept.c_str()] = submitResult.kept;
 
             if (auto currentLedgerState = tpTrans->getCurrentLedgerState())
             {
-                jvResult[jss::account_sequence_next] =
-                    safe_cast<Json::Value::UInt>(
+                jvResult[jss::account_sequence_next.c_str()] =
+                    safe_cast<unsigned int>(
                         currentLedgerState->accountSeqNext);
-                jvResult[jss::account_sequence_available] =
-                    safe_cast<Json::Value::UInt>(
+                jvResult[jss::account_sequence_available.c_str()] =
+                    safe_cast<unsigned int>(
                         currentLedgerState->accountSeqAvail);
-                jvResult[jss::open_ledger_cost] =
+                jvResult[jss::open_ledger_cost.c_str()] =
                     to_string(currentLedgerState->minFeeRequired);
-                jvResult[jss::validated_ledger_index] =
-                    safe_cast<Json::Value::UInt>(
+                jvResult[jss::validated_ledger_index.c_str()] =
+                    safe_cast<unsigned int>(
                         currentLedgerState->validatedLedger);
             }
         }
@@ -186,8 +186,8 @@ doSubmit(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error] = "internalJson";
-        jvResult[jss::error_exception] = e.what();
+        jvResult[jss::error.c_str()] = "internalJson";
+        jvResult[jss::error_exception.c_str()] = e.what();
 
         return jvResult;
     }

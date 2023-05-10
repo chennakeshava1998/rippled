@@ -38,7 +38,7 @@ namespace ripple {
 // {
 //   start: <index>
 // }
-Json::Value
+boost::json::object
 doTxHistory(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
@@ -46,24 +46,24 @@ doTxHistory(RPC::JsonContext& context)
 
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params.isMember(jss::start))
+    if (!context.params.contains(jss::start.c_str()))
         return rpcError(rpcINVALID_PARAMS);
 
-    unsigned int startIndex = context.params[jss::start].asUInt();
+    unsigned int startIndex = context.params[jss::start.c_str()].as_uint64();
 
     if ((startIndex > 10000) && (!isUnlimited(context.role)))
         return rpcError(rpcNO_PERMISSION);
 
     auto trans = context.app.getRelationalDatabase().getTxHistory(startIndex);
 
-    Json::Value obj;
-    Json::Value& txs = obj[jss::txs];
-    obj[jss::index] = startIndex;
+    boost::json::object obj;
+    boost::json::array& txs = obj[jss::txs.c_str()].as_array();
+    obj[jss::index.c_str()] = startIndex;
     if (context.app.config().reporting())
         obj["used_postgres"] = true;
 
     for (auto const& t : trans)
-        txs.append(t->getJson(JsonOptions::none));
+        txs.emplace_back(t->getJson(JsonOptions::none));
 
     return obj;
 }

@@ -32,47 +32,47 @@ namespace ripple {
 //
 // XXX In this case, not specify either ledger does not mean ledger current. It
 // means any ledger.
-Json::Value
+boost::json::object
 doTransactionEntry(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult = RPC::lookupLedger(lpLedger, context);
+    boost::json::object jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!context.params.isMember(jss::tx_hash))
+    if (!context.params.contains(jss::tx_hash.c_str()))
     {
-        jvResult[jss::error] = "fieldNotFoundTransaction";
+        jvResult[jss::error.c_str()] = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
+    else if (jvResult.contains(jss::ledger_hash.c_str()) && jvResult.at(jss::ledger_hash.c_str()).is_null())
     {
         // We don't work on ledger current.
 
         // XXX We don't support any transaction yet.
-        jvResult[jss::error] = "notYetImplemented";
+        jvResult[jss::error.c_str()] = "notYetImplemented";
     }
     else
     {
         uint256 uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict
         // routine, returning success or failure.
-        if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
+        if (!uTransID.parseHex(context.params[jss::tx_hash.c_str()].as_string()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            jvResult[jss::error.c_str()] = "malformedRequest";
             return jvResult;
         }
 
         auto [sttx, stobj] = lpLedger->txRead(uTransID);
         if (!sttx)
         {
-            jvResult[jss::error] = "transactionNotFound";
+            jvResult[jss::error.c_str()] = "transactionNotFound";
         }
         else
         {
-            jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+            jvResult[jss::tx_json.c_str()] = sttx->getJson(JsonOptions::none);
             if (stobj)
-                jvResult[jss::metadata] = stobj->getJson(JsonOptions::none);
+                jvResult[jss::metadata.c_str()] = stobj->getJson(JsonOptions::none);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

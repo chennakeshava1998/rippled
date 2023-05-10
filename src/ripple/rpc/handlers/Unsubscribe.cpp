@@ -28,20 +28,20 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doUnsubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    Json::Value jvResult(Json::objectValue);
+    boost::json::object jvResult;
     bool removeUrl{false};
 
-    if (!context.infoSub && !context.params.isMember(jss::url))
+    if (!context.infoSub && !context.params.contains(jss::url.c_str()))
     {
         // Must be a JSON-RPC call.
         return rpcError(rpcINVALID_PARAMS);
     }
 
-    if (context.params.isMember(jss::url))
+    if (context.params.contains(jss::url.c_str()))
     {
         if (context.role != Role::ADMIN)
             return rpcError(rpcNO_PERMISSION);
@@ -57,17 +57,17 @@ doUnsubscribe(RPC::JsonContext& context)
         ispSub = context.infoSub;
     }
 
-    if (context.params.isMember(jss::streams))
+    if (context.params.contains(jss::streams.c_str()))
     {
-        if (!context.params[jss::streams].isArray())
+        if (!context.params[jss::streams.c_str()].is_array())
             return rpcError(rpcINVALID_PARAMS);
 
-        for (auto& it : context.params[jss::streams])
+        for (auto& it : context.params[jss::streams.c_str()].as_array())
         {
-            if (!it.isString())
+            if (!it.is_string())
                 return rpcError(rpcSTREAM_MALFORMED);
 
-            std::string streamName = it.asString();
+            std::string streamName{it.as_string()};
             if (streamName == "server")
             {
                 context.netOps.unsubServer(ispSub->getSeq());
@@ -109,47 +109,47 @@ doUnsubscribe(RPC::JsonContext& context)
         }
     }
 
-    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
+    auto accountsProposed = context.params.contains(jss::accounts_proposed.c_str())
         ? jss::accounts_proposed
         : jss::rt_accounts;  // DEPRECATED
-    if (context.params.isMember(accountsProposed))
+    if (context.params.contains(accountsProposed.c_str()))
     {
-        if (!context.params[accountsProposed].isArray())
+        if (!context.params[accountsProposed.c_str()].is_array())
             return rpcError(rpcINVALID_PARAMS);
 
-        auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
+        auto ids = RPC::parseAccountIds(context.params[accountsProposed.c_str()]);
         if (ids.empty())
             return rpcError(rpcACT_MALFORMED);
         context.netOps.unsubAccount(ispSub, ids, true);
     }
 
-    if (context.params.isMember(jss::accounts))
+    if (context.params.contains(jss::accounts.c_str()))
     {
-        if (!context.params[jss::accounts].isArray())
+        if (!context.params[jss::accounts.c_str()].is_array())
             return rpcError(rpcINVALID_PARAMS);
 
-        auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
+        auto ids = RPC::parseAccountIds(context.params[jss::accounts.c_str()]);
         if (ids.empty())
             return rpcError(rpcACT_MALFORMED);
         context.netOps.unsubAccount(ispSub, ids, false);
     }
 
-    if (context.params.isMember(jss::account_history_tx_stream))
+    if (context.params.contains(jss::account_history_tx_stream.c_str()))
     {
-        auto const& req = context.params[jss::account_history_tx_stream];
-        if (!req.isMember(jss::account) || !req[jss::account].isString())
+        auto const& req = context.params[jss::account_history_tx_stream.c_str()].as_object();
+        if (!req.contains(jss::account.c_str()) || !req.at(jss::account.c_str()).is_string())
             return rpcError(rpcINVALID_PARAMS);
 
-        auto const id = parseBase58<AccountID>(req[jss::account].asString());
+        auto const id = parseBase58<AccountID>(req[jss::account.c_str()].asString());
         if (!id)
             return rpcError(rpcINVALID_PARAMS);
 
         bool stopHistoryOnly = false;
-        if (req.isMember(jss::stop_history_tx_only))
+        if (req.contains(jss::stop_history_tx_only.c_str()))
         {
-            if (!req[jss::stop_history_tx_only].isBool())
+            if (!req.at(jss::stop_history_tx_only.c_str()).is_bool())
                 return rpcError(rpcINVALID_PARAMS);
-            stopHistoryOnly = req[jss::stop_history_tx_only].asBool();
+            stopHistoryOnly = req.at(jss::stop_history_tx_only.c_str()).as_bool();
         }
         context.netOps.unsubAccountHistory(ispSub, *id, stopHistoryOnly);
 
@@ -158,40 +158,40 @@ doUnsubscribe(RPC::JsonContext& context)
             << " stopHistoryOnly=" << (stopHistoryOnly ? "true" : "false");
     }
 
-    if (context.params.isMember(jss::books))
+    if (context.params.contains(jss::books.c_str()))
     {
-        if (!context.params[jss::books].isArray())
+        if (!context.params[jss::books.c_str()].is_array())
             return rpcError(rpcINVALID_PARAMS);
 
-        for (auto& jv : context.params[jss::books])
+        for (auto& jv : context.params[jss::books.c_str()].as_array())
         {
-            if (!jv.isObject() || !jv.isMember(jss::taker_pays) ||
-                !jv.isMember(jss::taker_gets) ||
-                !jv[jss::taker_pays].isObjectOrNull() ||
-                !jv[jss::taker_gets].isObjectOrNull())
+            if (!jv.isObject() || !jv.contains(jss::taker_pays) ||
+                !jv.contains(jss::taker_gets) ||
+                !jv[jss::taker_pays.c_str()].isObjectOrNull() ||
+                !jv[jss::taker_gets.c_str()].isObjectOrNull())
             {
                 return rpcError(rpcINVALID_PARAMS);
             }
 
-            Json::Value taker_pays = jv[jss::taker_pays];
-            Json::Value taker_gets = jv[jss::taker_gets];
+            Json::Value taker_pays = jv[jss::taker_pays.c_str()];
+            Json::Value taker_gets = jv[jss::taker_gets.c_str()];
 
             Book book;
 
             // Parse mandatory currency.
-            if (!taker_pays.isMember(jss::currency) ||
+            if (!taker_pays.contains(jss::currency) ||
                 !to_currency(
-                    book.in.currency, taker_pays[jss::currency].asString()))
+                    book.in.currency, taker_pays[jss::currency.c_str()].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
             else if (
-                ((taker_pays.isMember(jss::issuer)) &&
-                 (!taker_pays[jss::issuer].isString() ||
+                ((taker_pays.contains(jss::issuer)) &&
+                 (!taker_pays[jss::issuer.c_str()].isString() ||
                   !to_issuer(
-                      book.in.account, taker_pays[jss::issuer].asString())))
+                      book.in.account, taker_pays[jss::issuer.c_str()].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.in) || noAccount() == book.in.account)
             {
@@ -201,9 +201,9 @@ doUnsubscribe(RPC::JsonContext& context)
             }
 
             // Parse mandatory currency.
-            if (!taker_gets.isMember(jss::currency) ||
+            if (!taker_gets.contains(jss::currency) ||
                 !to_currency(
-                    book.out.currency, taker_gets[jss::currency].asString()))
+                    book.out.currency, taker_gets[jss::currency.c_str()].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
 
@@ -211,10 +211,10 @@ doUnsubscribe(RPC::JsonContext& context)
             }
             // Parse optional issuer.
             else if (
-                ((taker_gets.isMember(jss::issuer)) &&
-                 (!taker_gets[jss::issuer].isString() ||
+                ((taker_gets.contains(jss::issuer)) &&
+                 (!taker_gets[jss::issuer.c_str()].isString() ||
                   !to_issuer(
-                      book.out.account, taker_gets[jss::issuer].asString())))
+                      book.out.account, taker_gets[jss::issuer.c_str()].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.out) || noAccount() == book.out.account)
             {
@@ -232,8 +232,8 @@ doUnsubscribe(RPC::JsonContext& context)
             context.netOps.unsubBook(ispSub->getSeq(), book);
 
             // both_sides is deprecated.
-            if ((jv.isMember(jss::both) && jv[jss::both].asBool()) ||
-                (jv.isMember(jss::both_sides) && jv[jss::both_sides].asBool()))
+            if ((jv.contains(jss::both) && jv[jss::both.c_str()].asBool()) ||
+                (jv.contains(jss::both_sides) && jv[jss::both_sides.c_str()].asBool()))
             {
                 context.netOps.unsubBook(ispSub->getSeq(), reversed(book));
             }
@@ -242,7 +242,7 @@ doUnsubscribe(RPC::JsonContext& context)
 
     if (removeUrl)
     {
-        context.netOps.tryRemoveRpcSub(context.params[jss::url].asString());
+        context.netOps.tryRemoveRpcSub(context.params[jss::url.c_str()].asString());
     }
 
     return jvResult;

@@ -61,9 +61,9 @@ namespace RPC {
 
     @return         A JSON object containing the error results, if any
 */
-Json::Value
+boost::json::object
 checkFee(
-    Json::Value& request,
+    boost::json::object& request,
     Role const role,
     bool doAutoFill,
     Config const& config,
@@ -91,18 +91,19 @@ getProcessTxnFn(NetworkOPs& netOPs)
 }
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSign(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    boost::json::object
+        params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSubmit(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    boost::json::object params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -110,18 +111,18 @@ transactionSubmit(
     ProcessTransactionFn const& processTransaction);
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSignFor(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    boost::json::object params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
 /** Returns a Json::objectValue. */
-Json::Value
+boost::json::object
 transactionSubmitMultiSigned(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    boost::json::object params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,

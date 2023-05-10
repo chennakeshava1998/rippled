@@ -25,14 +25,15 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doPrint(RPC::JsonContext& context)
 {
     JsonPropertyStream stream;
-    if (context.params.isObject() && context.params[jss::params].isArray() &&
-        context.params[jss::params][0u].isString())
+    // removing the type-check for object-ness. RPC::JsonContext::params is declared as a boost::json::object
+    if (context.params[jss::params.c_str()].is_array() &&
+        context.params[jss::params.c_str()].as_array()[0u].is_string())
     {
-        context.app.write(stream, context.params[jss::params][0u].asString());
+        context.app.write(stream, context.params[jss::params.c_str()].as_array()[0u].as_string().c_str());
     }
     else
     {

@@ -51,7 +51,7 @@ doSignFor(RPC::JsonContext& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app);
 
-    ret[jss::deprecated] =
+    ret[jss::deprecated.c_str()] =
         "This command has been deprecated and will be "
         "removed in a future version of the server. Please "
         "migrate to a standalone signing tool.";

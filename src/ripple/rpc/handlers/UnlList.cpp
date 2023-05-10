@@ -26,22 +26,22 @@
 
 namespace ripple {
 
-Json::Value
+boost::json::object
 doUnlList(RPC::JsonContext& context)
 {
     if (context.app.config().reporting())
         return rpcError(rpcREPORTING_UNSUPPORTED);
-    Json::Value obj(Json::objectValue);
+    boost::json::object obj;
 
     context.app.validators().for_each_listed(
-        [&unl = obj[jss::unl]](PublicKey const& publicKey, bool trusted) {
-            Json::Value node(Json::objectValue);
+        [&unl = obj[jss::unl.c_str()]](PublicKey const& publicKey, bool trusted) {
+            boost::json::object node;
 
-            node[jss::pubkey_validator] =
+            node[jss::pubkey_validator.c_str()] =
                 toBase58(TokenType::NodePublic, publicKey);
-            node[jss::trusted] = trusted;
+            node[jss::trusted.c_str()] = trusted;
 
-            unl.append(std::move(node));
+            unl.as_array().emplace_back(std::move(node));
         });
 
     return obj;

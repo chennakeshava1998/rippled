@@ -29,7 +29,7 @@ namespace RPC {
 struct JsonContext;
 }
 
-Json::Value
+boost::json::object
 doStop(RPC::JsonContext& context)
 {
     context.app.signalStop();

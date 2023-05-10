@@ -250,13 +250,13 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
     return {result, rpcSUCCESS};
 }
 
-Json::Value
+boost::json::object
 populateJsonResponse(
     std::pair<TxResult, RPC::Status> const& res,
     TxArgs const& args,
     RPC::JsonContext const& context)
 {
-    Json::Value response;
+    boost::json::object response;
     RPC::Status const& error = res.second;
     TxResult const& result = res.first;
     // handle errors
@@ -265,8 +265,7 @@ populateJsonResponse(
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
             result.searchedAll != TxSearched::unknown)
         {
-            response = Json::Value(Json::objectValue);
-            response[jss::searched_all] =
+            response[jss::searched_all.c_str()] =
                 (result.searchedAll == TxSearched::all);
             error.inject(response);
         }
@@ -284,7 +283,7 @@ populateJsonResponse(
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             assert(args.binary);
-            response[jss::meta] = strHex(makeSlice(*blob));
+            response[jss::meta.c_str()] = strHex(makeSlice(*blob));
         }
         // populate meta data
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
@@ -292,17 +291,17 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::none);
+                response[jss::meta.c_str()] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
-                    response[jss::meta], context, result.txn, *meta);
+                    response[jss::meta.c_str()].as_object(), context, result.txn, *meta);
             }
         }
-        response[jss::validated] = result.validated;
+        response[jss::validated.c_str()] = result.validated;
     }
     return response;
 }
 
-Json::Value
+boost::json::object
 doTxJson(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
@@ -310,25 +309,25 @@ doTxJson(RPC::JsonContext& context)
 
     // Deserialize and validate JSON arguments
 
-    if (!context.params.isMember(jss::transaction))
+    if (!context.params.contains(jss::transaction.c_str()))
         return rpcError(rpcINVALID_PARAMS);
 
     TxArgs args;
 
-    if (!args.hash.parseHex(context.params[jss::transaction].asString()))
+    if (!args.hash.parseHex(context.params[jss::transaction.c_str()].as_string()))
         return rpcError(rpcNOT_IMPL);
 
-    args.binary = context.params.isMember(jss::binary) &&
-        context.params[jss::binary].asBool();
+    args.binary = context.params.contains(jss::binary.c_str()) &&
+        context.params[jss::binary.c_str()].as_bool();
 
-    if (context.params.isMember(jss::min_ledger) &&
-        context.params.isMember(jss::max_ledger))
+    if (context.params.contains(jss::min_ledger.c_str()) &&
+        context.params.contains(jss::max_ledger.c_str()))
     {
         try
         {
             args.ledgerRange = std::make_pair(
-                context.params[jss::min_ledger].asUInt(),
-                context.params[jss::max_ledger].asUInt());
+                context.params[jss::min_ledger.c_str()].as_uint64(),
+                context.params[jss::max_ledger.c_str()].as_uint64());
         }
         catch (...)
         {

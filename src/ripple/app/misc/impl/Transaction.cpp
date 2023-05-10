@@ -164,7 +164,7 @@ Transaction::load(
 }
 
 // options 1 to include the date of the transaction
-boost::json::value
+boost::json::object
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     boost::json::object ret(mTransaction->getJson(JsonOptions::none, binary).as_object());
