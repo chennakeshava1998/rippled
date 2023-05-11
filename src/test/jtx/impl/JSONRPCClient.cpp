@@ -98,7 +98,7 @@ public:
             result
     */
     boost::json::value
-    invoke(std::string const& cmd, Json::Value const& params) override
+    invoke(std::string const& cmd, boost::json::value const& params) override
     {
         using namespace boost::beast::http;
         using namespace boost::asio;
@@ -115,20 +115,20 @@ public:
             req.insert("Host", ostr.str());
         }
         {
-            Json::Value jr;
-            jr[jss::method] = cmd;
+            boost::json::object jr;
+            jr[jss::method.c_str()] = cmd;
             if (rpc_version_ == 2)
             {
-                jr[jss::jsonrpc] = "2.0";
-                jr[jss::ripplerpc] = "2.0";
-                jr[jss::id] = 5;
+                jr[jss::jsonrpc.c_str()] = "2.0";
+                jr[jss::ripplerpc.c_str()] = "2.0";
+                jr[jss::id.c_str()] = 5;
             }
-            if (params)
+            if (!params.is_null())
             {
-                Json::Value& ja = jr[jss::params] = Json::arrayValue;
-                ja.append(params);
+                boost::json::array& ja = jr[jss::params.c_str()].emplace_array();
+                ja.emplace_back(params);
             }
-            req.body() = to_string(jr);
+            req.body() = serialize(jr);
         }
         req.prepare_payload();
         write(stream_, req);
@@ -136,9 +136,7 @@ public:
         response<dynamic_body> res;
         read(stream_, bin_, res);
 
-        Json::Reader jr;
         boost::json::value jv = boost::json::parse(buffer_string(res.body().data()));
-//        jr.parse(buffer_string(res.body().data()), jv);
 
         // TODO: include an assert condition here
 //        ASSERT(jv.if_object());

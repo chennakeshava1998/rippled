@@ -28,10 +28,10 @@ namespace jtx {
 void
 paths::operator()(Env& env, JTx& jt) const
 {
-    auto& jv = jt.jv;
-    auto const from = env.lookup(jv[jss::Account].asString());
-    auto const to = env.lookup(jv[jss::Destination].asString());
-    auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
+    auto& jv = jt.jv.as_object();
+    auto const from = env.lookup(jv[jss::Account.c_str()].as_string().c_str());
+    auto const to = env.lookup(jv[jss::Destination.c_str()].as_string().c_str());
+    auto const amount = amountFromJson(sfAmount, jv[jss::Amount.c_str()]);
     Pathfinder pf(
         std::make_shared<RippleLineCache>(
             env.current(), env.app().journal("RippleLineCache")),
@@ -52,15 +52,16 @@ paths::operator()(Env& env, JTx& jt) const
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (!found.isDefault())
-        jv[jss::Paths] = found.getJson(JsonOptions::none);
+        jv[jss::Paths.c_str()] = found.getJson(JsonOptions::none);
 }
 
 //------------------------------------------------------------------------------
 
-Json::Value&
+boost::json::object&
 path::create()
 {
-    return jv_.append(Json::objectValue);
+    jv_.emplace_back(boost::json::object());
+    return jv_.back().as_object();
 }
 
 void
@@ -89,7 +90,7 @@ path::append_one(BookSpec const& book)
 void
 path::operator()(Env& env, JTx& jt) const
 {
-    jt.jv["Paths"].append(jv_);
+    jt.jv.as_object()["Paths"].as_array().emplace_back(jv_);
 }
 
 }  // namespace jtx

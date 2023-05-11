@@ -27,13 +27,13 @@ namespace jtx {
 void
 dtag::operator()(Env&, JTx& jt) const
 {
-    jt.jv["DestinationTag"] = value_;
+    jt.jv.as_object()["DestinationTag"] = value_;
 }
 
 void
 stag::operator()(Env&, JTx& jt) const
 {
-    jt.jv["SourceTag"] = value_;
+    jt.jv.as_object()["SourceTag"] = value_;
 }
 
 }  // namespace jtx

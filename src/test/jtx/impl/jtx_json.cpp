@@ -28,15 +28,19 @@ namespace jtx {
 
 json::json(std::string const& s)
 {
-    if (!Json::Reader().parse(s, jv_))
+    jv_ = boost::json::parse(s).as_object();
+    boost::json::value parsedJson = boost::json::parse(s);
+    if (!parsedJson.is_object())
         Throw<parse_error>("bad json");
+
+    jv_ = parsedJson.as_object();
 }
 
 json::json(char const* s) : json(std::string(s))
 {
 }
 
-json::json(Json::Value jv) : jv_(std::move(jv))
+json::json(boost::json::object jv) : jv_(std::move(jv))
 {
 }
 
@@ -44,8 +48,8 @@ void
 json::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
-    for (auto iter = jv_.begin(); iter != jv_.end(); ++iter)
-        jv[iter.key().asString()] = *iter;
+    for (auto iter : jv_)
+        jv.as_object()[iter.key()] = iter.value();
 }
 
 }  // namespace jtx

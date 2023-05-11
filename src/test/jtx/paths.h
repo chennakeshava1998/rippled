@@ -55,7 +55,7 @@ public:
 class path
 {
 private:
-    Json::Value jv_;
+    boost::json::array jv_;
 
 public:
     path();
@@ -67,7 +67,7 @@ public:
     operator()(Env&, JTx& jt) const;
 
 private:
-    Json::Value&
+    boost::json::object&
     create();
 
     void

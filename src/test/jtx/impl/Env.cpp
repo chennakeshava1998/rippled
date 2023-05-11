@@ -392,12 +392,12 @@ Env::autofill_sig(JTx& jt)
         return jt.signer(*this, jt);
     if (!jt.fill_sig)
         return;
-    auto const account = lookup(jv[jss::Account].asString());
+    auto const account = lookup(jv.as_object()[jss::Account.c_str()].as_string().c_str());
     if (!app().checkSigs())
     {
-        jv[jss::SigningPubKey] = strHex(account.pk().slice());
+        jv.as_object()[jss::SigningPubKey.c_str()] = strHex(account.pk().slice());
         // dummy sig otherwise STTx is invalid
-        jv[jss::TxnSignature] = "00";
+        jv.as_object()[jss::TxnSignature.c_str()] = "00";
         return;
     }
     auto const ar = le(account);

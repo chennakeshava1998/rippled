@@ -29,6 +29,7 @@
 #include <optional>
 #include <set>
 #include <test/csf/Tx.h>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
@@ -225,7 +226,7 @@ public:
     friend Ledger::Seq
     mismatch(Ledger const& a, Ledger const& o);
 
-    Json::Value
+    boost::json::object
     getJson() const;
 
     friend bool

@@ -31,19 +31,19 @@ namespace jtx {
 class json
 {
 private:
-    Json::Value jv_;
+    boost::json::object jv_;
 
 public:
     explicit json(std::string const&);
 
     explicit json(char const*);
 
-    explicit json(Json::Value);
+    explicit json(boost::json::object);
 
     template <class T>
     json(Json::StaticString const& key, T const& value)
     {
-        jv_[key] = value;
+        jv_[key.c_str()] = value;
     }
 
     template <class T>

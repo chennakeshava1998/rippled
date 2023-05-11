@@ -31,7 +31,7 @@ seq::operator()(Env&, JTx& jt) const
         return;
     jt.fill_seq = false;
     if (num_)
-        jt[jss::Sequence] = *num_;
+        jt[jss::Sequence.c_str()] = *num_;
 }
 
 }  // namespace jtx

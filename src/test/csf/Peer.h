@@ -71,7 +71,7 @@ struct Peer
             return proposal_;
         }
 
-        Json::Value
+        boost::json::object
         getJson() const
         {
             return proposal_.getJson();
@@ -518,7 +518,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        boost::json::object&& consensusJson)
     {
         onAccept(
             result,
@@ -536,7 +536,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        boost::json::object&& consensusJson)
     {
         schedule(delays.ledgerAccept, [=, this]() {
             const bool proposing = mode == ConsensusMode::proposing;
@@ -624,7 +624,7 @@ struct Peer
 
         if (netLgr != ledgerID)
         {
-            JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
+            JLOG(j.trace()) << serialize(validations.getJsonTrie());
             issue(WrongPrevLedger{ledgerID, netLgr});
         }
 

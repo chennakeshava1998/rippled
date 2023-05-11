@@ -31,7 +31,7 @@ fee::operator()(Env&, JTx& jt) const
         return;
     jt.fill_fee = false;
     if (amount_)
-        jt[jss::Fee] = amount_->getJson(JsonOptions::none);
+        jt[jss::Fee.c_str()] = amount_->getJson(JsonOptions::none);
 }
 
 }  // namespace jtx

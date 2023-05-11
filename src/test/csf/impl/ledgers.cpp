@@ -20,6 +20,7 @@
 #include <test/csf/ledgers.h>
 
 #include <sstream>
+#include <boost/json.hpp>
 
 namespace ripple {
 namespace test {
@@ -27,10 +28,10 @@ namespace csf {
 
 Ledger::Instance const Ledger::genesis;
 
-Json::Value
+boost::json::object
 Ledger::getJson() const
 {
-    Json::Value res(Json::objectValue);
+    boost::json::object res;
     res["id"] = static_cast<ID::value_type>(id());
     res["seq"] = static_cast<Seq::value_type>(seq());
     return res;

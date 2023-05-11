@@ -28,10 +28,10 @@ namespace jtx {
 void
 memo::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoData"] = strHex(data_);
     m["MemoFormat"] = strHex(format_);
     m["MemoType"] = strHex(type_);
@@ -40,40 +40,40 @@ memo::operator()(Env&, JTx& jt) const
 void
 memodata::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoData"] = strHex(s_);
 }
 
 void
 memoformat::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoFormat"] = strHex(s_);
 }
 
 void
 memotype::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoType"] = strHex(s_);
 }
 
 void
 memondata::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoFormat"] = strHex(format_);
     m["MemoType"] = strHex(type_);
 }
@@ -81,10 +81,10 @@ memondata::operator()(Env&, JTx& jt) const
 void
 memonformat::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoData"] = strHex(data_);
     m["MemoType"] = strHex(type_);
 }
@@ -92,10 +92,10 @@ memonformat::operator()(Env&, JTx& jt) const
 void
 memontype::operator()(Env&, JTx& jt) const
 {
-    auto& jv = jt.jv;
+    auto& jv = jt.jv.as_object();
     auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
+    auto& mi = ma.as_array()[ma.as_array().size()].as_object();
+    auto& m = mi["Memo"].as_object();
     m["MemoData"] = strHex(data_);
     m["MemoFormat"] = strHex(format_);
 }

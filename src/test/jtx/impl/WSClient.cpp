@@ -168,7 +168,7 @@ public:
     }
 
     bool comp(boost::json::value& jval) const {
-        return jval.as_object()[jss::type] == jss::response;
+        return jval.as_object()[jss::type.c_str()] == jss::response.c_str();
     }
 
     boost::json::value
@@ -199,23 +199,23 @@ public:
 //        });
 
         auto jv = findMsg(5s, [&](boost::json::value const& jval) {
-            return serialize(jval.as_object()[std::string{jss::type}]) == std::string{jss::response};
+            return serialize(jval.as_object().at(std::string{jss::type})) == std::string{jss::response};
         });
         if (jv)
         {
             // Normalize JSON output
-            jv->removeMember(jss::type);
-            if ((*jv).isMember(jss::status) && (*jv)[jss::status] == jss::error)
+            jv->as_object().erase(jss::type.c_str());
+            if ((*jv).as_object().contains(jss::status.c_str()) && (*jv).as_object()[jss::status.c_str()] == jss::error.c_str())
             {
                 boost::json::value ret;
                 ret.as_object()[std::string{jss::result}] = *jv;
-                if ((*jv).isMember(jss::error))
-                    ret.as_object()[std::string{jss::error}] = (*jv)[jss::error];
+                if ((*jv).as_object().contains(jss::error.c_str()))
+                    ret.as_object()[std::string{jss::error}] = (*jv).as_object()[jss::error.c_str()];
                 ret.as_object()[std::string{jss::status}] = jss::error;
                 return ret;
             }
-            if ((*jv).isMember(jss::status) && (*jv).isMember(jss::result))
-                (*jv)[jss::result][jss::status] = (*jv)[jss::status];
+            if ((*jv).as_object().contains(jss::status.c_str()) && (*jv).as_object().contains(jss::result.c_str()))
+                (*jv).as_object()[jss::result.c_str()].as_object()[jss::status.c_str()] = (*jv).as_object()[jss::status.c_str()];
             return *jv;
         }
         return {};

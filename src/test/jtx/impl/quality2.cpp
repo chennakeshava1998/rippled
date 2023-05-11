@@ -40,7 +40,7 @@ qualityOutPercent::qualityOutPercent(double percent)
 static void
 insertQualityIntoJtx(SField const& field, std::uint32_t value, JTx& jt)
 {
-    jt.jv[field.jsonName] = value;
+    jt.jv.as_object()[field.jsonName.c_str()] = value;
 }
 
 void
