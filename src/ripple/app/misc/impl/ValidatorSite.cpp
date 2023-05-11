@@ -396,7 +396,7 @@ ValidatorSite::parseJsonResponse(
         if (valid)
         {
             version = body.at(jss::version.c_str()).as_uint64();
-            blobs = ValidatorList::parseBlobs(version, body);
+            blobs = ValidatorList::parseBlobs(version, body.as_object());
             valid = !blobs.empty();
         }
         return std::make_tuple(valid, version, blobs);

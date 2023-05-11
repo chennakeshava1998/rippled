@@ -51,8 +51,8 @@ namespace ripple {
 boost::json::value
 doAccountNFTs(RPC::JsonContext& context)
 {
-    auto const& params = context.params;
-    if (!params.isMember(jss::account))
+    auto & params = context.params;
+    if (!params.contains(jss::account.c_str()))
         return RPC::missing_field_error(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
@@ -62,11 +62,11 @@ doAccountNFTs(RPC::JsonContext& context)
 
     AccountID accountID;
     {
-        auto const strIdent = params[jss::account].asString();
-        if (auto jv = RPC::accountFromString(accountID, strIdent))
+        auto const strIdent = params[jss::account.c_str()].as_string().c_str();
+        if (auto jv = RPC::accountFromString(accountID, strIdent); !jv.empty())
         {
             for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
+                result[it->key()] = it->value();
 
             return result;
         }
@@ -81,13 +81,13 @@ doAccountNFTs(RPC::JsonContext& context)
 
     uint256 marker;
 
-    if (params.isMember(jss::marker))
+    if (params.contains(jss::marker.c_str()))
     {
-        auto const& m = params[jss::marker];
-        if (!m.isString())
+        auto const& m = params[jss::marker.c_str()];
+        if (!m.is_string())
             return RPC::expected_field_error(jss::marker, "string");
 
-        if (!marker.parseHex(m.asString()))
+        if (!marker.parseHex(m.as_string()))
             return RPC::invalid_field_error(jss::marker);
     }
 
@@ -99,7 +99,7 @@ doAccountNFTs(RPC::JsonContext& context)
         ledger->succ(first.key, last.key.next()).value_or(last.key)));
 
     std::uint32_t cnt = 0;
-    auto& nfts = (result[jss::account_nfts] = Json::arrayValue);
+    auto& nfts = (result[jss::account_nfts.c_str()] = Json::arrayValue);
 
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
@@ -134,22 +134,22 @@ doAccountNFTs(RPC::JsonContext& context)
             pastMarker = true;
 
             {
-                boost::json::value& obj = nfts.append(o.getJson(JsonOptions::none));
+                boost::json::object& obj = nfts.as_array().emplace_back(o.getJson(JsonOptions::none)).as_object();
 
                 // Pull out the components of the nft ID.
-                obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
-                obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
-                obj[sfNFTokenTaxon.jsonName] =
+                obj[sfFlags.jsonName.c_str()] = nft::getFlags(nftokenID);
+                obj[sfIssuer.jsonName.c_str()] = to_string(nft::getIssuer(nftokenID));
+                obj[sfNFTokenTaxon.jsonName.c_str()] =
                     nft::toUInt32(nft::getTaxon(nftokenID));
-                obj[jss::nft_serial] = nft::getSerial(nftokenID);
+                obj[jss::nft_serial.c_str()] = nft::getSerial(nftokenID);
                 if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
-                    obj[sfTransferFee.jsonName] = xferFee;
+                    obj[sfTransferFee.jsonName.c_str()] = xferFee;
             }
 
             if (++cnt == limit)
             {
-                result[jss::limit] = limit;
-                result[jss::marker] = to_string(o.getFieldH256(sfNFTokenID));
+                result[jss::limit.c_str()] = limit;
+                result[jss::marker.c_str()] = to_string(o.getFieldH256(sfNFTokenID));
                 return result;
             }
         }
@@ -160,7 +160,7 @@ doAccountNFTs(RPC::JsonContext& context)
             cp = nullptr;
     }
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account.c_str()] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
@@ -168,8 +168,8 @@ doAccountNFTs(RPC::JsonContext& context)
 boost::json::value
 doAccountObjects(RPC::JsonContext& context)
 {
-    auto const& params = context.params;
-    if (!params.isMember(jss::account))
+    auto & params = context.params;
+    if (!params.contains(jss::account.c_str()))
         return RPC::missing_field_error(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
@@ -179,11 +179,11 @@ doAccountObjects(RPC::JsonContext& context)
 
     AccountID accountID;
     {
-        auto const strIdent = params[jss::account].asString();
-        if (auto jv = RPC::accountFromString(accountID, strIdent))
+        auto const strIdent = params[jss::account.c_str()].as_string().c_str();
+        if (auto jv = RPC::accountFromString(accountID, strIdent); !jv.empty())
         {
             for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
+                result[it->key()] = it->value();
 
             return result;
         }
@@ -194,8 +194,8 @@ doAccountObjects(RPC::JsonContext& context)
 
     std::optional<std::vector<LedgerEntryType>> typeFilter;
 
-    if (params.isMember(jss::deletion_blockers_only) &&
-        params[jss::deletion_blockers_only].asBool())
+    if (params.contains(jss::deletion_blockers_only.c_str()) &&
+        params[jss::deletion_blockers_only.c_str()].as_bool())
     {
         struct
         {
@@ -213,7 +213,7 @@ doAccountObjects(RPC::JsonContext& context)
 
         for (auto [name, type] : deletionBlockers)
         {
-            if (params.isMember(jss::type) && name != params[jss::type])
+            if (params.contains(jss::type.c_str()) && name.c_str() != params[jss::type.c_str()])
             {
                 continue;
             }
@@ -243,13 +243,13 @@ doAccountObjects(RPC::JsonContext& context)
 
     uint256 dirIndex;
     uint256 entryIndex;
-    if (params.isMember(jss::marker))
+    if (params.contains(jss::marker.c_str()))
     {
-        auto const& marker = params[jss::marker];
-        if (!marker.isString())
+        auto const& marker = params[jss::marker.c_str()];
+        if (!marker.is_string())
             return RPC::expected_field_error(jss::marker, "string");
 
-        std::stringstream ss(marker.asString());
+        std::stringstream ss(marker.as_string().c_str());
         std::string s;
         if (!std::getline(ss, s, ','))
             return RPC::invalid_field_error(jss::marker);
@@ -273,10 +273,10 @@ doAccountObjects(RPC::JsonContext& context)
             limit,
             result))
     {
-        result[jss::account_objects] = Json::arrayValue;
+        result[jss::account_objects.c_str()].emplace_array();
     }
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account.c_str()] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }

@@ -690,11 +690,11 @@ private:
         }
         auto jv_error = rpcError(rpcINVALID_PARAMS);
         if (jvVal.as_object().contains(jss::jsonrpc.c_str()))
-            jv_error.as_object()[jss::jsonrpc.c_str()] = jvVal.as_object()[jss::jsonrpc.c_str()];
+            jv_error[jss::jsonrpc.c_str()] = jvVal.as_object()[jss::jsonrpc.c_str()];
         if (jvVal.as_object().contains(jss::ripplerpc.c_str()))
-            jv_error.as_object()[jss::ripplerpc.c_str()] = jvVal.as_object()[jss::ripplerpc.c_str()];
+            jv_error[jss::ripplerpc.c_str()] = jvVal.as_object()[jss::ripplerpc.c_str()];
         if (jvVal.as_object().contains(jss::id.c_str()))
-            jv_error.as_object()[jss::id.c_str()] = jvVal.as_object()[jss::id.c_str()];
+            jv_error[jss::id.c_str()] = jvVal.as_object()[jss::id.c_str()];
         return jv_error;
     }
 

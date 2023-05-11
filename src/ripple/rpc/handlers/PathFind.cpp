@@ -37,8 +37,8 @@ doPathFind(RPC::JsonContext& context)
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
-    if (!context.params.isMember(jss::subcommand) ||
-        !context.params[jss::subcommand].isString())
+    if (!context.params.contains(jss::subcommand.c_str()) ||
+        !context.params[jss::subcommand.c_str()].is_string())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
@@ -46,7 +46,7 @@ doPathFind(RPC::JsonContext& context)
     if (!context.infoSub)
         return rpcError(rpcNO_EVENTS);
 
-    auto sSubCommand = context.params[jss::subcommand].asString();
+    auto sSubCommand = context.params[jss::subcommand.c_str()].as_string().c_str();
 
     if (sSubCommand == "create")
     {

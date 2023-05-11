@@ -132,7 +132,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    clean(boost::json::value const& params) override
+    clean(boost::json::object & params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
@@ -178,30 +178,30 @@ public:
             */
 
             // Quick way to fix a single ledger
-            if (params.isMember(jss::ledger))
+            if (params.contains(jss::ledger.c_str()))
             {
-                maxRange_ = params[jss::ledger].asUInt();
-                minRange_ = params[jss::ledger].asUInt();
+                maxRange_ = params[jss::ledger.c_str()].as_uint64();
+                minRange_ = params[jss::ledger.c_str()].as_uint64();
                 fixTxns_ = true;
                 checkNodes_ = true;
             }
 
-            if (params.isMember(jss::max_ledger))
-                maxRange_ = params[jss::max_ledger].asUInt();
+            if (params.contains(jss::max_ledger.c_str()))
+                maxRange_ = params[jss::max_ledger.c_str()].as_uint64();
 
-            if (params.isMember(jss::min_ledger))
-                minRange_ = params[jss::min_ledger].asUInt();
+            if (params.contains(jss::min_ledger.c_str()))
+                minRange_ = params[jss::min_ledger.c_str()].as_uint64();
 
-            if (params.isMember(jss::full))
-                fixTxns_ = checkNodes_ = params[jss::full].asBool();
+            if (params.contains(jss::full.c_str()))
+                fixTxns_ = checkNodes_ = params[jss::full.c_str()].as_bool();
 
-            if (params.isMember(jss::fix_txns))
-                fixTxns_ = params[jss::fix_txns].asBool();
+            if (params.contains(jss::fix_txns.c_str()))
+                fixTxns_ = params[jss::fix_txns.c_str()].as_bool();
 
-            if (params.isMember(jss::check_nodes))
-                checkNodes_ = params[jss::check_nodes].asBool();
+            if (params.contains(jss::check_nodes.c_str()))
+                checkNodes_ = params[jss::check_nodes.c_str()].as_bool();
 
-            if (params.isMember(jss::stop) && params[jss::stop].asBool())
+            if (params.contains(jss::stop.c_str()) && params[jss::stop.c_str()].as_bool())
                 minRange_ = maxRange_ = 0;
 
             state_ = State::cleaning;

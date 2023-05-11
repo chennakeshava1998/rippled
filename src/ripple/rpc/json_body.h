@@ -33,7 +33,7 @@ struct json_body
 {
     explicit json_body() = default;
 
-    using value_type = Json::Value;
+    using value_type = boost::json::value;
 
     class reader
     {
@@ -87,7 +87,7 @@ struct json_body
         explicit writer(
             boost::beast::http::header<isRequest, Fields> const& fields,
             value_type const& value)
-            : body_string_(to_string(value))
+            : body_string_(serialize(value))
         {
         }
 

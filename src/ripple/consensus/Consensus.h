@@ -428,7 +428,7 @@ public:
         @param full True if verbose response desired.
         @return     The Json state.
     */
-    boost::json::value
+    boost::json::object
     getJson(bool full) const;
 
 private:
@@ -905,7 +905,7 @@ Consensus<Adaptor>::simulate(
 }
 
 template <class Adaptor>
-boost::json::value
+boost::json::object
 Consensus<Adaptor>::getJson(bool full) const
 {
     using std::to_string;
@@ -1060,9 +1060,9 @@ Consensus<Adaptor>::checkLedger()
                         << ", "
                         << " mode=" << to_string(mode_.get());
         JLOG(j_.warn()) << prevLedgerID_ << " to " << netLgr;
-        JLOG(j_.warn()) << serialize(previousLedger_.getJson());
+        JLOG(j_.warn()) << boost::json::serialize(previousLedger_.getJson());
         JLOG(j_.debug()) << "State on consensus change "
-                         << serialize(getJson(true));
+                         << boost::json::serialize(getJson(true));
         handleWrongLedger(netLgr);
     }
     else if (previousLedger_.id() != prevLedgerID_)

@@ -358,9 +358,9 @@ OverlayImpl::makeRedirectResponse(
     msg.insert(boost::beast::http::field::connection, "close");
     msg.body() = boost::json::object();
     {
-        boost::json::array& ips = (msg.body()["peer-ips"].emplace_array());
+        boost::json::array& ips = (msg.body().as_object()["peer-ips"].emplace_array());
         for (auto const& _ : m_peerFinder->redirect(slot))
-            ips.append(_.address.to_string());
+            ips.emplace_back(_.address.to_string());
     }
     msg.prepare_payload();
     return std::make_shared<SimpleWriter>(msg);
@@ -942,24 +942,24 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["version"] = 2u;
+    msg.body().as_object()["version"] = 2u;
 
     if (setup_.crawlOptions & CrawlOptions::Overlay)
     {
         // Keshava: temporary solution, need to figure a workaround for msg.body()
-        msg.body()["overlay"] = serialize(getOverlayInfo());
+        msg.body().as_object()["overlay"] = serialize(getOverlayInfo());
     }
     if (setup_.crawlOptions & CrawlOptions::ServerInfo)
     {
-        msg.body()["server"] = serialize(getServerInfo());
+        msg.body().as_object()["server"] = serialize(getServerInfo());
     }
     if (setup_.crawlOptions & CrawlOptions::ServerCounts)
     {
-        msg.body()["counts"] = serialize(getServerCounts());
+        msg.body().as_object()["counts"] = serialize(getServerCounts());
     }
     if (setup_.crawlOptions & CrawlOptions::Unl)
     {
-        msg.body()["unl"] = serialize(getUnlInfo());
+        msg.body().as_object()["unl"] = serialize(getUnlInfo());
     }
 
     msg.prepare_payload();
@@ -991,7 +991,7 @@ OverlayImpl::processValidatorList(
         msg.result(status);
         msg.insert("Content-Length", "0");
 
-        msg.body() = Json::nullValue;
+        msg.body().emplace_null();
 
         msg.prepare_payload();
         handoff.response = std::make_shared<SimpleWriter>(msg);
@@ -1067,10 +1067,10 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
             health = state;
     };
 
-    msg.body()[jss::info.c_str()] = Json::objectValue;
+    msg.body().as_object()[jss::info.c_str()] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
-        msg.body()[jss::info.c_str()][jss::validated_ledger.c_str()] =
+        msg.body().as_object()[jss::info.c_str()].as_object()[jss::validated_ledger.c_str()] =
             last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
             set_health(warning);
@@ -1080,13 +1080,13 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (amendment_blocked)
     {
-        msg.body()[jss::info.c_str()][jss::amendment_blocked.c_str()] = true;
+        msg.body().as_object()[jss::info.c_str()].as_object()[jss::amendment_blocked.c_str()] = true;
         set_health(critical);
     }
 
     if (number_peers <= 7)
     {
-        msg.body()[jss::info.c_str()][jss::peers.c_str()] = number_peers;
+        msg.body().as_object()[jss::info.c_str()].as_object()[jss::peers.c_str()] = number_peers;
         if (number_peers != 0)
             set_health(warning);
         else
@@ -1096,7 +1096,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     if (!(server_state == "full" || server_state == "validating" ||
           server_state == "proposing"))
     {
-        msg.body()[jss::info.c_str()][jss::server_state.c_str()] = server_state;
+        msg.body().as_object()[jss::info.c_str()].as_object()[jss::server_state.c_str()] = server_state;
         if (server_state == "syncing" || server_state == "tracking" ||
             server_state == "connected")
         {
@@ -1108,7 +1108,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (load_factor > 100)
     {
-        msg.body()[jss::info.c_str()][jss::load_factor.c_str()] = load_factor;
+        msg.body().as_object()[jss::info.c_str()].as_object()[jss::load_factor.c_str()] = load_factor;
         if (load_factor < 1000)
             set_health(warning);
         else

@@ -197,7 +197,7 @@ callMethod(
             context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
 
         auto start = std::chrono::system_clock::now();
-        auto ret = method(context, result);
+        auto ret = method(context, result.as_object());
         auto end = std::chrono::system_clock::now();
 
         JLOG(context.j.debug())

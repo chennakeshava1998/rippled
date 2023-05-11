@@ -189,14 +189,16 @@ boost::json::value STPath::getJson(JsonOptions) const
     return ret;
 }
 
-boost::json::value
+boost::json::object
 STPathSet::getJson(JsonOptions options) const
 {
     boost::json::array ret;
     for (auto it : value)
         ret.emplace_back(it.getJson(options));
 
-    return ret;
+    boost::json::object ans;
+    ans.emplace("dummyKeyToBeReplaced", ret); // Keshava: need to change the return type of getJson to be value, not object
+    return ans;
 }
 
 SerializedTypeID

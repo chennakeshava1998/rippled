@@ -54,7 +54,7 @@ BookListeners::publish(
             // Only publish jvObj if this is the first occurence
             if (havePublished.emplace(p->getSeq()).second)
             {
-                p->send(jvObj, true);
+                p->send(jvObj.as_object(), true);
             }
             ++it;
         }

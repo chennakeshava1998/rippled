@@ -61,14 +61,18 @@ STUInt8::getText() const
 }
 
 template <>
-boost::json::value STUInt8::getJson(JsonOptions) const
+boost::json::object STUInt8::getJson(JsonOptions) const
 {
     if (getFName() == sfTransactionResult)
     {
         std::string token, human;
 
         if (transResultInfo(TER::fromInt(value_), token, human))
-            return boost::json::string(token);
+        {
+            auto ret = boost::json::object();
+            ret.emplace("dummyKeyToBeReplaced", token);
+            return ret;
+        }
 
         JLOG(debugLog().error())
             << "Unknown result code in metadata: " << value_;
@@ -118,15 +122,18 @@ STUInt16::getText() const
 }
 
 template <>
-boost::json::value STUInt16::getJson(JsonOptions) const
+boost::json::object STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
     {
         auto item = LedgerFormats::getInstance().findByType(
             safe_cast<LedgerEntryType>(value_));
 
-        if (item != nullptr)
-            return boost::json::string(item->getName());
+        if (item != nullptr) {
+            boost::json::object ret;
+            ret.emplace("dummyKeyToBeReplaced", item->getName());
+            return ret;
+        }
     }
 
     if (getFName() == sfTransactionType)
@@ -134,8 +141,11 @@ boost::json::value STUInt16::getJson(JsonOptions) const
         auto item =
             TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
 
-        if (item != nullptr)
-            return boost::json::string(item->getName());
+        if (item != nullptr) {
+            boost::json::object ret;
+            ret.emplace("dummyKeyToBeReplaced", item->getName());
+            return ret;
+        }
     }
 
     return value_;
@@ -164,7 +174,7 @@ STUInt32::getText() const
 }
 
 template <>
-boost::json::value STUInt32::getJson(JsonOptions) const
+boost::json::object STUInt32::getJson(JsonOptions) const
 {
     return value_;
 }
@@ -192,13 +202,16 @@ STUInt64::getText() const
 }
 
 template <>
-boost::json::value STUInt64::getJson(JsonOptions) const
+boost::json::object STUInt64::getJson(JsonOptions) const
 {
     std::string str(16, 0);
     auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);
     assert(ret.ec == std::errc());
     str.resize(std::distance(str.data(), ret.ptr));
-    return boost::json::string(str);
+    auto ans = boost::json::object();
+
+    ans.emplace("dummyKeyToBeReplaced", str);
+    return ans;
 }
 
 }  // namespace ripple

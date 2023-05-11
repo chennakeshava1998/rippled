@@ -108,7 +108,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
-    boost::json::value& jvResult);
+    boost::json::object& jvResult);
 
 /** Get ledger by hash
     If there is no error in the return value, the ledger pointer will have

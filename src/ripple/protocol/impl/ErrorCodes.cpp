@@ -213,4 +213,5 @@ rpcErrorString(boost::json::object const& jv)
     return std::string{jv.at(jss::error.c_str()).as_string()} + std::string{jv.at(jss::error_message.c_str()).as_string()};
 }
 
+
 }  // namespace ripple

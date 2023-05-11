@@ -631,11 +631,11 @@ STAmount::getText() const
     return ret;
 }
 
-boost::json::value STAmount::getJson(JsonOptions) const
+boost::json::object STAmount::getJson(JsonOptions) const
 {
     boost::json::value elem;
     setJson(elem);
-    return elem;
+    return elem.as_object();
 }
 
 void

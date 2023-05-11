@@ -96,9 +96,11 @@ STBase::getText() const
     return std::string();
 }
 
-boost::json::value STBase::getJson(JsonOptions /*options*/) const
+boost::json::object STBase::getJson(JsonOptions /*options*/) const
 {
-    return boost::json::string{ getText()};
+    auto ret = boost::json::object();
+    ret.emplace("dummyKeyToBeReplaced", getText()); // Keshava: TODO: Need to standardise the return types of getJson -> either value/object/string ??
+    return ret;
 }
 
 void

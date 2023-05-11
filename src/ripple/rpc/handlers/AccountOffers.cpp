@@ -62,7 +62,7 @@ doAccountOffers(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account.c_str());
 
     std::shared_ptr<ReadView const> ledger;
-    boost::json::object result = RPC::lookupLedger(ledger, context).as_object();
+    boost::json::object result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -70,9 +70,9 @@ doAccountOffers(RPC::JsonContext& context)
     AccountID accountID;
 
     auto jv = RPC::accountFromString(accountID, strIdent);
-    if (!jv.is_null())
+    if (!jv.empty())
     {
-        return jv.as_object();
+        return jv;
     }
 
     // Get info on account.

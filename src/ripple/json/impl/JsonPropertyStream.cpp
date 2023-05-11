@@ -19,27 +19,29 @@
 
 #include <ripple/json/JsonPropertyStream.h>
 #include <ripple/json/json_value.h>
+#include <iostream>
 
 namespace ripple {
 
-JsonPropertyStream::JsonPropertyStream() : m_top(Json::objectValue)
+JsonPropertyStream::JsonPropertyStream()
 {
     m_stack.reserve(64);
     m_stack.push_back(&m_top);
 }
 
-Json::Value const&
+boost::json::object const&
 JsonPropertyStream::top() const
 {
-    return m_top;
+    // Keshava: How is the m_top variable set? It seems to be set only in the default ctor.
+    return m_top.as_object(); // Keshava: What if the top-most element is not an object??
 }
 
 void
 JsonPropertyStream::map_begin()
 {
     // top is array
-    Json::Value& top(*m_stack.back());
-    Json::Value& map(top.append(Json::objectValue));
+    boost::json::array& top(m_stack.back()->as_array());
+    boost::json::value& map(top.emplace_back(boost::json::object()));
     m_stack.push_back(&map);
 }
 
@@ -47,8 +49,8 @@ void
 JsonPropertyStream::map_begin(std::string const& key)
 {
     // top is a map
-    Json::Value& top(*m_stack.back());
-    Json::Value& map(top[key] = Json::objectValue);
+    boost::json::object& top(m_stack.back()->as_object());
+    boost::json::value& map(top[key] = boost::json::object());
     m_stack.push_back(&map);
 }
 
@@ -61,57 +63,57 @@ JsonPropertyStream::map_end()
 void
 JsonPropertyStream::add(std::string const& key, short v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, unsigned short v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, int v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, unsigned int v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, long v)
 {
-    (*m_stack.back())[key] = int(v);
+    (*m_stack.back()).as_object()[key] = int(v);
 }
 
 void
 JsonPropertyStream::add(std::string const& key, float v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, double v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, std::string const& v)
 {
-    (*m_stack.back())[key] = v;
+    (*m_stack.back()).as_object()[key] = v;
 }
 
 void
 JsonPropertyStream::array_begin()
 {
     // top is array
-    Json::Value& top(*m_stack.back());
-    Json::Value& vec(top.append(Json::arrayValue));
+    boost::json::array& top(m_stack.back()->as_array());
+    boost::json::value& vec(top.emplace_back(boost::json::array()));
     m_stack.push_back(&vec);
 }
 
@@ -119,8 +121,8 @@ void
 JsonPropertyStream::array_begin(std::string const& key)
 {
     // top is a map
-    Json::Value& top(*m_stack.back());
-    Json::Value& vec(top[key] = Json::arrayValue);
+    boost::json::value& top(*m_stack.back());
+    boost::json::value& vec(top.as_object()[key] = boost::json::array());
     m_stack.push_back(&vec);
 }
 
@@ -133,49 +135,49 @@ JsonPropertyStream::array_end()
 void
 JsonPropertyStream::add(short v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 void
 JsonPropertyStream::add(unsigned short v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 void
 JsonPropertyStream::add(int v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 void
 JsonPropertyStream::add(unsigned int v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 void
 JsonPropertyStream::add(long v)
 {
-    m_stack.back()->append(int(v));
+    m_stack.back()->as_array().emplace_back(int(v));
 }
 
 void
 JsonPropertyStream::add(float v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 void
 JsonPropertyStream::add(double v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 void
 JsonPropertyStream::add(std::string const& v)
 {
-    m_stack.back()->append(v);
+    m_stack.back()->as_array().emplace_back(v);
 }
 
 }  // namespace ripple

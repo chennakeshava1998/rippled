@@ -88,7 +88,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!ledger)
         return resultJson;
 
-    boost::json::object result = resultJson.as_object();
+    boost::json::object result = resultJson;
 
     boost::json::array dummy;
     boost::json::array& jvTransactions =
@@ -98,11 +98,9 @@ doNoRippleCheck(RPC::JsonContext& context)
     AccountID accountID;
 
     auto jv = RPC::accountFromString(accountID, strIdent);
-    if (!jv.is_null())
+    if (!jv.empty())
     {
-        result = jv.as_object();
-
-        return result;
+        return jv;
     }
 
     auto const sle = ledger->read(keylet::account(accountID));

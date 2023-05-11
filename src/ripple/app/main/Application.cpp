@@ -1748,7 +1748,7 @@ ApplicationImp::getLastFullLedger()
         if (auto stream = j.error())
         {
             stream << "Failed on ledger";
-            boost::json::value p;
+            boost::json::object p;
             addJson(p, {*ledger, nullptr, LedgerFill::full});
             stream << p;
         }

@@ -125,7 +125,7 @@ ApplyContext::checkInvariantsHelper(
         {
             JLOG(journal.fatal())
                 << "Transaction has failed one or more invariants: "
-                << to_string(tx.getJson(JsonOptions::none));
+                << serialize(tx.getJson(JsonOptions::none));
 
             return failInvariantCheck(result);
         }
@@ -135,7 +135,7 @@ ApplyContext::checkInvariantsHelper(
         JLOG(journal.fatal())
             << "Transaction caused an exception in an invariant"
             << ", ex: " << ex.what()
-            << ", tx: " << to_string(tx.getJson(JsonOptions::none));
+            << ", tx: " << serialize(tx.getJson(JsonOptions::none));
 
         return failInvariantCheck(result);
     }

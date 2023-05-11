@@ -72,7 +72,7 @@ doAccountChannels(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account.c_str());
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context).as_object();
+    auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -94,7 +94,7 @@ doAccountChannels(RPC::JsonContext& context)
     AccountID raDstAccount;
     if (hasDst)
     {
-        if (auto err = RPC::accountFromString(raDstAccount, strDst); !err.is_null())
+        if (auto err = RPC::accountFromString(raDstAccount, strDst); !err.empty())
             return err;
     }
 

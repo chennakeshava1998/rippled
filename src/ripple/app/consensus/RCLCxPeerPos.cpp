@@ -51,13 +51,13 @@ RCLCxPeerPos::checkSign() const
         publicKey(), proposal_.signingHash(), signature(), false);
 }
 
-boost::json::value
+boost::json::object
 RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();
 
     if (publicKey().size())
-        ret[jss::peer_id] = toBase58(TokenType::NodePublic, publicKey());
+        ret[jss::peer_id.c_str()] = toBase58(TokenType::NodePublic, publicKey());
 
     return ret;
 }

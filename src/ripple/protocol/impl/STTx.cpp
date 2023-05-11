@@ -226,10 +226,10 @@ STTx::checkSign(
     return Unexpected("Internal signature check failure.");
 }
 
-boost::json::value STTx::getJson(JsonOptions) const
+boost::json::object STTx::getJson(JsonOptions) const
 {
-    boost::json::value ret = STObject::getJson(JsonOptions::none);
-    ret.as_object()[jss::hash.c_str()] = to_string(getTransactionID());
+    boost::json::object ret = STObject::getJson(JsonOptions::none);
+    ret[jss::hash.c_str()] = to_string(getTransactionID());
     return ret;
 }
 

@@ -139,7 +139,7 @@ STArray::getText() const
     return r;
 }
 
-boost::json::value
+boost::json::object
 STArray::getJson(JsonOptions p) const
 {
     boost::json::array v;
@@ -148,10 +148,13 @@ STArray::getJson(JsonOptions p) const
         if (object.getSType() != STI_NOTPRESENT)
         {
             boost::json::value& inner = v.emplace_back(boost::json::object());
-            inner.as_object()[object.getFName().getJsonName()] = object.getJson(p);
+            inner.as_object()[object.getFName().getJsonName().c_str()] = object.getJson(p);
         }
     }
-    return v;
+
+    boost::json::object ans;
+    ans.emplace("dummyKey", v);
+    return ans;
 }
 
 void

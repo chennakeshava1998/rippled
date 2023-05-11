@@ -280,9 +280,9 @@ public:
     std::optional<NetClock::time_point>
     firstUnsupportedExpected() const override;
 
-    boost::json::value
+    boost::json::object
     getJson() const override;
-    boost::json::value
+    boost::json::object
     getJson(uint256 const&) const override;
 
     bool
@@ -774,7 +774,7 @@ AmendmentTableImpl::injectJson(
     }
 }
 
-boost::json::value
+boost::json::object
 AmendmentTableImpl::getJson() const
 {
     boost::json::object ret;
@@ -792,7 +792,7 @@ AmendmentTableImpl::getJson() const
     return ret;
 }
 
-boost::json::value
+boost::json::object
 AmendmentTableImpl::getJson(uint256 const& amendmentID) const
 {
     boost::json::object ret;

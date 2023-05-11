@@ -28,6 +28,7 @@
 #include <sstream>
 #include <stack>
 #include <vector>
+#include <boost/json.hpp>
 
 namespace ripple {
 
