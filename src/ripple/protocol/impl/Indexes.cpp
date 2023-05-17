@@ -283,12 +283,10 @@ check(AccountID const& id, std::uint32_t seq) noexcept
     return {ltCHECK, indexHash(LedgerNameSpace::CHECK, id, seq)};
 }
 
-Keylet
+DPAKeylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 {
-    return {
-        ltDEPOSIT_PREAUTH,
-        indexHash(LedgerNameSpace::DEPOSIT_PREAUTH, owner, preauthorized)};
+    return {indexHash(LedgerNameSpace::DEPOSIT_PREAUTH, owner, preauthorized)};
 }
 
 //------------------------------------------------------------------------------

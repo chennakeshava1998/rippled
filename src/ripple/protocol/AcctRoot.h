@@ -27,6 +27,56 @@
 namespace ripple {
 
 template <bool Writable>
+class DepositPreAuthImpl final : public  LedgerEntryWrapper<Writable> {
+private:
+    using Base = LedgerEntryWrapper<Writable>;
+    using SleT = typename Base::SleT;
+    using Base::wrapped_;
+
+    DepositPreAuthImpl(std::shared_ptr<SleT>&& w) : Base(std::move(w))
+    {
+    }
+
+    // Friend declarations of factory functions.
+    //
+    // For classes that contain factories we must declare the entire class
+    // as a friend unless the class declaration is visible at this point.
+    friend class ReadView;
+    friend class ApplyView;
+
+public:
+    // Conversion operator from AcctRootImpl<true> to AcctRootImpl<false>.
+    operator DepositPreAuthImpl<true>() const
+    {
+        return DepositPreAuthImpl<false>(
+            std::const_pointer_cast<std::shared_ptr<STLedgerEntry const>>(
+                wrapped_));
+    }
+
+    DepositPreAuthImpl(DepositPreAuthImpl const&) = delete;
+    DepositPreAuthImpl(DepositPreAuthImpl const&&) = delete;
+
+    DepositPreAuthImpl&
+    operator=(DepositPreAuthImpl const& rhs) = delete;
+    DepositPreAuthImpl&
+    operator=(DepositPreAuthImpl const&& rhs) = delete;
+
+    // Keshava: below functions are not required, will be removed in a future commit
+    // Keshava: should this function be placed inside parent class? part of common interface?
+    [[nodiscard]] AccountID
+    accountID() const
+    {
+        return wrapped_->at(sfAccount);
+    }
+
+    [[nodiscard]] std::uint64_t
+    getOwner() const
+    {
+        return wrapped_->at(sfOwnerNode);
+    }
+};
+
+template <bool Writable>
 class AcctRootImpl final : public LedgerEntryWrapper<Writable>
 {
 private:

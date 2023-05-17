@@ -126,7 +126,7 @@ DepositPreauth::doApply()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
-        Keylet const preauthKeylet = keylet::depositPreauth(account_, auth);
+        auto const preauthKeylet = keylet::depositPreauth(account_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
         slePreauth->setAccountID(sfAccount, account_);

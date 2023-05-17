@@ -95,6 +95,20 @@ static_assert(std::is_move_assignable_v<Keylet>);
 static_assert(std::is_nothrow_destructible_v<Keylet>);
 #endif
 
+template<bool>
+class DepositPreAuthImpl;
+
+struct DepositPreAuthKeylet final : public KeyletBase {
+    template <bool Writable>
+    using TWrapped = DepositPreAuthImpl<Writable>;
+
+    using KeyletBase::check;
+
+    DepositPreAuthKeylet(uint256 const& key) : KeyletBase(ltDEPOSIT_PREAUTH, key)
+    {
+    }
+};
+
 template <bool>
 class AcctRootImpl;
 
