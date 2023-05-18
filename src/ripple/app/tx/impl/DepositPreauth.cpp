@@ -127,6 +127,7 @@ DepositPreauth::doApply()
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
         auto const preauthKeylet = keylet::depositPreauth(account_, auth);
+        // Keshava: Can we eliminate the use of this SLE through the DPAImpl wrapper?
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
         slePreauth->setAccountID(sfAccount, account_);
@@ -171,16 +172,16 @@ DepositPreauth::removeFromLedger(
 {
     // Verify that the Preauth entry they asked to remove is
     // in the ledger.
-    std::shared_ptr<SLE> const slePreauth{
-        view.peekSLE(keylet::depositPreauth(preauthIndex))};
+    std::optional<DepositPreAuthImpl<true>> slePreauth{
+        view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {
         JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
         return tecNO_ENTRY;
     }
 
-    AccountID const account{(*slePreauth)[sfAccount]};
-    std::uint64_t const page{(*slePreauth)[sfOwnerNode]};
+    AccountID const account{slePreauth->accountID()};
+    std::uint64_t const page{slePreauth->getOwner()};
     if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
     {
         JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
@@ -195,7 +196,7 @@ DepositPreauth::removeFromLedger(
     adjustOwnerCount(view, *ownerAcctRoot, -1, app.journal("View"));
 
     // Remove DepositPreauth from ledger.
-    view.erase(slePreauth);
+    view.erase(slePreauth->slePtr());
 
     return tesSUCCESS;
 }

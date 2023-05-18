@@ -45,7 +45,7 @@ private:
     friend class ApplyView;
 
 public:
-    // Conversion operator from AcctRootImpl<true> to AcctRootImpl<false>.
+    // Conversion operator from ChecksImpl<true> to ChecksImpl<false>.
     operator ChecksImpl<true>() const
     {
         return ChecksImpl<false>(
@@ -82,7 +82,7 @@ private:
     friend class ApplyView;
 
 public:
-    // Conversion operator from AcctRootImpl<true> to AcctRootImpl<false>.
+    // Conversion operator from DepositPreAuthImpl<true> to DepositPreAuthImpl<false>.
     operator DepositPreAuthImpl<true>() const
     {
         return DepositPreAuthImpl<false>(
@@ -90,16 +90,14 @@ public:
                 wrapped_));
     }
 
-    DepositPreAuthImpl(DepositPreAuthImpl const&) = delete;
-    DepositPreAuthImpl(DepositPreAuthImpl const&&) = delete;
+    DepositPreAuthImpl(DepositPreAuthImpl const&) = default;
+    DepositPreAuthImpl(DepositPreAuthImpl const&&) = default;
 
     DepositPreAuthImpl&
     operator=(DepositPreAuthImpl const& rhs) = delete;
     DepositPreAuthImpl&
     operator=(DepositPreAuthImpl const&& rhs) = delete;
 
-    // Keshava: below functions are not required, will be removed in a future commit
-    // Keshava: should this function be placed inside parent class? part of common interface?
     [[nodiscard]] AccountID
     accountID() const
     {

@@ -102,7 +102,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         {
             // See if a preauthorization entry is in the ledger.
             auto const sleDepositAuth =
-                ledger->readSLE(keylet::depositPreauth(dstAcct, srcAcct));
+                ledger->read(keylet::depositPreauth(dstAcct, srcAcct));
             depositAuthorized = static_cast<bool>(sleDepositAuth);
         }
     }
