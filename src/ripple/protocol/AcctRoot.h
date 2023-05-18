@@ -27,6 +27,43 @@
 namespace ripple {
 
 template <bool Writable>
+class ChecksImpl final : public  LedgerEntryWrapper<Writable> {
+private:
+    using Base = LedgerEntryWrapper<Writable>;
+    using SleT = typename Base::SleT;
+    using Base::wrapped_;
+
+    ChecksImpl(std::shared_ptr<SleT>&& w) : Base(std::move(w))
+    {
+    }
+
+    // Friend declarations of factory functions.
+    //
+    // For classes that contain factories we must declare the entire class
+    // as a friend unless the class declaration is visible at this point.
+    friend class ReadView;
+    friend class ApplyView;
+
+public:
+    // Conversion operator from AcctRootImpl<true> to AcctRootImpl<false>.
+    operator ChecksImpl<true>() const
+    {
+        return ChecksImpl<false>(
+            std::const_pointer_cast<std::shared_ptr<STLedgerEntry const>>(
+                wrapped_));
+    }
+
+    ChecksImpl(ChecksImpl const&) = delete;
+    ChecksImpl(ChecksImpl const&&) = delete;
+
+    ChecksImpl&
+    operator=(ChecksImpl const& rhs) = delete;
+    ChecksImpl&
+    operator=(ChecksImpl const&& rhs) = delete;
+};
+
+
+template <bool Writable>
 class DepositPreAuthImpl final : public  LedgerEntryWrapper<Writable> {
 private:
     using Base = LedgerEntryWrapper<Writable>;
