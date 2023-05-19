@@ -53,13 +53,34 @@ public:
                 wrapped_));
     }
 
-    ChecksImpl(ChecksImpl const&) = delete;
-    ChecksImpl(ChecksImpl const&&) = delete;
+    uint256 key() const {
+        return wrapped_->key();
+    }
 
-    ChecksImpl&
-    operator=(ChecksImpl const& rhs) = delete;
-    ChecksImpl&
-    operator=(ChecksImpl const&& rhs) = delete;
+    auto getCheckExpiration() const {
+        return wrapped_->at(~sfExpiration);
+    }
+
+    // Keshava: Is this identical to the function STObject::getAccountID ? should I piggy-back on that function instead?
+    AccountID getCheckCreator() const
+    {
+        return wrapped_->at(sfAccount);
+    }
+
+    AccountID getCheckRecipient() const {
+        return wrapped_->at(sfDestination);
+    }
+
+    // Keshava: The below two functions refer to a page in a directory of an account. What is an appropriate name? These are cryptic :((
+    std::uint64_t getDestinationNode() const {
+        return wrapped_->at(sfDestinationNode);
+    }
+
+    std::uint64_t getOwnerNode() const {
+        return wrapped_->at(sfOwnerNode);
+    }
+
+
 };
 
 
@@ -89,15 +110,7 @@ public:
             std::const_pointer_cast<std::shared_ptr<STLedgerEntry const>>(
                 wrapped_));
     }
-
-    DepositPreAuthImpl(DepositPreAuthImpl const&) = default;
-    DepositPreAuthImpl(DepositPreAuthImpl const&&) = default;
-
-    DepositPreAuthImpl&
-    operator=(DepositPreAuthImpl const& rhs) = delete;
-    DepositPreAuthImpl&
-    operator=(DepositPreAuthImpl const&& rhs) = delete;
-
+    
     [[nodiscard]] AccountID
     accountID() const
     {
