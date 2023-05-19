@@ -434,13 +434,13 @@ public:
             env.app().openLedger().modify(
                 [&gw, transferRate](OpenView& view, beast::Journal j) {
                     // Get the account root we want to hijack.
-                    auto const sle = view.readSLE(keylet::account(gw.id()));
+                    auto const sle = view.read(keylet::account(gw.id()));
                     if (!sle)
                         return false;  // This would be really surprising!
 
                     // We'll insert a replacement for the account root
                     // with the higher (currently invalid) transfer rate.
-                    auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                    auto replacement = std::make_shared<SLE>(*(sle->slePtr()), sle->slePtr()->key());
                     (*replacement)[sfTransferRate] =
                         static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
                     view.rawReplace(replacement);

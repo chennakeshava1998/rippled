@@ -485,13 +485,13 @@ class NFToken_test : public beast::unit_test::suite
         env.app().openLedger().modify(
             [&alice, &env](OpenView& view, beast::Journal j) {
                 // Get the account root we want to hijack.
-                auto const sle = view.readSLE(keylet::account(alice.id()));
+                auto const sle = view.read(keylet::account(alice.id()));
                 if (!sle)
                     return false;  // This would be really surprising!
 
                 // Just for sanity's sake we'll check that the current value
                 // of sfMintedNFTokens matches what we expect.
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                auto replacement = std::make_shared<SLE>(*sle->slePtr(), sle->slePtr()->key());
                 if (replacement->getFieldU32(sfMintedNFTokens) != 1)
                     return false;  // Unexpected test conditions.
 

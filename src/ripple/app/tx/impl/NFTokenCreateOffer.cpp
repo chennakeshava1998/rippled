@@ -182,7 +182,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     {
         // If a destination is specified, the destination must already be in
         // the ledger.
-        auto const sleDst = ctx.view.readSLE(keylet::account(*destination));
+        auto const sleDst = ctx.view.read(keylet::account(*destination));
 
         if (!sleDst)
             return tecNO_DST;
@@ -193,7 +193,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             // flag cannot be set unless amendment is enabled but
             // out of an abundance of caution check anyway
 
-            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+            if (sleDst->flags() & lsfDisallowIncomingNFTokenOffer)
                 return tecNO_PERMISSION;
         }
     }
@@ -203,14 +203,14 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         // Check if the owner (buy offer) has disallowed incoming offers
         if (ctx.view.rules().enabled(featureDisallowIncoming))
         {
-            auto const sleOwner = ctx.view.readSLE(keylet::account(*owner));
+            auto const sleOwner = ctx.view.read(keylet::account(*owner));
 
             // defensively check
             // it should not be possible to specify owner that doesn't exist
             if (!sleOwner)
                 return tecNO_TARGET;
 
-            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+            if (sleOwner->flags() & lsfDisallowIncomingNFTokenOffer)
                 return tecNO_PERMISSION;
         }
     }
