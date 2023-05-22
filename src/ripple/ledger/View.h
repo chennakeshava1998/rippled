@@ -363,6 +363,7 @@ trustDelete(
         call to view.peek()
 */
 // [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
+// Keshava: Update the function signature after complete modifications to DeleterFuncPtr in DeleteAccount.cpp
 TER
 offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
 

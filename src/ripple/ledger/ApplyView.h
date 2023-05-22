@@ -300,7 +300,7 @@ public:
     std::optional<std::uint64_t>
     dirAppend(
         Keylet const& directory,
-        Keylet const& key,
+        KeyletBase const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
         if (key.type != ltOFFER)

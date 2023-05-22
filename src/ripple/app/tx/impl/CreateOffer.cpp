@@ -772,10 +772,10 @@ CreateOffer::flowCross(
         // If stale offers were found remove them.
         for (auto const& toRemove : result.removableOffers)
         {
-            if (auto otr = psb.peekSLE(keylet::offer(toRemove)))
-                offerDelete(psb, otr, j_);
-            if (auto otr = psbCancel.peekSLE(keylet::offer(toRemove)))
-                offerDelete(psbCancel, otr, j_);
+            if (auto otr = psb.peek(keylet::offer(toRemove)))
+                offerDelete(psb, otr->slePtr(), j_);
+            if (auto otr = psbCancel.peek(keylet::offer(toRemove)))
+                offerDelete(psbCancel, otr->slePtr(), j_);
         }
 
         // Determine the size of the final offer after crossing.
@@ -929,8 +929,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel =
-            sb.peekSLE(keylet::offer(account_, *cancelSequence));
+        auto sleCancel =
+            sb.peek(keylet::offer(account_, *cancelSequence));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -938,7 +938,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (sleCancel)
         {
             JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
-            result = offerDelete(sb, sleCancel, viewJ);
+            result = offerDelete(sb, sleCancel->slePtr(), viewJ);
         }
     }
 

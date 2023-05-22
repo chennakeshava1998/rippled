@@ -124,6 +124,74 @@ public:
     }
 };
 
+template<bool Writable>
+class OffersImpl final : public LedgerEntryWrapper<Writable>
+{
+private:
+    using Base = LedgerEntryWrapper<Writable>;
+    using SleT = typename Base::SleT;
+    using Base::wrapped_;
+
+    // This constructor is private so only the factory functions can
+    // construct an OffersImpl.
+    OffersImpl(std::shared_ptr<SleT>&& w) : Base(std::move(w))
+    {
+    }
+
+    // Friend declarations of factory functions.
+    //
+    // For classes that contain factories we must declare the entire class
+    // as a friend unless the class declaration is visible at this point.
+    friend class ReadView;
+    friend class ApplyView;
+
+public:
+    // Conversion operator from OffersImpl<true> to OffersImpl<false>.
+    operator OffersImpl<true>() const
+    {
+        return OffersImpl<false>(
+            std::const_pointer_cast<std::shared_ptr<STLedgerEntry const>>(
+                wrapped_));
+    }
+
+    AccountID getAccountID() const {
+        return wrapped_->at(sfAccount);
+    }
+
+    STAmount takerGets() const {
+        return wrapped_->at(sfTakerGets);
+    }
+
+    STAmount takerPays() const {
+        return wrapped_->at(sfTakerPays);
+    }
+
+    Json::Value getJson(JsonOptions options) const {
+        return wrapped_->getJson(options);
+    }
+
+    auto key() const {
+        return wrapped_->key();
+    }
+
+    auto getBookDirectory() const {
+        return wrapped_->at(sfBookDirectory);
+    }
+
+    std::uint64_t getOwnerNode() const {
+        return wrapped_->at(sfOwnerNode);
+    }
+
+    // Keshava: What do these fields really mean? Think of better names??
+    auto getBookNode() const {
+        return wrapped_->at(sfBookNode);
+    }
+
+    auto getOfferExpiration() const {
+        return wrapped_->at(sfExpiration);
+    }
+};
+
 template <bool Writable>
 class AcctRootImpl final : public LedgerEntryWrapper<Writable>
 {

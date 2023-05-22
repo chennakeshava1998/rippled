@@ -218,10 +218,10 @@ line(
             currency)};
 }
 
-Keylet
+OffersKeylet
 offer(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltOFFER, indexHash(LedgerNameSpace::OFFER, id, seq)};
+    return {indexHash(LedgerNameSpace::OFFER, id, seq)};
 }
 
 Keylet

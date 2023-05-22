@@ -123,6 +123,21 @@ struct DepositPreAuthKeylet final : public KeyletBase {
     }
 };
 
+template<bool>
+class OffersImpl;
+
+struct OffersKeylet final : public KeyletBase
+{
+    template <bool Writable>
+    using TWrapped = OffersImpl<Writable>;
+
+    using KeyletBase::check;
+
+    OffersKeylet(uint256 const& key) : KeyletBase(ltOFFER, key)
+    {
+    }
+};
+
 template <bool>
 class AcctRootImpl;
 

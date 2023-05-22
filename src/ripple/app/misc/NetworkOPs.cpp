@@ -4228,13 +4228,13 @@ NetworkOPsImp::getBookPage(
 
         if (!bDone)
         {
-            auto sleOffer = view.readSLE(keylet::offer(offerIndex));
+            auto sleOffer = view.read(keylet::offer(offerIndex));
 
             if (sleOffer)
             {
-                auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
-                auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);
-                auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
+                auto const uOfferOwnerID = sleOffer->getAccountID();
+                auto const& saTakerGets = sleOffer->takerGets();
+                auto const& saTakerPays = sleOffer->takerPays();
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
 

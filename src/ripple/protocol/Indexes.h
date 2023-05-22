@@ -123,13 +123,13 @@ line(AccountID const& id, Issue const& issue) noexcept
 
 /** An offer from an account */
 /** @{ */
-Keylet
+OffersKeylet
 offer(AccountID const& id, std::uint32_t seq) noexcept;
 
-inline Keylet
+inline OffersKeylet
 offer(uint256 const& key) noexcept
 {
-    return {ltOFFER, key};
+    return {key};
 }
 /** @} */
 
