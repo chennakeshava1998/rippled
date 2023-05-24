@@ -193,6 +193,76 @@ public:
 };
 
 template <bool Writable>
+class EscrowImpl final : public LedgerEntryWrapper<Writable>
+{
+private:
+    using Base = LedgerEntryWrapper<Writable>;
+    using SleT = typename Base::SleT;
+    using Base::wrapped_;
+
+    // This constructor is private so only the factory functions can
+    // construct an EscrowImpl.
+    EscrowImpl(std::shared_ptr<SleT>&& w) : Base(std::move(w))
+    {
+    }
+
+    // Friend declarations of factory functions.
+    //
+    // For classes that contain factories we must declare the entire class
+    // as a friend unless the class declaration is visible at this point.
+    friend class ReadView;
+    friend class ApplyView;
+
+public:
+    // Conversion operator from AcctRootImpl<true> to AcctRootImpl<false>.
+    operator EscrowImpl<true>() const
+    {
+        return EscrowImpl<false>(
+            std::const_pointer_cast<std::shared_ptr<STLedgerEntry const>>(
+                wrapped_));
+    }
+
+    [[nodiscard]] std::optional<uint32_t> finishTime() const {
+        return wrapped_->at(~sfFinishAfter);
+    }
+
+    [[nodiscard]] std::optional<uint32_t> cancelTime() const {
+        return wrapped_->at(~sfCancelAfter);
+    }
+
+    [[nodiscard]] auto checkCondition() const {
+        return wrapped_->at(~sfCondition);
+    }
+
+    [[nodiscard]] AccountID getEscrowRecipient() const {
+        return wrapped_->at(sfDestination);
+    }
+
+    [[nodiscard]] AccountID
+    accountID() const
+    {
+        return wrapped_->at(sfAccount);
+    }
+
+    // Keshava: this function returns the appropriate page from inside a ledger object
+    [[nodiscard]] std::uint64_t getOwnerNode() const {
+        return wrapped_->at(sfOwnerNode);
+    }
+
+    [[nodiscard]] auto getRecipientNode() const {
+        return wrapped_->at(~sfDestinationNode);
+    }
+
+    [[nodiscard]] STAmount amount() const {
+        return wrapped_->at(sfAmount);
+    }
+
+
+
+
+};
+
+template <bool Writable>
 class AcctRootImpl final : public LedgerEntryWrapper<Writable>
 {
 private:

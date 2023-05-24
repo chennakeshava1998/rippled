@@ -228,9 +228,9 @@ EscrowCreate::doApply()
             return tecNO_TARGET;
     }
 
-    // Create escrow in ledger.  Note that we we use the value from the
+    // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet =
+    EscrowKelyet const escrowKeylet =
         keylet::escrow(account, ctx_.tx.getSeqProxy().value());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
@@ -355,7 +355,7 @@ TER
 EscrowFinish::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peekSLE(k);
+    auto slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
 
@@ -367,25 +367,25 @@ EscrowFinish::doApply()
         auto const now = ctx_.view().info().parentCloseTime;
 
         // Too soon: can't execute before the finish time
-        if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+        if (slep->finishTime() && !after(now, *slep->finishTime()))
             return tecNO_PERMISSION;
 
         // Too late: can't execute after the cancel time
-        if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+        if (slep->cancelTime() && after(now, *slep->cancelTime()))
             return tecNO_PERMISSION;
     }
     else
     {
         // Too soon?
-        if ((*slep)[~sfFinishAfter] &&
+        if (slep->finishTime() &&
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfFinishAfter])
+                slep->finishTime())
             return tecNO_PERMISSION;
 
         // Too late?
-        if ((*slep)[~sfCancelAfter] &&
+        if (slep->cancelTime() &&
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
+                slep->cancelTime())
             return tecNO_PERMISSION;
     }
 
@@ -420,7 +420,7 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
 
         // Check against condition in the ledger entry:
-        auto const cond = (*slep)[~sfCondition];
+        auto const cond = slep->checkCondition();
 
         // If a condition wasn't specified during creation,
         // one shouldn't be included now.
@@ -437,7 +437,7 @@ EscrowFinish::doApply()
     }
 
     // NOTE: Escrow payments cannot be used to fund accounts.
-    AccountID const destID = (*slep)[sfDestination];
+    AccountID const destID = slep->getEscrowRecipient();
     auto destAcctRoot = ctx_.view().peek(keylet::account(destID));
     if (!destAcctRoot)
         return tecNO_DST;
@@ -459,11 +459,11 @@ EscrowFinish::doApply()
         }
     }
 
-    AccountID const account = (*slep)[sfAccount];
+    AccountID const account = slep->accountID();
 
     // Remove escrow from owner directory
     {
-        auto const page = (*slep)[sfOwnerNode];
+        auto const page = slep->getOwnerNode();
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
@@ -473,7 +473,7 @@ EscrowFinish::doApply()
     }
 
     // Remove escrow from recipient's owner directory, if present.
-    if (auto const optPage = (*slep)[~sfDestinationNode])
+    if (auto const optPage = slep->getRecipientNode())
     {
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(destID), *optPage, k.key, true))
@@ -484,7 +484,7 @@ EscrowFinish::doApply()
     }
 
     // Transfer amount to destination
-    destAcctRoot->setBalance(destAcctRoot->balance() + (*slep)[sfAmount]);
+    destAcctRoot->setBalance(destAcctRoot->balance() + slep->amount());
     ctx_.view().update(*destAcctRoot);
 
     // Adjust source owner count
@@ -493,7 +493,7 @@ EscrowFinish::doApply()
     ctx_.view().update(*acctRoot);
 
     // Remove escrow from ledger
-    ctx_.view().erase(slep);
+    ctx_.view().erase(slep->slePtr());
 
     return tesSUCCESS;
 }
@@ -516,7 +516,7 @@ TER
 EscrowCancel::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peekSLE(k);
+    auto slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
 
@@ -525,27 +525,27 @@ EscrowCancel::doApply()
         auto const now = ctx_.view().info().parentCloseTime;
 
         // No cancel time specified: can't execute at all.
-        if (!(*slep)[~sfCancelAfter])
+        if (!slep->cancelTime())
             return tecNO_PERMISSION;
 
         // Too soon: can't execute before the cancel time.
-        if (!after(now, (*slep)[sfCancelAfter]))
+        if (!after(now, *slep->cancelTime()))
             return tecNO_PERMISSION;
     }
     else
     {
         // Too soon?
-        if (!(*slep)[~sfCancelAfter] ||
+        if (!slep->cancelTime() ||
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
+                slep->cancelTime())
             return tecNO_PERMISSION;
     }
 
-    AccountID const account = (*slep)[sfAccount];
+    AccountID const account = slep->accountID();
 
     // Remove escrow from owner directory
     {
-        auto const page = (*slep)[sfOwnerNode];
+        auto const page = slep->getOwnerNode();
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
@@ -555,10 +555,10 @@ EscrowCancel::doApply()
     }
 
     // Remove escrow from recipient's owner directory, if present.
-    if (auto const optPage = (*slep)[~sfDestinationNode]; optPage)
+    if (auto const optPage = slep->getRecipientNode(); optPage)
     {
         if (!ctx_.view().dirRemove(
-                keylet::ownerDir((*slep)[sfDestination]),
+                keylet::ownerDir(slep->getEscrowRecipient()),
                 *optPage,
                 k.key,
                 true))
@@ -570,12 +570,12 @@ EscrowCancel::doApply()
 
     // Transfer amount back to owner, decrement owner count
     auto acctRoot = ctx_.view().peek(keylet::account(account));
-    acctRoot->setBalance(acctRoot->balance() + (*slep)[sfAmount]);
+    acctRoot->setBalance(acctRoot->balance() + slep->amount());
     adjustOwnerCount(ctx_.view(), *acctRoot, -1, ctx_.journal);
     ctx_.view().update(*acctRoot);
 
     // Remove escrow from ledger
-    ctx_.view().erase(slep);
+    ctx_.view().erase(slep->slePtr());
 
     return tesSUCCESS;
 }

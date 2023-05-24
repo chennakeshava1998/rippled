@@ -139,6 +139,20 @@ struct OffersKeylet final : public KeyletBase
 };
 
 template <bool>
+class EscrowImpl;
+
+struct EscrowKelyet final : public KeyletBase {
+    template <bool Writable>
+    using TWrapped = EscrowImpl<Writable>;
+
+    using KeyletBase::check;
+
+    EscrowKelyet(uint256 const& key) : KeyletBase(ltESCROW, key)
+    {
+    }
+};
+
+template <bool>
 class AcctRootImpl;
 
 struct AccountRootKeylet final : public KeyletBase
