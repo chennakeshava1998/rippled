@@ -56,6 +56,7 @@
 #include <vector>
 
 #include <ripple/nodestore/impl/DatabaseNodeImp.h>
+#include <ripple/protocol/Fees.h>
 
 namespace ripple {
 
@@ -626,14 +627,14 @@ Ledger::setup()
 
     try
     {
-        if (auto const sle = readSLE(keylet::fees()))
+        if (auto const feeLedgerObj = read(keylet::fees()))
         {
             bool oldFees = false;
             bool newFees = false;
             {
-                auto const baseFee = sle->at(~sfBaseFee);
-                auto const reserveBase = sle->at(~sfReserveBase);
-                auto const reserveIncrement = sle->at(~sfReserveIncrement);
+                auto const baseFee = feeLedgerObj->baseFee();
+                auto const reserveBase = feeLedgerObj->reserveBase();
+                auto const reserveIncrement = feeLedgerObj->reserveIncrement();
                 if (baseFee)
                     fees_.base = *baseFee;
                 if (reserveBase)
@@ -643,10 +644,10 @@ Ledger::setup()
                 oldFees = baseFee || reserveBase || reserveIncrement;
             }
             {
-                auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
-                auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
+                auto const baseFeeXRP = feeLedgerObj->baseFeeDrops();
+                auto const reserveBaseXRP = feeLedgerObj->reserveBaseDrops();
                 auto const reserveIncrementXRP =
-                    sle->at(~sfReserveIncrementDrops);
+                    feeLedgerObj->reserveIncrementDrops();
                 auto assign = [&ret](
                                   XRPAmount& dest,
                                   std::optional<STAmount> const& src) {
@@ -1101,7 +1102,7 @@ finishLoadByIndexOrHash(
 
     assert(
         ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        ledger->readSLE(keylet::fees()));
+        ledger->read(keylet::fees()));
     ledger->setImmutable();
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);

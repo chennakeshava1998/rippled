@@ -350,6 +350,8 @@ Change::applyFee()
 {
     auto const k = keylet::fees();
 
+    // It is advantageous to let feeObject be a SLE instead of FeesImpl<true>
+    // SLE is optimised for set operations
     SLE::pointer feeObject = view().peekSLE(k);
 
     if (!feeObject)
