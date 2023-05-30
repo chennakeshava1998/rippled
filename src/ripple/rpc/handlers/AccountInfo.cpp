@@ -29,6 +29,7 @@
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpc/status.h>
+#include <ripple/protocol/MultiSigners.h>
 
 namespace ripple {
 
@@ -138,7 +139,7 @@ doAccountInfo(RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->readSLE(keylet::signers(accountID));
+            auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 

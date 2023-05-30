@@ -27,6 +27,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
+#include <ripple/protocol/MultiSigners.h>
 
 namespace ripple {
 
@@ -321,7 +322,7 @@ SetAccount::doApply()
         }
 
         if ((!acctRoot->regularKey()) &&
-            (!view().peekSLE(keylet::signers(account_))))
+            (!view().peek(keylet::signers(account_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;

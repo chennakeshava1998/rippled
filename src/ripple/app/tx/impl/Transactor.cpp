@@ -33,6 +33,7 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/MultiSigners.h>
 
 namespace ripple {
 
@@ -562,8 +563,8 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> sleAccountSigners =
-        ctx.view.readSLE(keylet::signers(id));
+    std::optional<SignersImpl<false>> sleAccountSigners =
+        ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -578,7 +579,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     assert(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
 
     auto accountSigners =
-        SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
+        SignerEntries::deserialize(*(sleAccountSigners->slePtr()), ctx.j, "ledger");
     if (!accountSigners)
         return accountSigners.error();
 
@@ -702,7 +703,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     }
 
     // Cannot perform transaction if quorum is not met.
-    if (weightSum < sleAccountSigners->getFieldU32(sfSignerQuorum))
+    if (weightSum < sleAccountSigners->slePtr()->getFieldU32(sfSignerQuorum))
     {
         JLOG(ctx.j.trace())
             << "applyTransaction: Signers failed to meet quorum.";
