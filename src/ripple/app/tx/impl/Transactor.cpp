@@ -563,10 +563,10 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
-    std::optional<SignersImpl<false>> sleAccountSigners =
+    std::optional<SignersImpl<false>> acctSigners =
         ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
-    if (!sleAccountSigners)
+    if (!acctSigners)
     {
         JLOG(ctx.j.trace())
             << "applyTransaction: Invalid: Not a multi-signing account.";
@@ -575,11 +575,11 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     // We have plans to support multiple SignerLists in the future.  The
     // presence and defaulted value of the SignerListID field will enable that.
-    assert(sleAccountSigners->isFieldPresent(sfSignerListID));
-    assert(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
+    assert(acctSigners->isFieldPresent(sfSignerListID));
+    assert(acctSigners->getFieldU32(sfSignerListID) == 0);
 
     auto accountSigners =
-        SignerEntries::deserialize(*(sleAccountSigners->slePtr()), ctx.j, "ledger");
+        SignerEntries::deserialize(*(acctSigners->slePtr()), ctx.j, "ledger");
     if (!accountSigners)
         return accountSigners.error();
 
@@ -703,7 +703,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     }
 
     // Cannot perform transaction if quorum is not met.
-    if (weightSum < sleAccountSigners->slePtr()->getFieldU32(sfSignerQuorum))
+    if (weightSum < acctSigners->slePtr()->getFieldU32(sfSignerQuorum))
     {
         JLOG(ctx.j.trace())
             << "applyTransaction: Signers failed to meet quorum.";
