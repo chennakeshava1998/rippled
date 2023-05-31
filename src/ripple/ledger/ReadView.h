@@ -244,12 +244,11 @@ public:
     virtual std::shared_ptr<SLE const>
     readSLE(KeyletBase const& k) const = 0;
 
-    template <
-        class TKeylet,
-        typename Wrapped = typename TKeylet::template TWrapped<false>>
+    template <class TKeylet>
     auto
-    read(TKeylet const& keylet) const -> std::optional<Wrapped>
+    read(TKeylet const& keylet) const -> std::optional<typename TKeylet::template TWrapped<false>>
     {
+        using Wrapped = typename TKeylet::template TWrapped<false>;
         if (auto sle = readSLE(keylet))
         {
             return Wrapped(std::move(sle));

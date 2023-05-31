@@ -173,12 +173,11 @@ public:
     virtual std::shared_ptr<SLE>
     peekSLE(KeyletBase const& k) = 0;
 
-    template <
-        class TKeylet,
-        typename Wrapped = typename TKeylet::template TWrapped<true>>
+    template <class TKeylet>
     auto
-    peek(TKeylet const& keylet) -> std::optional<Wrapped>
+    peek(TKeylet const& keylet) -> std::optional<typename TKeylet::template TWrapped<true>>
     {
+        using Wrapped = typename TKeylet::template TWrapped<true>;
         if (auto sle = peekSLE(keylet))
         {
             return Wrapped(std::move(sle));
