@@ -92,6 +92,9 @@ public:
     }
 };
 
+using FeesLgrObjectRd = FeesImpl<false>;
+using FeesLgrObject = FeesImpl<true>;
+
 }  // namespace ripple
 
 #endif  // RIPPLE_PROTOCOL_FEES_H_INCLUDED
