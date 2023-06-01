@@ -66,6 +66,10 @@ public:
         return wrapped_->key();
     }
 };
+
+using SignersRd = SignersImpl<false>;
+using Signers = SignersImpl<true>;
+
 }  // namespace ripple
 
 #endif  // RIPPLE_PROTOCOL_MULTI_SIGNERS_H_INCLUDED

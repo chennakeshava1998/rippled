@@ -563,7 +563,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
-    std::optional<SignersImpl<false>> acctSigners =
+    std::optional<SignersRd> acctSigners =
         ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!acctSigners)
