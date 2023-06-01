@@ -21,8 +21,6 @@
 #define RIPPLE_PROTOCOL_AMENDMENTS_H_INCLUDED
 
 #include <ripple/protocol/LedgerEntryWrapper.h>
-// #include <ripple/protocol/STAccount.h>
-// #include <ripple/protocol/STAmount.h>
 
 namespace ripple {
 
@@ -56,6 +54,9 @@ public:
                 wrapped_));
     }
 };
+
+using Amendments = AmendmentsImpl<true>;
+using AmendmentsRd = AmendmentsImpl<false>;
 
 }  // namespace ripple
 

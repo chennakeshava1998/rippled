@@ -254,9 +254,9 @@ Change::applyAmendment()
     auto const k = keylet::amendments();
 
     // amendmentObject is better off being a SLE rather than a
-    // AmendmentsImpl<true> It is accessing multiple get/set methods from
+    // Amendments object. It is accessing multiple get/set methods from
     // STObject. It is expensive to accomplish the same with
-    // AmendmentsObject<true>.
+    // Amendments object.
     SLE::pointer amendmentObject = view().peekSLE(k);
 
     if (!amendmentObject)
