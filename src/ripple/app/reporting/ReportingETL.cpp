@@ -21,16 +21,10 @@
 #include <ripple/app/reporting/ReportingETL.h>
 
 #include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_writer.h>
 #include <ripple/protocol/FeesLedgerObj.h>
-#include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
 #include <cctype>
 #include <charconv>
-#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <variant>

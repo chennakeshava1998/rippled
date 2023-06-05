@@ -25,7 +25,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/JobQueue.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/FeesLedgerObj.h>

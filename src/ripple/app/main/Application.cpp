@@ -35,7 +35,6 @@
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/NodeIdentity.h>
 #include <ripple/app/main/NodeStoreScheduler.h>
-#include <ripple/app/main/Tuning.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
@@ -53,7 +52,6 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/random.h>
-#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
@@ -83,13 +81,11 @@
 #include <date/date.h>
 
 #include <chrono>
-#include <condition_variable>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <mutex>
 #include <optional>
-#include <sstream>
 #include <utility>
 #include <variant>
 

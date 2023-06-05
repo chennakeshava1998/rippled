@@ -19,7 +19,6 @@
 
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/ledger/View.h>

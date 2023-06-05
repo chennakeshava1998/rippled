@@ -28,20 +28,13 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/core/Pg.h>
-#include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>
-#include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/impl/DatabaseNodeImp.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/FeesLedgerObj.h>
@@ -49,7 +42,6 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 
