@@ -267,7 +267,8 @@ ticket_t::operator()(AccountID const& id, SeqProxy ticketSeq) const
 static SignersKeylet
 signers(AccountID const& account, std::uint32_t page) noexcept
 {
-    return SignersKeylet(indexHash(LedgerNameSpace::SIGNER_LIST, account, page));
+    return SignersKeylet(
+        indexHash(LedgerNameSpace::SIGNER_LIST, account, page));
 }
 
 SignersKeylet

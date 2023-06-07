@@ -105,8 +105,7 @@ struct SignersKeylet final : public KeyletBase
 
     using KeyletBase::check;
 
-    explicit SignersKeylet(uint256 const& key)
-        : KeyletBase(ltSIGNER_LIST, key)
+    explicit SignersKeylet(uint256 const& key) : KeyletBase(ltSIGNER_LIST, key)
     {
     }
 };

@@ -54,13 +54,15 @@ public:
                 wrapped_));
     }
 
-    [[nodiscard]]
-    Json::Value getJson(JsonOptions options) const {
+    [[nodiscard]] Json::Value
+    getJson(JsonOptions options) const
+    {
         return wrapped_->getJson(options);
     }
 
-    [[nodiscard]]
-    uint256 const& key() const {
+    [[nodiscard]] uint256 const&
+    key() const
+    {
         return wrapped_->key();
     }
 };

@@ -30,10 +30,10 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/MultiSigners.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/MultiSigners.h>
 
 namespace ripple {
 
@@ -563,8 +563,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
-    std::optional<SignersRd> acctSigners =
-        ctx.view.read(keylet::signers(id));
+    std::optional<SignersRd> acctSigners = ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!acctSigners)
     {
@@ -575,8 +574,8 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     // We have plans to support multiple SignerLists in the future.  The
     // presence and defaulted value of the SignerListID field will enable that.
-    assert(acctSigners->isFieldPresent(sfSignerListID));
-    assert(acctSigners->getFieldU32(sfSignerListID) == 0);
+    assert(acctSigners->slePtr()->isFieldPresent(sfSignerListID));
+    assert(acctSigners->slePtr()->getFieldU32(sfSignerListID) == 0);
 
     auto accountSigners =
         SignerEntries::deserialize(*(acctSigners->slePtr()), ctx.j, "ledger");

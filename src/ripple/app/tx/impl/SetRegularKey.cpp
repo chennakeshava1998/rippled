@@ -20,8 +20,8 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/MultiSigners.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 

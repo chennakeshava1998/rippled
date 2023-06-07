@@ -23,13 +23,13 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/MultiSigners.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpc/status.h>
-#include <ripple/protocol/MultiSigners.h>
 
 namespace ripple {
 
@@ -139,9 +139,8 @@ doAccountInfo(RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            const std::optional<SignersImpl<false>> signerList = ledger->read
-                                                             (keylet::signers
-                                                     (accountID));
+            const std::optional<SignersImpl<false>> signerList =
+                ledger->read(keylet::signers(accountID));
             if (signerList)
                 jvSignerList.append(signerList->getJson(JsonOptions::none));
 

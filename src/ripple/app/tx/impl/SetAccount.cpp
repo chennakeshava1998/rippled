@@ -19,15 +19,13 @@
 
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
-#include <ripple/protocol/AcctRoot.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/MultiSigners.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
-#include <ripple/protocol/MultiSigners.h>
 
 namespace ripple {
 
