@@ -201,15 +201,15 @@ Keylet
 unchecked(uint256 const& key) noexcept;
 
 /** The root page of an account's directory */
-Keylet
+PageKeylet
 ownerDir(AccountID const& id) noexcept;
 
 /** A page in a directory */
 /** @{ */
-Keylet
+PageKeylet
 page(uint256 const& root, std::uint64_t index = 0) noexcept;
 
-inline Keylet
+inline PageKeylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
     assert(root.type == ltDIR_NODE);

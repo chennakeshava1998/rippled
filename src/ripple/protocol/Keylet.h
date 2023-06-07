@@ -120,6 +120,34 @@ static_assert(std::is_move_assignable_v<AccountRootKeylet>);
 static_assert(std::is_nothrow_destructible_v<AccountRootKeylet>);
 #endif
 
+template <bool>
+class DirNodeImpl;
+
+struct OwnerDirKeylet final : public KeyletBase
+{
+    template <bool Writable>
+    using TWrapped = DirNodeImpl<Writable>;
+
+    using KeyletBase::check;
+
+    explicit OwnerDirKeylet(uint256 const& key)
+        : KeyletBase(ltDIR_NODE, key)
+    {
+    }
+};
+
+struct PageKeylet final : public KeyletBase
+{
+    template <bool Writable>
+    using TWrapped = DirNodeImpl<Writable>;
+
+    using KeyletBase::check;
+
+    explicit PageKeylet(uint256 const& key)
+        : KeyletBase(ltDIR_NODE, key)
+    {
+    }
+};
 }  // namespace ripple
 
 #endif

@@ -367,7 +367,7 @@ xrpLiquid(
 void
 forEachItem(
     ReadView const& view,
-    Keylet const& root,
+    KeyletBase const& root,
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
     assert(root.type == ltDIR_NODE);

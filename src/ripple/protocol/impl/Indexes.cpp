@@ -299,19 +299,20 @@ unchecked(uint256 const& key) noexcept
     return {ltANY, key};
 }
 
-Keylet
+PageKeylet
 ownerDir(AccountID const& id) noexcept
 {
-    return {ltDIR_NODE, indexHash(LedgerNameSpace::OWNER_DIR, id)};
+    return PageKeylet(indexHash(LedgerNameSpace::OWNER_DIR, id));
 }
 
-Keylet
+PageKeylet
 page(uint256 const& key, std::uint64_t index) noexcept
 {
     if (index == 0)
-        return {ltDIR_NODE, key};
+        return PageKeylet(key);
 
-    return {ltDIR_NODE, indexHash(LedgerNameSpace::DIR_NODE, key, index)};
+    return PageKeylet(indexHash(LedgerNameSpace::DIR_NODE, key,
+index));
 }
 
 Keylet
