@@ -712,10 +712,12 @@ hash_set<PublicKey>
 Ledger::negativeUNL() const
 {
     hash_set<PublicKey> negUnl;
-    if (auto nUNLLedgerObj = read(keylet::negativeUNL());
-        nUNLLedgerObj && nUNLLedgerObj->isFieldPresent(sfDisabledValidators)) // Keshava: Can we avoid these expensive conversions into ->slePtr()
+    if (std::optional<NegUNLImpl<false>> nUNLLedgerObj = read
+        (keylet::negativeUNL());
+        nUNLLedgerObj && nUNLLedgerObj->isFieldPresent(sfDisabledValidators))
     {
-        auto const& nUnlData = nUNLLedgerObj->getFieldArray(sfDisabledValidators);
+        STArray const& nUnlData = nUNLLedgerObj->getFieldArray
+                              (sfDisabledValidators);
         for (auto const& n : nUnlData)
         {
             if (n.isFieldPresent(sfPublicKey))
@@ -737,7 +739,7 @@ Ledger::negativeUNL() const
 std::optional<PublicKey>
 Ledger::validatorToDisable() const
 {
-    if (auto nUNLLedgerObj = read<NegUNLKeylet, NegUNLRd>(keylet::negativeUNL());
+    if (std::optional<NegUNLImpl<false>> nUNLLedgerObj = read(keylet::negativeUNL());
         nUNLLedgerObj && nUNLLedgerObj->isFieldPresent(sfValidatorToDisable))
     {
         auto d = nUNLLedgerObj->getFieldVL(sfValidatorToDisable);

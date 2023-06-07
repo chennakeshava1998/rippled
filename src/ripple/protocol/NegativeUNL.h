@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -21,8 +21,7 @@
 #define RIPPLE_PROTOCOL_NEGATIVE_UNL_H_INCLUDED
 
 #include <ripple/protocol/LedgerEntryWrapper.h>
-//#include <ripple/protocol/STAccount.h>
-//#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STArray.h>
 
 namespace ripple {
 
@@ -78,7 +77,7 @@ public:
         return wrapped_->setFieldVL(field, blob);
     }
 
-    [[nodiscard]] const auto&
+    [[nodiscard]] const ripple::STArray&
     getFieldArray(SField const& field) const {
         return wrapped_->getFieldArray(field);
     }
