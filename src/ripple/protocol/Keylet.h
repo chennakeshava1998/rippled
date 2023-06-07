@@ -106,8 +106,7 @@ struct NegUNLKeylet final : public KeyletBase
 
     using KeyletBase::check;
 
-    explicit NegUNLKeylet(uint256 const& key)
-        : KeyletBase(ltNEGATIVE_UNL, key)
+    explicit NegUNLKeylet(uint256 const& key) : KeyletBase(ltNEGATIVE_UNL, key)
     {
     }
 };

@@ -33,7 +33,6 @@ private:
     using SleT = typename Base::SleT;
     using Base::wrapped_;
 
-
     // Friend declarations of factory functions.
     //
     // For classes that contain factories we must declare the entire class
@@ -43,8 +42,6 @@ private:
 
 public:
     // This constructor is used in Change::applyUNLModify() function.
-    // Keshava: Is it mandatory to use make_XYZ factory functions for this usecase?
-    // What are the perils of having a public constructor?
     NegUNLImpl(std::shared_ptr<SleT>&& w) : Base(std::move(w))
     {
     }
@@ -58,27 +55,32 @@ public:
     }
 
     [[nodiscard]] bool
-        isFieldPresent(SField const& field) const {
+    isFieldPresent(SField const& field) const
+    {
         return wrapped_->isFieldPresent(field);
     }
 
     [[nodiscard]] Blob
-    getFieldVL(SField const& field) const {
+    getFieldVL(SField const& field) const
+    {
         return wrapped_->getFieldVL(field);
     }
 
     void
-    setFieldVL(SField const& field, Slice const& sl) const {
+    setFieldVL(SField const& field, Slice const& sl) const
+    {
         return wrapped_->setFieldVL(field, sl);
     }
 
     void
-    setFieldVL(SField const& field, Blob const& blob) const {
+    setFieldVL(SField const& field, Blob const& blob) const
+    {
         return wrapped_->setFieldVL(field, blob);
     }
 
     [[nodiscard]] const ripple::STArray&
-    getFieldArray(SField const& field) const {
+    getFieldArray(SField const& field) const
+    {
         return wrapped_->getFieldArray(field);
     }
 };
