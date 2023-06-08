@@ -120,6 +120,22 @@ static_assert(std::is_move_assignable_v<AccountRootKeylet>);
 static_assert(std::is_nothrow_destructible_v<AccountRootKeylet>);
 #endif
 
+template <bool>
+class RippleStateImpl;
+
+struct RippleStateKeylet final : public KeyletBase
+{
+    template <bool Writable>
+    using TWrapped = RippleStateImpl<Writable>;
+
+    using KeyletBase::check;
+
+    explicit RippleStateKeylet(uint256 const& key)
+        : KeyletBase(ltRIPPLE_STATE, key)
+    {
+    }
+};
+
 }  // namespace ripple
 
 #endif

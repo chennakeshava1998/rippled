@@ -39,6 +39,7 @@
 #include <utility>
 
 #include <vector>
+#include <ripple/protocol/RippleState.h>
 
 namespace ripple {
 
@@ -351,7 +352,7 @@ trustCreate(
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
+    std::optional<RippleState> rippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);

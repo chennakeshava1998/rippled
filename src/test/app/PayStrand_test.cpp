@@ -526,7 +526,7 @@ struct ExistingElementPool
                 return STAmount{};
             return acctRoot->balance();
         };
-        auto lineBalance = [](ReadView const& v, ripple::Keylet const& k) {
+        auto lineBalance = [](ReadView const& v, ripple::KeyletBase const& k) {
             auto const sle = v.readSLE(k);
             if (!sle)
                 return STAmount{};

@@ -351,7 +351,8 @@ CashCheck::doApply()
             Issue const& trustLineIssue = flowDeliver.issue();
             AccountID const issuer = flowDeliver.getIssuer();
             AccountID const truster = issuer == account_ ? srcId : account_;
-            Keylet const trustLineKey = keylet::line(truster, trustLineIssue);
+            RippleStateKeylet const trustLineKey = keylet::line(truster,
+                                                        trustLineIssue);
             bool const destLow = issuer > account_;
 
             bool const checkCashMakesTrustLine =

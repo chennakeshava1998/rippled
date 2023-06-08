@@ -108,13 +108,13 @@ static book_t const book{};
     between them.
 */
 /** @{ */
-Keylet
+RippleStateKeylet
 line(
     AccountID const& id0,
     AccountID const& id1,
     Currency const& currency) noexcept;
 
-inline Keylet
+inline RippleStateKeylet
 line(AccountID const& id, Issue const& issue) noexcept
 {
     return line(id, issue.account, issue.currency);

@@ -23,7 +23,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/protocol/st.h>
+#include <ripple/protocol/RippleState.h>
 
 namespace ripple {
 
@@ -116,10 +116,10 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             // Prevent trustline to self from being created,
             // unless one has somehow already been created
             // (in which case doApply will clean it up).
-            auto const sleDelete =
-                ctx.view.readSLE(keylet::line(id, uDstAccountID, currency));
+            std::optional<RippleStateRd> trustLineToSelf =
+                ctx.view.read(keylet::line(id, uDstAccountID, currency));
 
-            if (!sleDelete)
+            if (!trustLineToSelf)
             {
                 JLOG(ctx.j.trace())
                     << "Malformed transaction: Can not extend credit to self.";
@@ -213,7 +213,7 @@ SetTrust::doApply()
     {
         return trustDelete(
             view(),
-            view().peekSLE(keylet::line(account_, uDstAccountID, currency)),
+            view().peek(keylet::line(account_, uDstAccountID, currency)),
             account_,
             uDstAccountID,
             viewJ);
@@ -231,10 +231,10 @@ SetTrust::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState =
-        view().peekSLE(keylet::line(account_, uDstAccountID, currency));
+    std::optional<RippleState> rippleState =
+        view().peek(keylet::line(account_, uDstAccountID, currency));
 
-    if (sleRippleState)
+    if (rippleState)
     {
         STAmount saLowBalance;
         STAmount saLowLimit;
@@ -253,20 +253,20 @@ SetTrust::doApply()
         // Balances
         //
 
-        saLowBalance = sleRippleState->getFieldAmount(sfBalance);
+        saLowBalance = rippleState->getFieldAmount(sfBalance);
         saHighBalance = -saLowBalance;
 
         //
         // Limits
         //
 
-        sleRippleState->setFieldAmount(
+        rippleState->setFieldAmount(
             !bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
 
         saLowLimit =
-            !bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
+            !bHigh ? saLimitAllow : rippleState->getFieldAmount(sfLowLimit);
         saHighLimit =
-            bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
+            bHigh ? saLimitAllow : rippleState->getFieldAmount(sfHighLimit);
 
         //
         // Quality in
@@ -276,34 +276,34 @@ SetTrust::doApply()
         {
             // Not setting. Just get it.
 
-            uLowQualityIn = sleRippleState->getFieldU32(sfLowQualityIn);
-            uHighQualityIn = sleRippleState->getFieldU32(sfHighQualityIn);
+            uLowQualityIn = rippleState->getFieldU32(sfLowQualityIn);
+            uHighQualityIn = rippleState->getFieldU32(sfHighQualityIn);
         }
         else if (uQualityIn)
         {
             // Setting.
 
-            sleRippleState->setFieldU32(
+            rippleState->setFieldU32(
                 !bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 
             uLowQualityIn = !bHigh
                 ? uQualityIn
-                : sleRippleState->getFieldU32(sfLowQualityIn);
+                : rippleState->getFieldU32(sfLowQualityIn);
             uHighQualityIn = bHigh
                 ? uQualityIn
-                : sleRippleState->getFieldU32(sfHighQualityIn);
+                : rippleState->getFieldU32(sfHighQualityIn);
         }
         else
         {
             // Clearing.
 
-            sleRippleState->makeFieldAbsent(
+            rippleState->makeFieldAbsent(
                 !bHigh ? sfLowQualityIn : sfHighQualityIn);
 
             uLowQualityIn =
-                !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
+                !bHigh ? 0 : rippleState->getFieldU32(sfLowQualityIn);
             uHighQualityIn =
-                bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
+                bHigh ? 0 : rippleState->getFieldU32(sfHighQualityIn);
         }
 
         if (QUALITY_ONE == uLowQualityIn)
@@ -320,37 +320,37 @@ SetTrust::doApply()
         {
             // Not setting. Just get it.
 
-            uLowQualityOut = sleRippleState->getFieldU32(sfLowQualityOut);
-            uHighQualityOut = sleRippleState->getFieldU32(sfHighQualityOut);
+            uLowQualityOut = rippleState->getFieldU32(sfLowQualityOut);
+            uHighQualityOut = rippleState->getFieldU32(sfHighQualityOut);
         }
         else if (uQualityOut)
         {
             // Setting.
 
-            sleRippleState->setFieldU32(
+            rippleState->setFieldU32(
                 !bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
             uLowQualityOut = !bHigh
                 ? uQualityOut
-                : sleRippleState->getFieldU32(sfLowQualityOut);
+                : rippleState->getFieldU32(sfLowQualityOut);
             uHighQualityOut = bHigh
                 ? uQualityOut
-                : sleRippleState->getFieldU32(sfHighQualityOut);
+                : rippleState->getFieldU32(sfHighQualityOut);
         }
         else
         {
             // Clearing.
 
-            sleRippleState->makeFieldAbsent(
+            rippleState->makeFieldAbsent(
                 !bHigh ? sfLowQualityOut : sfHighQualityOut);
 
             uLowQualityOut =
-                !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
+                !bHigh ? 0 : rippleState->getFieldU32(sfLowQualityOut);
             uHighQualityOut =
-                bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
+                bHigh ? 0 : rippleState->getFieldU32(sfHighQualityOut);
         }
 
-        std::uint32_t const uFlagsIn(sleRippleState->getFieldU32(sfFlags));
+        std::uint32_t const uFlagsIn(rippleState->getFieldU32(sfFlags));
         std::uint32_t uFlagsOut(uFlagsIn);
 
         if (bSetNoRipple && !bClearNoRipple)
@@ -444,14 +444,14 @@ SetTrust::doApply()
         }
 
         if (uFlagsIn != uFlagsOut)
-            sleRippleState->setFieldU32(sfFlags, uFlagsOut);
+            rippleState->setFieldU32(sfFlags, uFlagsOut);
 
         if (bDefault || badCurrency() == currency)
         {
             // Delete.
 
             terResult = trustDelete(
-                view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+                view(), rippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
         else if (bReserveIncrease && mPriorBalance < reserveCreate)
@@ -465,7 +465,7 @@ SetTrust::doApply()
         }
         else
         {
-            view().update(sleRippleState);
+            view().update(*rippleState);
 
             JLOG(j_.trace()) << "Modify ripple line";
         }

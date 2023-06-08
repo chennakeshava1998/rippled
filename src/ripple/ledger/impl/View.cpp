@@ -28,6 +28,7 @@
 #include <ripple/protocol/st.h>
 #include <cassert>
 #include <optional>
+#include <ripple/protocol/RippleState.h>
 
 namespace ripple {
 
@@ -846,21 +847,21 @@ trustCreate(
 TER
 trustDelete(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
+    std::optional<RippleState> rippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j)
 {
     // Detect legacy dirs.
-    std::uint64_t uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t uHighNode = sleRippleState->getFieldU64(sfHighNode);
+    std::uint64_t uLowNode = rippleState->getFieldU64(sfLowNode);
+    std::uint64_t uHighNode = rippleState->getFieldU64(sfHighNode);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
     if (!view.dirRemove(
             keylet::ownerDir(uLowAccountID),
             uLowNode,
-            sleRippleState->key(),
+            rippleState->key(),
             false))
     {
         return tefBAD_LEDGER;
@@ -871,14 +872,14 @@ trustDelete(
     if (!view.dirRemove(
             keylet::ownerDir(uHighAccountID),
             uHighNode,
-            sleRippleState->key(),
+            rippleState->key(),
             false))
     {
         return tefBAD_LEDGER;
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    view.erase(sleRippleState);
+    view.erase(*rippleState);
 
     return tesSUCCESS;
 }
@@ -952,9 +953,9 @@ rippleCredit(
     assert(!isXRP(uReceiverID) && uReceiverID != noAccount());
 
     // If the line exists, modify it accordingly.
-    if (auto const sleRippleState = view.peekSLE(index))
+    if (std::optional<RippleState> rippleState = view.peek(index))
     {
-        STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
+        STAmount saBalance = rippleState->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
             saBalance.negate();  // Put balance in sender terms.
@@ -971,7 +972,7 @@ rippleCredit(
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
-        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
+        std::uint32_t const uFlags(rippleState->getFieldU32(sfFlags));
         bool bDelete = false;
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
@@ -988,13 +989,13 @@ rippleCredit(
                 static_cast<bool>(view.read(keylet::account(uSenderID))
                                       ->isFlag(lsfDefaultRipple)) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-            !sleRippleState->getFieldAmount(
+            !rippleState->getFieldAmount(
                 !bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && !sleRippleState->getFieldU32(
+            && !rippleState->getFieldU32(
                    !bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
             // Sender quality in is 0.
-            && !sleRippleState->getFieldU32(
+            && !rippleState->getFieldU32(
                    !bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
         // Sender quality out is 0.
         {
@@ -1005,7 +1006,7 @@ rippleCredit(
             adjustOwnerCount(view, *ownerAcctRoot, -1, j);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(
+            rippleState->setFieldU32(
                 sfFlags,
                 uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
@@ -1019,20 +1020,20 @@ rippleCredit(
             saBalance.negate();
 
         // Want to reflect balance to zero even if we are deleting line.
-        sleRippleState->setFieldAmount(sfBalance, saBalance);
+        rippleState->setFieldAmount(sfBalance, saBalance);
         // ONLY: Adjust ripple balance.
 
         if (bDelete)
         {
             return trustDelete(
                 view,
-                sleRippleState,
+                rippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
                 !bSenderHigh ? uReceiverID : uSenderID,
                 j);
         }
 
-        view.update(sleRippleState);
+        view.update(*rippleState);
         return tesSUCCESS;
     }
 
@@ -1298,7 +1299,7 @@ issueIOU(
 
     auto const index = keylet::line(issue.account, account, issue.currency);
 
-    if (auto state = view.peekSLE(index))
+    if (std::optional<RippleState> state = view.peek(index))
     {
         STAmount final_balance = state->getFieldAmount(sfBalance);
 
@@ -1335,7 +1336,7 @@ issueIOU(
                 bSenderHigh ? issue.account : account,
                 j);
 
-        view.update(state);
+        view.update(*state);
 
         return tesSUCCESS;
     }

@@ -189,7 +189,7 @@ book_t::operator()(Book const& b) const
     return {ltDIR_NODE, getBookBase(b)};
 }
 
-Keylet
+RippleStateKeylet
 line(
     AccountID const& id0,
     AccountID const& id1,
@@ -209,13 +209,12 @@ line(
     // two accounts (smallest then largest)  and hash them in that order:
     auto const accounts = std::minmax(id0, id1);
 
-    return {
-        ltRIPPLE_STATE,
+    return RippleStateKeylet(
         indexHash(
             LedgerNameSpace::TRUST_LINE,
             accounts.first,
             accounts.second,
-            currency)};
+            currency));
 }
 
 Keylet
