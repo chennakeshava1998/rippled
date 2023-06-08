@@ -123,7 +123,8 @@ static_assert(std::is_nothrow_destructible_v<AccountRootKeylet>);
 template <bool>
 class EscrowImpl;
 
-struct EscrowKeylet final : public KeyletBase {
+struct EscrowKeylet final : public KeyletBase
+{
     template <bool Writable>
     using TWrapped = EscrowImpl<Writable>;
 

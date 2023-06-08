@@ -54,19 +54,27 @@ public:
                 wrapped_));
     }
 
-    [[nodiscard]] std::optional<uint32_t> finishTime() const {
+    [[nodiscard]] std::optional<uint32_t>
+    finishTime() const
+    {
         return wrapped_->at(~sfFinishAfter);
     }
 
-    [[nodiscard]] std::optional<uint32_t> cancelTime() const {
+    [[nodiscard]] std::optional<uint32_t>
+    cancelTime() const
+    {
         return wrapped_->at(~sfCancelAfter);
     }
 
-    [[nodiscard]] const std::optional<ripple::Slice> checkCondition() const {
+    [[nodiscard]] const std::optional<ripple::Slice>
+    checkCondition() const
+    {
         return wrapped_->at(~sfCondition);
     }
 
-    [[nodiscard]] AccountID getEscrowRecipient() const {
+    [[nodiscard]] AccountID
+    getEscrowRecipient() const
+    {
         return wrapped_->at(sfDestination);
     }
 
@@ -77,19 +85,24 @@ public:
     }
 
     // This function returns the appropriate page from inside a ledger object.
-    [[nodiscard]] std::uint64_t getOwnerNode() const {
+    [[nodiscard]] std::uint64_t
+    getOwnerNode() const
+    {
         return wrapped_->at(sfOwnerNode);
     }
 
     // Keshava: Should I explicitly specify the return type or use auto keyword?
     // returns ripple::OptionalProxy<ripple::STInteger<unsigned long long>>
     // but OptionalProxy is not accesible from this file
-        [[nodiscard]] auto
-        getRecipientNode() const {
+    [[nodiscard]] auto
+    getRecipientNode() const
+    {
         return wrapped_->at(~sfDestinationNode);
     }
 
-    [[nodiscard]] STAmount amount() const {
+    [[nodiscard]] STAmount
+    amount() const
+    {
         return wrapped_->at(sfAmount);
     }
 };

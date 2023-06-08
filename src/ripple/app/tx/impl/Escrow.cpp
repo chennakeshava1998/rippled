@@ -367,11 +367,13 @@ EscrowFinish::doApply()
         auto const now = ctx_.view().info().parentCloseTime;
 
         // Too soon: can't execute before the finish time
-        if (escrowObject->finishTime() && !after(now, *escrowObject->finishTime()))
+        if (escrowObject->finishTime() &&
+            !after(now, *escrowObject->finishTime()))
             return tecNO_PERMISSION;
 
         // Too late: can't execute after the cancel time
-        if (escrowObject->cancelTime() && after(now, *escrowObject->cancelTime()))
+        if (escrowObject->cancelTime() &&
+            after(now, *escrowObject->cancelTime()))
             return tecNO_PERMISSION;
     }
     else
