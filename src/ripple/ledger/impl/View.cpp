@@ -367,7 +367,9 @@ xrpLiquid(
 void
 forEachItem(
     ReadView const& view,
-    KeyletBase const& root,
+    OwnerDirNode const& root, // Keshava: no other keylet uses this function,
+                               // hence
+                               // specialize it
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
     assert(root.type == ltDIR_NODE);
