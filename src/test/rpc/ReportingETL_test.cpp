@@ -26,6 +26,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/rpc/GRPCTestClientBase.h>
+#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 namespace test {
@@ -56,7 +57,7 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedger");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort = *(*config)[PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
 
         env.close();
@@ -498,7 +499,7 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedgerData");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort = *(*config)[PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
         auto grpcLedgerData = [&grpcPort](
                                   auto sequence, std::string marker = "") {
@@ -620,7 +621,7 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedgerDiff");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort = *(*config)[PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
 
         auto grpcLedgerDiff = [&grpcPort](
@@ -735,7 +736,7 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedgerDiff");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort = *(*config)[PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
 
         auto grpcLedgerEntry = [&grpcPort](auto sequence, auto key) {
@@ -895,7 +896,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config = envconfig(
                 addGrpcConfigWithSecureGateway, getEnvLocalhostAddr());
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
@@ -955,7 +956,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config =
                 envconfig(addGrpcConfigWithSecureGateway, secureGatewayIp);
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
@@ -1008,7 +1009,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config = envconfig(
                 addGrpcConfigWithSecureGateway, getEnvLocalhostAddr());
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
@@ -1065,7 +1066,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config =
                 envconfig(addGrpcConfigWithSecureGateway, secureGatewayIp);
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
