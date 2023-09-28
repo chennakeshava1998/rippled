@@ -79,6 +79,9 @@ jobs:
       - name: try to authenticate to ripple Conan remote
         id: remote
         run: |
+          # Personal repos will not configure secrets. Do not fail builds due
+          # to authentication issues
+          set +e
           conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }}
           echo outcome=$([ $? -eq 0 ] && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: archive profile
