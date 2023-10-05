@@ -101,6 +101,21 @@ admin = 127.0.0.1
         }
 
         {
+            Env env(*this);
+
+            auto const result =
+                env.app().getOPs().getServerInfo(true, false, true);
+            auto const& counters = result[jss::counters];
+            std::cout << "counters\n" << counters << std::endl;
+            BEAST_EXPECT(counters && counters.isObject());
+            auto const& current_activities = result[jss::current_activities];
+            auto const& nodestore = counters[jss::nodestore];
+            std::cout << "current_activities\n" << current_activities <<
+                std::endl;
+            std::cout << "nodestore\n" << nodestore << std::endl;
+        }
+
+        {
             auto config = makeValidatorConfig();
             auto const rpc_port =
                 (*config)["port_rpc"].get<unsigned int>("port");
