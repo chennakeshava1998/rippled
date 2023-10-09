@@ -116,7 +116,7 @@ private:
         for (const auto& pair : sTypeMap)
         {
             std::string type_name =
-                translate(std::string(pair.first).substr(4) /* remove STI_ */);
+                translate(pair.first.substr(4) /* remove STI_ */);
             int32_t type_value = pair.second;
             ret[jss::TYPES][type_name] = type_value;
             type_map[type_value] = type_name;
