@@ -39,8 +39,9 @@ class Definitions
 {
 private:
     std::string
-    translate(std::string inp)
+    translate(std::string const& input_str)
     {
+        std::string inp(input_str);
         auto replace = [&](const char* f, const char* r) -> std::string {
             std::string out = inp;
             boost::replace_all(out, f, r);
