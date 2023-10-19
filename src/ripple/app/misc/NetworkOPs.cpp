@@ -42,7 +42,6 @@
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/json/MultivarJson.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/UptimeClock.h>
@@ -54,6 +53,7 @@
 #include <ripple/consensus/ConsensusParms.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
+#include <ripple/json/MultivarJson.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -605,7 +605,7 @@ private:
         TER result,
         bool validated,
         std::shared_ptr<ReadView const> const& ledger,
-        std::optional<std::reference_wrapper<TxMeta const>> meta);
+        std::optional<TxMeta const> meta);
 
     void
     pubValidatedTransaction(
@@ -3092,7 +3092,7 @@ NetworkOPsImp::transJson(
     TER result,
     bool validated,
     std::shared_ptr<ReadView const> const& ledger,
-    std::optional<std::reference_wrapper<TxMeta const>> meta)
+    std::optional<TxMeta const> meta)
 {
     Json::Value jvObj(Json::objectValue);
     std::string sToken;
@@ -3105,9 +3105,9 @@ NetworkOPsImp::transJson(
 
     if (meta)
     {
-        jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
+        jvObj[jss::meta] = meta->getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
-            jvObj[jss::meta], *ledger, transaction, meta->get());
+            jvObj[jss::meta], *ledger, transaction, *meta);
     }
 
     if (validated)
@@ -3180,9 +3180,9 @@ NetworkOPsImp::pubValidatedTransaction(
     auto const& stTxn = transaction.getTxn();
 
     // Create two different Json objects, for different API versions
-    auto const metaRef = std::ref(transaction.getMeta());
     auto const trResult = transaction.getResult();
-    MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
+    MultiApiJson jvObj =
+        transJson(stTxn, trResult, true, ledger, transaction.getMeta());
 
     {
         std::lock_guard sl(mSubLock);
@@ -3325,9 +3325,9 @@ NetworkOPsImp::pubAccountTransaction(
         auto const& stTxn = transaction.getTxn();
 
         // Create two different Json objects, for different API versions
-        auto const metaRef = std::ref(transaction.getMeta());
         auto const trResult = transaction.getResult();
-        MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
+        MultiApiJson jvObj =
+            transJson(stTxn, trResult, true, ledger, transaction.getMeta());
 
         for (InfoSub::ref isrListener : notify)
         {
@@ -3802,10 +3802,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             return;
                         }
 
-                        auto const mRef = std::ref(*meta);
                         auto const trR = meta->getResultTER();
                         MultiApiJson jvTx =
-                            transJson(stTxn, trR, true, curTxLedger, mRef);
+                            transJson(stTxn, trR, true, curTxLedger, *meta);
 
                         jvTx.set(
                             jss::account_history_tx_index, txHistoryIndex--);
