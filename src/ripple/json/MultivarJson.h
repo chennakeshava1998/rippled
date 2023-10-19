@@ -40,9 +40,8 @@ struct MultivarJson
     }
 
     void
-    set(const char* key,
-        auto const&
-            v) requires std::constructible_from<Json::Value, decltype(v)>
+    set(const char* key, auto const& v)
+        requires std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
             a[key] = v;
@@ -95,8 +94,7 @@ version 3, the `apiVersionSelector` would change to
 constexpr auto
 apiVersionSelector(unsigned int apiVersion) noexcept
 {
-    return [apiVersion]() constexpr
-    {
+    return [apiVersion]() constexpr {
         // apiVersion <= 1 returns 0
         // apiVersion > 1  returns 1
         return static_cast<std::size_t>(apiVersion > 1);
