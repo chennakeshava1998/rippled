@@ -48,7 +48,6 @@ struct MultivarJson_test : beast::unit_test::suite
 
         MultivarJson<3> const subject({str1, obj1});
         static_assert(sizeof(subject) == sizeof(subject.val));
-        static_assert(subject.size == subject.val.size());
         static_assert(
             std::is_same_v<decltype(subject.val), std::array<Json::Value, 3>>);
 
@@ -246,8 +245,8 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("apiVersionSelector");
 
-            static_assert(MultiApiJson::size == 2);
             static MultiApiJson x{{obj1, str1}};
+            static_assert(x.val.size() == 2);
 
             static_assert(
                 std::is_same_v<decltype(apiVersionSelector(1)()), std::size_t>);

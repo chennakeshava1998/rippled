@@ -31,7 +31,6 @@ template <std::size_t Size>
 struct MultivarJson
 {
     std::array<Json::Value, Size> val;
-    constexpr static std::size_t size = Size;
 
     Json::Value const&
     select(auto&& selector) const
@@ -60,7 +59,7 @@ struct MultivarJson
             if (a.isMember(key))
                 count += 1;
 
-        return (count == 0 ? none : (count < size ? some : all));
+        return (count == 0 ? none : (count < Size ? some : all));
     }
 };
 
