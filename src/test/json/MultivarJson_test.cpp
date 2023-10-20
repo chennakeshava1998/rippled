@@ -94,52 +94,50 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("select");
 
-            BEAST_EXPECT(
-                subject.select([]() -> std::size_t { return 0; }) == str1);
-            BEAST_EXPECT(
-                subject.select([]() -> std::size_t { return 1; }) == obj1);
-            BEAST_EXPECT(
-                subject.select([]() -> std::size_t { return 2; }) == jsonNull);
+            BEAST_EXPECT(subject.select(0) == str1);
+            BEAST_EXPECT(subject.select(1) == obj1);
+            BEAST_EXPECT(subject.select(2) == jsonNull);
 
             // Tests of requires clause - these are expected to match
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select([]() -> std::size_t {});
-                };
-            }(subject));
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select([]() constexpr->std::size_t { return 0; });
-                };
-            }(subject));
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select([]() mutable -> std::size_t {});
-                };
-            }(subject));
+            //            static_assert([](auto&& v) {
+            //                return requires
+            //                {
+            //                    v.select([]() -> std::size_t {});
+            //                };
+            //            }(subject));
+            //            static_assert([](auto&& v) {
+            //                return requires
+            //                {
+            //                    v.select([]() constexpr->std::size_t { return
+            //                    0; });
+            //                };
+            //            }(subject));
+            //            static_assert([](auto&& v) {
+            //                return requires
+            //                {
+            //                    v.select([]() mutable -> std::size_t {});
+            //                };
+            //            }(subject));
 
-            // Tests of requires clause - these are expected NOT to match
-            static_assert([](auto&& a) {
-                return !requires
-                {
-                    subject.select([]() -> int { return 0; });
-                };
-            }(subject));
-            static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.select([]() -> void {});
-                };
-            }(subject));
-            static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.select([]() -> bool {});
-                };
-            }(subject));
+            //            // Tests of requires clause - these are expected NOT
+            //            to match static_assert([](auto&& a) {
+            //                return !requires
+            //                {
+            //                    subject.select([]() -> int { return 0; });
+            //                };
+            //            }(subject));
+            //            static_assert([](auto&& v) {
+            //                return !requires
+            //                {
+            //                    v.select([]() -> void {});
+            //                };
+            //            }(subject));
+            //            static_assert([](auto&& v) {
+            //                return !requires
+            //                {
+            //                    v.select([]() -> bool {});
+            //                };
+            //            }(subject));
         }
 
         {
@@ -167,42 +165,22 @@ struct MultivarJson_test : beast::unit_test::suite
 
             // Tests of requires clause - these are expected to match
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", Json::nullValue);
-                };
+                return requires { v.set("name", Json::nullValue); };
             }(x));
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", "value");
-                };
+                return requires { v.set("name", "value"); };
             }(x));
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", true);
-                };
-            }(x));
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", 42);
-                };
-            }(x));
+            static_assert(
+                [](auto&& v) { return requires { v.set("name", true); }; }(x));
+            static_assert(
+                [](auto&& v) { return requires { v.set("name", 42); }; }(x));
 
             // Tests of requires clause - these are expected NOT to match
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.set("name", foo_t{});
-                };
+                return !requires { v.set("name", foo_t{}); };
             }(x));
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.set("name", std::nullopt);
-                };
+                return !requires { v.set("name", std::nullopt); };
             }(x));
         }
 
@@ -250,24 +228,21 @@ struct MultivarJson_test : beast::unit_test::suite
             static MultiApiJson x{{obj1, str1}};
 
             static_assert(
-                std::is_same_v<decltype(apiVersionSelector(1)()), std::size_t>);
+                std::is_same_v<decltype(apiVersionSelector(1)), std::size_t>);
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select(apiVersionSelector(1));
-                };
+                return requires { v.select(apiVersionSelector(1)); };
             }(x));
 
             BEAST_EXPECT(x.select(apiVersionSelector(0)) == obj1);
             BEAST_EXPECT(x.select(apiVersionSelector(2)) == str1);
 
-            static_assert(apiVersionSelector(0)() == 0);
-            static_assert(apiVersionSelector(1)() == 0);
-            static_assert(apiVersionSelector(2)() == 1);
-            static_assert(apiVersionSelector(3)() == 1);
+            static_assert(apiVersionSelector(0) == 0);
+            static_assert(apiVersionSelector(1) == 0);
+            static_assert(apiVersionSelector(2) == 1);
+            static_assert(apiVersionSelector(3) == 1);
             static_assert(
-                apiVersionSelector(
-                    std::numeric_limits<unsigned int>::max())() == 1);
+                apiVersionSelector(std::numeric_limits<unsigned int>::max()) ==
+                1);
         }
     }
 };

@@ -33,17 +33,30 @@ struct MultivarJson
     std::array<Json::Value, Size> val;
     constexpr static std::size_t size = Size;
 
+    //    Json::Value const&
+    //    select(auto&& selector) const
+    //        requires std::same_as<std::size_t, decltype(selector())>
+    //    {
+    //        return val[selector()];
+    //    }
+
     Json::Value const&
-    select(auto&& selector) const
-        requires std::same_as<std::size_t, decltype(selector())>
+    select(std::size_t selector) const
     {
-        return val[selector()];
+        return val[selector];
     }
 
+    //    void
+    //    set(const char* key,
+    //        auto const&
+    //            v) requires std::constructible_from<Json::Value, decltype(v)>
+    //    {
+    //        for (auto& a : this->val)
+    //            a[key] = v;
+    //    }
+
     void
-    set(const char* key,
-        auto const&
-            v) requires std::constructible_from<Json::Value, decltype(v)>
+    set(const char* key, Json::Value const& v)
     {
         for (auto& a : this->val)
             a[key] = v;
@@ -96,12 +109,13 @@ version 3, the `apiVersionSelector` would change to
 constexpr auto
 apiVersionSelector(unsigned int apiVersion) noexcept
 {
-    return [apiVersion]() constexpr
-    {
-        // apiVersion <= 1 returns 0
-        // apiVersion > 1  returns 1
-        return static_cast<std::size_t>(apiVersion > 1);
-    };
+    //    return [apiVersion]() constexpr
+    //    {
+    //        // apiVersion <= 1 returns 0
+    //        // apiVersion > 1  returns 1
+    //        return static_cast<std::size_t>(apiVersion > 1);
+    //    };
+    return static_cast<std::size_t>(apiVersion > 1);
 }
 
 }  // namespace ripple

@@ -3156,7 +3156,7 @@ NetworkOPsImp::transJson(
          apiVersion <= 2;
          ++apiVersion)
     {
-        unsigned const index = apiVersionSelector(apiVersion)();
+        unsigned const index = apiVersionSelector(apiVersion);
         assert(index < MultiApiJson::size);
         if (index != lastIndex)
         {
