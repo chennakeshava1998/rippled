@@ -175,7 +175,7 @@ loadLedgerInfos(
            "total_coins, closing_time, prev_closing_time, close_time_res, "
            "close_flags, ledger_seq FROM ledgers ";
 
-    uint32_t expNumResults = 1;
+    int32_t expNumResults = -1;
 
     if (auto ledgerSeq = std::get_if<uint32_t>(&whichLedger))
     {
@@ -232,6 +232,19 @@ loadLedgerInfos(
     }
     else if (res.ntuples() > 0)
     {
+        // The input specifies min-max ledger sequence, but the number of
+        // output records do not match the expectation. This could occur if
+        // the database does not have sufficient data.
+        if (expNumResults != -1 && res.ntuples() != expNumResults)
+        {
+            JLOG(log.error()) << __func__
+                              << " : Wrong number of tuples in Postgres "
+                                 "response. Expected " +
+                    expNumResults + ", but got "
+                              << res.ntuples() << " . sql = " << sql.str();
+            assert(false);
+            return {};
+        }
         if (res.nfields() != 10)
         {
             JLOG(log.error()) << __func__
@@ -299,6 +312,10 @@ loadLedgerInfos(
  *        std::monostate loads the most recent ledger
  * @param app The Application
  * @return Ledger info
+ * This helper function returns at most one tuple from the database. You cannot
+ * retrieve multiple records from the database (e.g.: range of ledgers)
+ * through this hepler function. In order to achieve that, you will need to
+ * invoke loadLedgerInfos with a pair of ledger sequence numbers.
  */
 static std::optional<LedgerInfo>
 loadLedgerHelper(
