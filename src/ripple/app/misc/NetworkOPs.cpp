@@ -3106,7 +3106,7 @@ NetworkOPsImp::transJson(
     // NOTE jvObj which is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
-    std::string hash = {};
+    std::string hash = to_string(transaction->getTransactionID());
     jvObj[jss::transaction] =
         transaction->getJson(JsonOptions::none, false, {std::ref(hash)});
 
