@@ -51,26 +51,19 @@ namespace detail {
 class SigningForParams
 {
 private:
-    AccountID const* const multiSigningAcctID_;
+    std::optional<AccountID> multiSigningAcctID_;
     std::optional<PublicKey> multiSignPublicKey_;
     Buffer multiSignature_;
 
 public:
-    explicit SigningForParams() : multiSigningAcctID_(nullptr)
-    {
-    }
-
-    SigningForParams(SigningForParams const& rhs) = delete;
-
-    SigningForParams(AccountID const& multiSigningAcctID)
-        : multiSigningAcctID_(&multiSigningAcctID)
+    explicit SigningForParams()
     {
     }
 
     bool
     isMultiSigning() const
     {
-        return multiSigningAcctID_ != nullptr;
+        return multiSigningAcctID_.has_value();
     }
 
     bool
@@ -98,8 +91,15 @@ public:
     getSigner() const
     {
         if (!multiSigningAcctID_)
-            LogicError("Accessing unknown SigningForParams::getSigner()");
+            LogicError(
+                "Accessing unknown SigningForParams::multiSigningAcctID_");
         return *multiSigningAcctID_;
+    }
+
+    void
+    setSignerAccount(AccountID sAcct)
+    {
+        multiSigningAcctID_ = sAcct;
     }
 
     PublicKey const&
@@ -350,6 +350,7 @@ struct transactionPreProcessResult
 {
     Json::Value const first;
     std::shared_ptr<STTx> const second;
+    SigningForParams signParams_;
 
     transactionPreProcessResult() = delete;
     transactionPreProcessResult(transactionPreProcessResult const&) = delete;
@@ -360,13 +361,17 @@ struct transactionPreProcessResult
     transactionPreProcessResult&
     operator=(transactionPreProcessResult&&) = delete;
 
+    // In this constructor, SigningForParams signParams_ field is not updated
+    // because, json return value represents an error scenario
     transactionPreProcessResult(Json::Value&& json)
         : first(std::move(json)), second()
     {
     }
 
-    explicit transactionPreProcessResult(std::shared_ptr<STTx>&& st)
-        : first(), second(std::move(st))
+    explicit transactionPreProcessResult(
+        std::shared_ptr<STTx>&& st,
+        SigningForParams signParams)
+        : first(), second(std::move(st)), signParams_(signParams)
     {
     }
 };
@@ -375,11 +380,17 @@ static transactionPreProcessResult
 transactionPreProcessImpl(
     Json::Value& params,
     Role role,
-    SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
     auto j = app.journal("RPCHandler");
+
+    SigningForParams signingArgs;
+
+    // if there are multiple signatures, fill the signerAcctID field
+    if (auto signerAccountID =
+            parseBase58<AccountID>(params["account"].asString()))
+        signingArgs.setSignerAccount(*signerAccountID);
 
     Json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair =
@@ -565,7 +576,7 @@ transactionPreProcessImpl(
         stpTrans->sign(pk, sk);
     }
 
-    return transactionPreProcessResult{std::move(stpTrans)};
+    return transactionPreProcessResult{std::move(stpTrans), signingArgs};
 }
 
 static std::pair<Json::Value, Transaction::pointer>
@@ -790,9 +801,10 @@ transactionSign(
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
-    SigningForParams signForParams;
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
+    transactionPreProcessResult preprocResult =
+        transactionPreProcessImpl(jvRequest, role, validatedLedgerAge, app);
+
+    SigningForParams signForParams = preprocResult.signParams_;
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -830,9 +842,10 @@ transactionSubmit(
     JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
-    SigningForParams signForParams;
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
+    transactionPreProcessResult preprocResult =
+        transactionPreProcessImpl(jvRequest, role, validatedLedgerAge, app);
+
+    SigningForParams signForParams = preprocResult.signParams_;
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -994,10 +1007,10 @@ transactionSignFor(
     }
 
     // Add and amend fields based on the transaction type.
-    SigningForParams signForParams(*signerAccountID);
+    transactionPreProcessResult preprocResult =
+        transactionPreProcessImpl(jvRequest, role, validatedLedgerAge, app);
 
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
+    SigningForParams signForParams = preprocResult.signParams_;
 
     if (!preprocResult.second)
         return preprocResult.first;
