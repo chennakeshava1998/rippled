@@ -705,7 +705,7 @@ class Transaction_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const alie{"alie"};
         Account const gw{"gw"};
-        auto const USD{gw["USD"]};
+        //        auto const USD{gw["USD"]};
 
         env.fund(XRP(1000000), alice, gw);
         env.close();
@@ -747,6 +747,11 @@ class Transaction_test : public beast::unit_test::suite
                 result[jss::result][jss::hash] ==
                 to_string(txn->getTransactionID()));
             BEAST_EXPECT(result[jss::result][jss::validated] == true);
+            BEAST_EXPECT(result[jss::result][jss::ledger_index] == 4);
+            BEAST_EXPECT(
+                result[jss::result][jss::ledger_hash] ==
+                "B41882E20F0EC6228417D28B9AE0F33833645D35F6799DFB782AC97FC4BB51"
+                "D2");
         }
 
         for (auto memberIt = expected.begin(); memberIt != expected.end();

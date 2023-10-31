@@ -147,7 +147,25 @@ class AccountTx_test : public beast::unit_test::suite
                         (j[jss::result][jss::transactions][1u][jss::tx_json]
                           [jss::DeliverMax] == "10000000010") &&
                         (!j[jss::result][jss::transactions][1u][jss::tx_json]
-                              .isMember(jss::Amount));
+                              .isMember(jss::Amount)) &&
+                        /* Testing the existence of API fields introduced in
+                         * v2 */
+                        j[jss::result][jss::transactions][0u].isMember(
+                            jss::hash) &&
+                        j[jss::result][jss::transactions][0u].isMember(
+                            jss::ledger_index) &&
+                        j[jss::result][jss::transactions][0u].isMember(
+                            jss::ledger_hash) &&
+                        j[jss::result][jss::transactions][0u].isMember(
+                            jss::close_time_iso) &&
+                        j[jss::result][jss::transactions][1u].isMember(
+                            jss::hash) &&
+                        j[jss::result][jss::transactions][1u].isMember(
+                            jss::ledger_index) &&
+                        j[jss::result][jss::transactions][1u].isMember(
+                            jss::ledger_hash) &&
+                        j[jss::result][jss::transactions][1u].isMember(
+                            jss::close_time_iso);
                 default:
                     return false;
             }

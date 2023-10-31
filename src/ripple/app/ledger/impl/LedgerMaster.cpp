@@ -635,6 +635,8 @@ LedgerMaster::isValidated(ReadView const& ledger)
                 {
                     // SQL database doesn't match ledger chain
                     clearLedger(seq);
+                    app_.getInboundLedgers().acquire(
+                        *hash, seq, InboundLedger::Reason::GENERIC);
                 }
             }
             return false;
