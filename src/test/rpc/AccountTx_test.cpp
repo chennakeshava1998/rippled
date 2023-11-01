@@ -137,17 +137,30 @@ class AccountTx_test : public beast::unit_test::suite
                          j[jss::result][jss::transactions][1u][jss::tx]
                           [jss::DeliverMax]);
                 case 2:
-                    return j.isMember(jss::result) &&
+                    if (j.isMember(jss::result) &&
                         (j[jss::result][jss::status] == "success") &&
                         (j[jss::result][jss::transactions].size() == 2) &&
                         (j[jss::result][jss::transactions][0u][jss::tx_json]
-                          [jss::TransactionType] == jss::AccountSet) &&
-                        (j[jss::result][jss::transactions][1u][jss::tx_json]
-                          [jss::TransactionType] == jss::Payment) &&
-                        (j[jss::result][jss::transactions][1u][jss::tx_json]
-                          [jss::DeliverMax] == "10000000010") &&
-                        (!j[jss::result][jss::transactions][1u][jss::tx_json]
-                              .isMember(jss::Amount));
+                          [jss::TransactionType] == jss::AccountSet))
+                    {
+                        auto const& payment =
+                            j[jss::result][jss::transactions][1u];
+                        return (payment.isMember(jss::tx_json)) &&
+                            (payment[jss::tx_json][jss::TransactionType] ==
+                             jss::Payment) &&
+                            (payment[jss::tx_json][jss::DeliverMax] ==
+                             "10000000010") &&
+                            (!payment[jss::tx_json].isMember(jss::Amount)) &&
+                            (!payment[jss::tx_json].isMember(jss::hash)) &&
+                            (payment.isMember(jss::hash)) &&
+                            (payment[jss::validated] == true) &&
+                            (payment.isMember(jss::ledger_index)) &&
+                            (payment.isMember(jss::ledger_hash)) &&
+                            (payment.isMember(jss::close_time_iso));
+                    }
+                    else
+                        return false;
+
                 default:
                     return false;
             }

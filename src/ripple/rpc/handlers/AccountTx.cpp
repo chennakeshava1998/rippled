@@ -358,10 +358,12 @@ populateJsonResponse(
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                         if (auto closeTime =
                                 context.ledgerMaster.getCloseTimeBySeq(
-                                    txnMeta->getIndex()))
+                                    txn->getLedger()))
                             jvObj[jss::close_time_iso] =
                                 to_string_iso(*closeTime);
                     }
+                    else
+                        jvObj[jss::validated] = false;
                 }
             }
         }
