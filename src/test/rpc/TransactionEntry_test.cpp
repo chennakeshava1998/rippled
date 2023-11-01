@@ -171,10 +171,15 @@ class TransactionEntry_test : public beast::unit_test::suite
             if (apiVersion > 1)
             {
                 BEAST_EXPECT(resIndex[jss::hash] == txhash);
-                BEAST_EXPECT(resIndex[jss::validated] == true);
+                BEAST_EXPECT(resIndex[jss::validated]);
                 BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::Amount));
+                BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::hash));
+                BEAST_EXPECT(
+                    !resIndex[jss::tx_json].isMember(jss::ledger_index));
+                BEAST_EXPECT(
+                    !resIndex[jss::tx_json].isMember(jss::ledger_hash));
 
-                if (!close_time_iso.empty())
+                if (BEAST_EXPECT(!close_time_iso.empty()))
                     BEAST_EXPECT(
                         resIndex[jss::close_time_iso] == close_time_iso);
             }

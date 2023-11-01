@@ -156,7 +156,11 @@ class AccountTx_test : public beast::unit_test::suite
                             (payment[jss::validated] == true) &&
                             (payment.isMember(jss::ledger_index)) &&
                             (payment.isMember(jss::ledger_hash)) &&
-                            (payment.isMember(jss::close_time_iso));
+                            (payment.isMember(jss::close_time_iso)) &&
+                            (!payment[jss::tx_json].isMember(jss::hash)) &&
+                            (!payment[jss::tx_json].isMember(
+                                jss::ledger_index)) &&
+                            (!payment[jss::tx_json].isMember(jss::ledger_hash));
                     }
                     else
                         return false;

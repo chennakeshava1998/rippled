@@ -177,9 +177,6 @@ Transaction::getJson(
     {
         if (showInLedger)
             ret[jss::inLedger] = mLedgerIndex;  // Deprecated.
-
-        ret[jss::ledger_index] = mLedgerIndex;
-
         if (options == JsonOptions::include_date)
         {
             auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mLedgerIndex);
