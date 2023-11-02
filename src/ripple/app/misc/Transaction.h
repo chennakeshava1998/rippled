@@ -24,7 +24,6 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxMeta.h>
