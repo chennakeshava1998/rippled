@@ -92,7 +92,8 @@ struct PseudoTx_test : public beast::unit_test::suite
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
                         ripple::apply(env.app(), view, stx, tapNONE, j);
-                    BEAST_EXPECT(!result.second && result.first == temINVALID);
+                    BEAST_EXPECT(
+                        !result.second && result.first == telLOCAL_ERROR);
                     return result.second;
                 });
         }

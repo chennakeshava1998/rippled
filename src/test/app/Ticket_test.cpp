@@ -703,7 +703,7 @@ class Ticket_test : public beast::unit_test::suite
         env(noop(alice),
             ticket::use(ticketSeq_G),
             json(R"({"AccountTxnID": "0"})"),
-            ter(temINVALID));
+            ter(telLOCAL_ERROR));
         env.close();
         env.require(owners(alice, 2), tickets(alice, 1));
     }
