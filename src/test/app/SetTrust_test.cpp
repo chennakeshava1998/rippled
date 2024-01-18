@@ -191,6 +191,21 @@ public:
         // trust amount can't be negative
         env(trust(alice, gw["USD"](-1000)), ter(temBAD_LIMIT));
 
+        //        // trust amount can't be titled XRP
+        //        env(trust(alice, gw["XRP"](1000)), ter(temBAD_CURRENCY));
+
+        //        // currency code must be three characters in length
+        //        env(trust(alice, gw["abcd"](1000)), ter(temBAD_CURRENCY));
+
+        // valid currency codes
+        env(trust(alice, gw["$$$"](1000)), ter(tesSUCCESS));
+
+        // valid currency codes
+        env(trust(alice, gw["^%#"](1000)), ter(tesSUCCESS));
+
+        // valid currency codes
+        env(trust(alice, gw["a1@"](1000)), ter(tesSUCCESS));
+
         // trust amount can't be from invalid issuer
         env(trust_explicit_amt(
                 alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}),
