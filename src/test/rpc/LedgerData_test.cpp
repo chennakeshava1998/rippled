@@ -313,7 +313,7 @@ public:
             jvParams[jss::type] = type;
             return env.rpc(
                 "json",
-                "ledger_data",
+                "ledger",
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
         };
 

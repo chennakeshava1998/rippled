@@ -51,6 +51,8 @@ isBinary(LedgerFill const& fill)
     return fill.options & LedgerFill::binary;
 }
 
+// this function is not filtering for a specific type of transactions
+// (LedgerFill.type_)
 template <class Object>
 void
 fillJson(
@@ -326,6 +328,8 @@ fillJson(Object& json, LedgerFill const& fill)
     if (isBinary(fill))
         fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
     else
+        // this function is not filtering for a specific type of transactions
+        // (LedgerFill.type_)
         fillJson(
             json,
             !fill.ledger.open(),
@@ -334,6 +338,8 @@ fillJson(Object& json, LedgerFill const& fill)
             (fill.context ? fill.context->apiVersion
                           : RPC::apiMaximumSupportedVersion));
 
+    // this function is not filtering for a specific type of transactions
+    // (LedgerFill.type_)
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);
 
