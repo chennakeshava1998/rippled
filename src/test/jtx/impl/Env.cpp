@@ -280,7 +280,7 @@ Env::parseResult(Json::Value const& jr)
         jr[jss::result].isMember(jss::engine_result_code))
         ter = TER::fromInt(jr[jss::result][jss::engine_result_code].asInt());
     else
-        ter = temINVALID;
+        ter = telENV_RPC_FAILED;
     return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
 }
 
