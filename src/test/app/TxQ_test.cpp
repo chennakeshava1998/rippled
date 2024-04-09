@@ -1067,7 +1067,19 @@ public:
                         env.app(), view, *jt.stx, tapNONE, env.journal);
                     return didApply;
                 });
-            env.postconditions(jt, ter, didApply);
+            env.postconditions(
+                jt, ter, rpcSUCCESS, didApply);  // CK: Is an
+                                                 // rpcError
+                                                 // relevant to
+                                                 // this test?
+                                                 // Can I make
+                                                 // it an
+                                                 // optional
+                                                 // parameter
+                                                 // to
+                                                 //
+                                                 //
+                                                 // postconditions??
         }
         checkMetrics(__LINE__, env, 1, std::nullopt, 4, 2, 256);
 

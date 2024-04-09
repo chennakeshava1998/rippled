@@ -515,6 +515,7 @@ public:
     postconditions(
         JTx const& jt,
         TER ter,
+        error_code_i rpcErr,
         bool didApply,
         Json::Value const& jr = Json::Value());
 
@@ -666,6 +667,9 @@ protected:
     TestStopwatch stopwatch_;
     uint256 txid_;
     TER ter_ = tesSUCCESS;
+    error_code_i rpcError_ = rpcSUCCESS; // This data member is set by
+                                         // parsing the result Json::Value of
+                                         // an RPC command
 
     Json::Value
     do_rpc(

@@ -44,6 +44,9 @@ struct JTx
     Json::Value jv;
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
+    std::optional<error_code_i> rpcError; // This data member is set through
+                                          // the call operator of the
+                                          // envRpcErr class
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_TER_H_INCLUDED
 #define RIPPLE_TEST_JTX_TER_H_INCLUDED
 
+#include <ripple/protocol/ErrorCodes.h>
 #include <test/jtx/Env.h>
 #include <tuple>
 
@@ -48,6 +49,25 @@ public:
     operator()(Env&, JTx& jt) const
     {
         jt.ter = v_;
+    }
+};
+
+class envRpcErr
+{
+    // All JTx might not have an expected rpcError (they might be expected to
+    // succeed with rpcSUCCESS). Hence using an optional
+    std::optional<error_code_i> v_;
+
+public:
+
+    explicit envRpcErr(error_code_i e_) : v_(e_)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.rpcError = v_;
     }
 };
 

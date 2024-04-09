@@ -1636,11 +1636,13 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Duplicate signers should fail.
+        // update this function with the appropriate RPC failure message
+        // Intentionally fail this test to inspect the RPC fail msg
         aliceSeq = env.seq(alice);
         env(noop(alice),
             msig(demon, demon),
             fee(3 * baseFee),
-            ter(telENV_RPC_FAILED));
+            ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 

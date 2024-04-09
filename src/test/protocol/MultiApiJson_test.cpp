@@ -52,11 +52,11 @@ struct MultiApiJson_test : beast::unit_test::suite
         return obj1;
     }
 
-    constexpr static auto index =
-        [](unsigned int v) constexpr noexcept -> std::size_t
-    {
-        return v - 1;
-    };
+    //    constexpr static auto index =
+    //        [](unsigned int v) constexpr noexcept -> std::size_t
+    //    {
+    //        return v - 1;
+    //    };
 
     template <int size>
     constexpr static auto valid = [](unsigned int v) constexpr noexcept -> bool

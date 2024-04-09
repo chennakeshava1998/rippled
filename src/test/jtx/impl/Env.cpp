@@ -272,9 +272,19 @@ Env::trust(STAmount const& amount, Account const& account)
     test.expect(balance(account) == start);
 }
 
+// return the rpcError too, if one is encountered
 std::pair<TER, bool>
 Env::parseResult(Json::Value const& jr)
 {
+//    error_code_i rpcErr;
+//
+//    if(jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember
+//                                                     (jss::error_code)) {
+//        // need to find an mapping from integers into error_code_i enum
+//        // alternatively: compare jss::error with ErrorInfo.token value
+//        rpcErr = jr[jss::result][jss::error_code].asInt();
+//    }
+
     TER ter;
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::engine_result_code))
@@ -290,6 +300,7 @@ void
 Env::submit(JTx const& jt)
 {
     bool didApply;
+    // TODO: Need to set Env::rpcError_ in this function
     auto const jr = [&]() {
         if (jt.stx)
         {
@@ -312,7 +323,7 @@ Env::submit(JTx const& jt)
             return Json::Value();
         }
     }();
-    return postconditions(jt, ter_, didApply, jr);
+    return postconditions(jt, ter_, rpcError_, didApply, jr);
 }
 
 void
@@ -350,16 +361,31 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
 
     std::tie(ter_, didApply) = parseResult(jr);
 
-    return postconditions(jt, ter_, didApply, jr);
+    return postconditions(jt, ter_, rpcError_, didApply, jr);
 }
 
 void
 Env::postconditions(
     JTx const& jt,
     TER ter,
+    error_code_i rpcErr,
     bool didApply,
     Json::Value const& jr)
 {
+    if (jt.rpcError &&
+        !test.expect(
+            rpcErr == *jt.rpcError,
+            "Unexpected rpc result"))  // CK: Include a verbose helpful
+                                       // statement
+    {
+        test.log << pretty(jt.jv) << std::endl;
+        if (jr)
+            test.log << pretty(jr) << std::endl;
+        // Don't check postconditions if
+        // we didn't get the expected result.
+        return;
+    }
+
     if (jt.ter &&
         !test.expect(
             ter == *jt.ter,
