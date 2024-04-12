@@ -148,8 +148,13 @@ enum error_code_i {
     // Oracle
     rpcORACLE_MALFORMED = 94,
 
-    rpcLAST =
-        rpcORACLE_MALFORMED  // rpcLAST should always equal the last code.=
+    // Used in Submit.cpp
+    rpcINVALID_TRANSACTION = 95,
+    rpcINTERNAL_SUBMIT = 96,
+    rpcINVALID_JSON = 97,  // unable to parse transaction processing result
+                           // into txJson
+
+    rpcLAST = rpcINVALID_JSON  // rpcLAST should always equal the last code.=
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
@@ -238,6 +243,22 @@ inject_error(error_code_i code, std::string const& message, JsonValue& json)
     json[jss::error] = info.token;
     json[jss::error_code] = info.code;
     json[jss::error_message] = message;
+}
+
+// switch the order of input parameters to distinguish from the other
+// overload candidates. This overload fills the jss::error_exception field,
+// instead of the jss::error_message field
+template <class JsonValue>
+void
+inject_error(
+    std::string const& exception_message,
+    error_code_i code,
+    JsonValue& json)
+{
+    ErrorInfo const& info(get_error_info(code));
+    json[jss::error] = info.token;
+    json[jss::error_code] = info.code;
+    json[jss::error_exception] = exception_message;
 }
 
 /** @} */

@@ -110,7 +110,13 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcTOO_BUSY,               "tooBusy",              "The server is too busy to help you now.", 503},
     {rpcTXN_NOT_FOUND,          "txnNotFound",          "Transaction not found.", 404},
     {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
-    {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400}};
+    {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is "
+"malformed.", 400},
+{rpcINVALID_TRANSACTION, "invalidTransaction", "Transaction fails local "
+"signature or serialization checks.", },
+{rpcINTERNAL_SUBMIT, "internalSubmit", "Exception occurred in NetworkOPs "
+"processing this transaction."},
+{rpcINVALID_JSON, "internalJson", "unable to parse transaction processing result into txJson"}};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be
