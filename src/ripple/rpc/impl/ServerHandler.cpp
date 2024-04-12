@@ -324,6 +324,7 @@ ServerHandler::onWSMessage(
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
+        jvResult[jss::error_code] = rpcINVALID_JSON;
         jvResult[jss::value] = buffers_to_string(buffers);
         boost::beast::multi_buffer sb;
         Json::stream(jvResult, [&sb](auto const p, auto const n) {
@@ -432,6 +433,8 @@ ServerHandler::processSession(
             jr[jss::error] = apiVersion == RPC::apiInvalidVersion
                 ? jss::invalid_API_version
                 : jss::missingCommand;
+            jr[jss::error_code] = rpcINTERNAL;  // TODO: use a new error code
+                                                // rpcINVALID_API here
             jr[jss::request] = jv;
             if (jv.isMember(jss::id))
                 jr[jss::id] = jv[jss::id];
@@ -503,8 +506,15 @@ ServerHandler::processSession(
     // Regularize result. This is duplicate code.
     if (jr[jss::result].isMember(jss::error))
     {
+        // if jss::error_code is returned, preserve it in the return value
+        std::optional<unsigned int> errCode;
+        if (jr[jss::result].isMember(jss::error_code))
+            errCode = jr[jss::result][jss::error_code].asUInt();
         jr = jr[jss::result];
         jr[jss::status] = jss::error;
+
+        if (errCode)
+            jr[jss::error_code] = *errCode;
 
         auto rq = jv;
 
@@ -637,6 +647,7 @@ ServerHandler::processRequest(
         {
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
+            r[jss::error_code] = rpcINVALID_JSON;
             r[jss::error] =
                 make_json_error(method_not_found, "Method not found");
             reply.append(r);
@@ -669,6 +680,7 @@ ServerHandler::processRequest(
             }
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
+            r[jss::error_code] = rpcINTERNAL;
             r[jss::error] = make_json_error(
                 wrong_version, jss::invalid_API_version.c_str());
             reply.append(r);
@@ -720,6 +732,9 @@ ServerHandler::processRequest(
                 Json::Value r = jsonRPC;
                 r[jss::error] =
                     make_json_error(server_overloaded, "Server is overloaded");
+                r[jss::error_code] = rpcINTERNAL;  // TODO: Use a new rpc
+                                                   // error-code for
+                                                   // overloaded servers
                 reply.append(r);
                 continue;
             }
@@ -735,6 +750,7 @@ ServerHandler::processRequest(
             }
             Json::Value r = jsonRPC;
             r[jss::error] = make_json_error(forbidden, "Forbidden");
+            r[jss::error_code] = rpcINTERNAL;
             reply.append(r);
             continue;
         }
@@ -748,6 +764,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
+            r[jss::error_code] = rpcINVALID_JSON;
             r[jss::error] = make_json_error(method_not_found, "Null method");
             reply.append(r);
             continue;
@@ -763,6 +780,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
+            r[jss::error_code] = rpcINVALID_JSON;
             r[jss::error] =
                 make_json_error(method_not_found, "method is not string");
             reply.append(r);
@@ -779,6 +797,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
+            r[jss::error_code] = rpcINVALID_JSON;
             r[jss::error] =
                 make_json_error(method_not_found, "method is empty");
             reply.append(r);
@@ -833,6 +852,7 @@ ServerHandler::processRequest(
                 }
 
                 Json::Value r = jsonRPC;
+                r[jss::error_code] = rpcINVALID_JSON;
                 r[jss::error] = make_json_error(
                     method_not_found, "ripplerpc is not a string");
                 reply.append(r);
@@ -909,6 +929,7 @@ ServerHandler::processRequest(
                 JLOG(m_journal.debug()) << "rpcError: " << result[jss::error]
                                         << ": " << result[jss::error_message];
                 r[jss::error] = std::move(result);
+                r[jss::error_code] = result[jss::error_code];
             }
             else
             {
