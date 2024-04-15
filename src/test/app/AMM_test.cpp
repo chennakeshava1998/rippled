@@ -4906,9 +4906,9 @@ private:
         struct InputSet
         {
             char const* testCase;
-            double const poolUsdBIT;
+            unsigned int const poolUsdBIT;
             double const poolUsdGH;
-            sendmax const sendMaxUsdBIT;
+            STAmount const sendMaxUsdBIT;
             STAmount const sendUsdGH;
             STAmount const failUsdGH;
             STAmount const failUsdBIT;
@@ -5134,6 +5134,30 @@ private:
                         input.lpTokenBalance));
                 else
                 {
+                    bool const areOffersUnused = expectOffers(
+                        env,
+                        trader,
+                        2,
+                        {{Amounts{usdBIT(1), btcGH(input.offer1BtcGH)},
+                          Amounts{
+                              btcGH(input.offer2BtcGH),
+                              usdGH(input.offer2UsdGH)}}});
+
+                    // Offers are only used in unit tests where
+                    // sendMax > (one side of the AMM pool). For other swap
+                    // transactions, only the AMM is used.
+
+                    if (input.sendMaxUsdBIT >
+                        STAmount{usdBIT, input.poolUsdBIT})
+                        BEAST_EXPECT(!areOffersUnused);
+                    else
+                        BEAST_EXPECT(areOffersUnused);
+
+                    if (!areOffersUnused)
+                    {
+                        std::cerr << getAccountOffers(env, trader) << std::endl;
+                    }
+
                     BEAST_EXPECT(amm.expectBalances(
                         input.goodUsdGH,
                         input.goodUsdBIT,
