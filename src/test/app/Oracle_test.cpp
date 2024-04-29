@@ -287,6 +287,52 @@ private:
     }
 
     void
+    testLastUpdateTime()
+    {
+        testcase("test LastUpdateTime with current unix time");
+        using namespace jtx;
+        Account const owner("owner");
+
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), owner);
+            env.close();
+
+            // advance the ledger to the current time
+            const auto p1 = std::chrono::system_clock::now();
+            auto const currTime =
+                std::chrono::duration_cast<std::chrono::seconds>(
+                    p1.time_since_epoch())
+                    .count();
+            env.close(std::chrono::seconds(currTime));
+
+            Json::Value jv, jr;
+            jv[jss::TransactionType] = "OracleSet";
+            jv[jss::Account] = owner.human();
+            jv[jss::OracleDocumentID] = 1;
+
+            Json::Value dataSeries(Json::arrayValue);
+
+            {
+                Json::Value priceData;
+                Json::Value price;
+                price[jss::BaseAsset] = "XRP";
+                price[jss::QuoteAsset] = "USD";
+                price[jss::AssetPrice] = 4;
+                price[jss::Scale] = 2;
+                priceData[jss::PriceData] = price;
+                dataSeries.append(priceData);
+            }
+            jv[jss::PriceDataSeries] = dataSeries;
+
+            jv[jss::LastUpdateTime] = to_string(currTime);
+
+            env(jv);
+            env.close();
+        }
+    }
+
+    void
     testCreate()
     {
         testcase("Create");
@@ -684,6 +730,8 @@ public:
               all - featureExpandedSignerList})
             testMultisig(features);
         testLedgerEntry();
+
+        testLastUpdateTime();
     }
 };
 
