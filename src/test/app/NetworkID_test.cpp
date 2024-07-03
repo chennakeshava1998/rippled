@@ -41,6 +41,7 @@ public:
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
             cfg->NETWORK_ID = networkID;
+            std::cout << "final config: " << cfg->NETWORK_ID << std::endl;
             return cfg;
         });
     }
@@ -155,6 +156,40 @@ public:
 
             // submit the correct network id
             jv[jss::NetworkID] = 1025;
+            runTx(env, jv, tesSUCCESS);
+        }
+
+        // Config accepts negative values for network_id, because std::uint32_t is used for internal representation
+        {
+            test::jtx::Env env{*this, makeNetworkConfig(-1)};
+            BEAST_EXPECT(env.app().config().NETWORK_ID == -1);
+
+            // the negative network_id wraps around to a large positive number
+            BEAST_EXPECT(env.app().config().NETWORK_ID == 4294967295);
+            {
+                env.fund(XRP(200), alice);
+                // try to submit a txn without network id, this should not work
+                Json::Value jvn;
+                jvn[jss::Account] = alice.human();
+                jvn[jss::TransactionType] = jss::AccountSet;
+                jvn[jss::Fee] = to_string(env.current()->fees().base);
+                jvn[jss::Sequence] = env.seq(alice);
+                jvn[jss::LastLedgerSequence] = env.current()->info().seq + 2;
+                auto jt = env.jtnofill(jvn);
+                Serializer s;
+                jt.stx->add(s);
+                BEAST_EXPECT(
+                    env.rpc(
+                        "submit",
+                        strHex(s.slice()))[jss::result][jss::engine_result] ==
+                    "telREQUIRES_NETWORK_ID");
+                env.close();
+            }
+
+            Json::Value jv;
+
+            // Json::Value class does not have a constructor for "long long" type, hence use wrap-around for input
+            jv[jss::NetworkID] = Json::Value(std::uint32_t(-1));
             runTx(env, jv, tesSUCCESS);
         }
     }
